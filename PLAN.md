@@ -229,7 +229,7 @@
 
 ### 10.6. Порядок подключения на M0
 
-Состояние машины на 31.10.2026: dotnet 9 ✓, git ✓, Python 3.12 ✓; **Unity не установлена, uv нет, git-репозитория нет, хуков нет, Unity MCP и unity-claude-skills не подключены.**
+Состояние на 31.10.2026: dotnet 9 ✓, git ✓, Python 3.12 ✓, Unity ✓ (установлена у Сергея), репозиторий `sergeykorolyov6/coop-rts` ✓, хуки ✓ (`.claude/settings.json`); **uv нет, Unity MCP и unity-claude-skills не подключены.** Облачные сессии Claude Code: dotnet ставится через apt (`dotnet-sdk-8.0`), Unity там нет — работа со сценами через Remote Control на машину Сергея.
 
 1. Решить, переименовывать ли папку `coop rts` → `coop-rts` (пробел в пути мешает скриптам и хукам) — до создания репозитория.
 2. Репозиторий: `git init`, `CLAUDE.md`, `PLAN.md`, `Docs/Design/`, `.claude/skills/`, `.claude/settings.json` с хуками.

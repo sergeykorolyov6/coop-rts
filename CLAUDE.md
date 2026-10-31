@@ -17,7 +17,7 @@
 - `Game.Net` — сеть: сбор команд игроков, lockstep, рассылка. Зависит от `Game.Sim`, не от `Game.Presentation`.
 
 Правила симуляции:
-- Фиксированный тик: 20 тиков/сек. Симуляция продвигается только через `Sim.Tick()`.
+- Фиксированный тик: 20 тиков/сек. Симуляция продвигается только через `Simulation.Tick()` (класс не называется `Sim`, чтобы не конфликтовать с пространством имён `Game.Sim`).
 - Единственный вход в симуляцию — команды: `ICommand { int PlayerId; int Tick; }` (MoveCommand, BuildCommand, AttackCommand …). Никаких прямых вызовов вроде `unit.MoveTo()` из Presentation. Команды сериализуемые: на журнале команд строятся сеть, реплеи и будущие сохранения.
 - Единственный выход для UI, кроме состояния, — события сима (`SimEvent`: «место занято», «бур атакован», «стройка заморожена» …). Сим не знает про UI, Presentation не выводит события из состояния сам.
 - **Многопользовательский с первого дня.** У каждой сущности есть владелец (`PlayerId`), у каждого игрока свой кошелёк ресурсов, отношения игроков (союзник/враг/нейтрал) — в состоянии матча. Общего командного кошелька нет. Ресурс зачисляется владельцу штаба, который его принял, — не владельцу бура или ленты. Кооп-сценарии тестируются в Sim несколькими игроками без сети.
@@ -39,13 +39,14 @@
 
 ## Тесты
 
-- `Game.Sim.Tests` — NUnit. Любая логика в Sim добавляется вместе с тестом.
+- `Game.Sim.Tests` — NUnit, лежит в корне репозитория, **вне `Assets/`**: Unity не должен видеть `bin/obj`. Код Sim — только в `Assets/Game.Sim/`; `Game.Sim.Dotnet/Game.Sim.csproj` (netstandard2.1, API как у Unity) подключает его для `dotnet`. Тесты обращаются к `internal` через `InternalsVisibleTo`. Любая логика в Sim добавляется вместе с тестом.
 - Обязательный тест на детерминизм: один и тот же seed + одна и та же последовательность команд → одинаковый `StateHash` на каждом тике, дважды подряд.
 - Запуск: `dotnet test Game.Sim.Tests` (сборка Sim — обычный .NET-проект, Unity не нужен). Перед тем как сказать «готово», прогони тесты.
 
 ## Стиль кода
 
-- C# 9+, `nullable enable`, файловые `namespace`.
+- C# 10 (`Assets/csc.rsp`: `-langversion:10 -nullable:enable`; Unity 6 официально — C# 9), `nullable enable`, файловые `namespace`. Не использовать `record` и `init` — в netstandard2.1 нет `IsExternalInit`.
+- Пространство имён: вся сборка Sim — `Game.Sim` (без подпространств по папкам: `Game.Sim.Math` перекрыл бы `System.Math`).
 - Один публичный класс — один файл. Имена: `PascalCase` типы и методы, `_camelCase` приватные поля.
 - Без «умных» абстракций на будущее. Интерфейс — только когда есть ≥2 реализации.
 - Комментарии — зачем, а не что. По-русски или по-английски — не важно, но единообразно внутри файла.
@@ -67,6 +68,8 @@
 | турель | `Turret` |
 | точка интереса | `PointOfInterest` |
 | владелец, союзник | `OwnerId` (`PlayerId`), `Relation.Ally` |
+| кошелёк ресурсов игрока | `Wallet` (`Player.Wallet`) |
+| отношения игроков (союзник/враг/нейтрал) | `Relations`, `Relation` |
 | Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда, Серые Существа, Чёрный Легион | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star`, `grey_creatures`, `black_legion` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.
@@ -80,7 +83,7 @@
 - Цвет объектов в Presentation — цвет владельца (все объекты игрока, включая недостроенные), форма — по типу. Не делай материалы по фракциям.
 - Перед Unity-кодом используй скиллы `unity:*` (плагин unity-claude-skills) — они актуальнее твоей памяти по API Unity 6. Если скилл и память расходятся, прав скилл.
 - Повторяемые workflow — в `.claude/skills/<name>/SKILL.md`: есть `add-unit`; планируются `implement-mechanic`, `add-poi`, `desync-hunt`, `scene-check`, `balance-pass`. Если делаешь одно и то же второй раз — предложи оформить скилл.
-- Хуки запускают `dotnet test` и проверку на `float`/`Random`/`UnityEngine` в `Game.Sim` после каждой правки. Красный хук — чинить сразу, не откладывать.
+- Хуки (`.claude/settings.json` → `.claude/hooks/sim-check.sh`) запускают `dotnet test` и проверку на `float`/`double`/`Random`/`DateTime`/`Time.`/`UnityEngine`/`Dictionary`/`HashSet` в `Game.Sim` после каждой правки. Эти слова не пишем в Sim даже в комментариях. Красный хук — чинить сразу, не откладывать.
 - Не трогай `ProjectSettings/`, `Packages/manifest.json` без явной просьбы.
 - Если непонятно, как должна работать механика — спроси или предложи 2 варианта. Не додумывай геймдизайн.
 
@@ -92,20 +95,23 @@ PLAN.md
 .claude/
   skills/              скиллы проекта (add-unit, …)
   settings.json        хуки
+  hooks/               скрипты хуков (sim-check.sh)
 Assets/
+  csc.rsp              -langversion:10 -nullable:enable для всех сборок
   Game.Sim/            чистый C# (asmdef без Unity-зависимостей)
-    Core/              Sim, Tick loop, Commands, SimEvents, StateHash, Players
+    Core/              Simulation, Tick loop, Commands, SimEvents, StateHash, Players
     Map/               Grid, Tiles, Deposits, PointsOfInterest, FlowField, FogOfWar
     Entities/          Units, Buildings, Construction, Repair, Components
     Economy/           Wallets, Drills, Conveyors, ManualMining, Production
     Combat/            Damage, Targeting
     AI/                EnemyAI, Waves
     Math/              IntMath, FixedVector, DeterministicRng
-  Game.Sim.Tests/
-    Mechanics/         тесты по спекам (DrillTests …)
   Game.Presentation/   Unity-слой
   Game.Net/
   Data/                json с балансом (генерируется из Docs/Design/*.csv)
+Game.Sim.Dotnet/       Game.Sim.csproj — собирает Assets/Game.Sim/**/*.cs для dotnet
+Game.Sim.Tests/        NUnit-проект (вне Assets/, Unity его не видит)
+  Mechanics/           тесты по спекам (DrillTests …)
 Docs/
   Design/
     vision.md          видение
