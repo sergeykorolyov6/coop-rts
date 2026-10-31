@@ -11,17 +11,22 @@ public sealed class Simulation
     private readonly SortedDictionary<int, List<PendingCommand>> _pending =
         new SortedDictionary<int, List<PendingCommand>>();
     private readonly List<SimEvent> _events = new List<SimEvent>();
+    private readonly StateHasher _hasher = new StateHasher();
     private long _nextSequence;
 
     public Simulation(MatchSetup setup)
     {
         State = new SimState(setup);
+        StateHash = _hasher.Compute(State);
     }
 
     public SimState State { get; }
 
     // Events raised during the last Tick().
     public IReadOnlyList<SimEvent> Events => _events;
+
+    // Hash of the state after the last Tick() (or of the initial state before the first one).
+    public ulong StateHash { get; private set; }
 
     // Commands may arrive in any order and ahead of time. Within a tick they execute by
     // PlayerId and then in the order each player issued them, so network arrival order
@@ -55,6 +60,7 @@ public sealed class Simulation
         }
 
         State.Tick = tick + 1;
+        StateHash = _hasher.Compute(State);
     }
 
     private static int ComparePending(PendingCommand a, PendingCommand b)
