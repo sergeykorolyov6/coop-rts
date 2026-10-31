@@ -25,6 +25,7 @@ crashlytics-buildid.txt
 # Unity генерирует их в корне; .csproj у Game.Sim.Tests свой и коммитится
 /*.csproj
 /*.sln
+/*.slnx
 *.suo
 *.user
 *.userprefs
