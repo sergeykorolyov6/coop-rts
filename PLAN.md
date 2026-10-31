@@ -106,7 +106,7 @@
 - [x] Глазами (31.10.2026): проект открыт в Unity, сцена `Main`, Play — клетчатая карта 64×64, `Tick` в инспекторе `SimRunner` растёт. Настройки после первого открытия закоммичены.
 - [x] Unity MCP (CoplayDev v10.3.0): пакет в проекте, `uv`, `.mcp.json`; сервер на `127.0.0.1:8080` видит редактор, 49 тулов. Сервер стартует вместе с Unity (Auto-Start).
 - [x] Проверено через MCP из сессии Claude (31.10.2026): консоль без ошибок, сцена `Main` (камера, свет, `SimRunner` + `MapView`), Play — `Ground` создаётся, 217 тиков за 10,8 с игрового времени (20 тиков/с), `StateHash` меняется. Если Unity не в фокусе, Play стоит (`Run In Background` выключен) — для проверки через MCP включать `Application.runInBackground = true` на время сеанса, настройки проекта не трогать.
-- [ ] Плагин unity-claude-skills — не подключён (раздел 10.6, шаг 4).
+- [x] Плагин unity-claude-skills (v1.4.0, `unity@nice-wolf-local`, scope user). В репозитории нет `marketplace.json`, поэтому клон в `~/claude-plugins/unity-claude-skills` + свой `.claude-plugin/marketplace.json` → `claude plugin marketplace add` и `claude plugin install`. Скиллы `unity:*` видны в новой сессии.
 - [ ] Брат: спека конвейеров, ответы на вопросы 15–18 и 20, утвердить `construction.md`, CSV с числами.
 
 ### M1 — Ядро экономики (3–4 мес)
@@ -238,7 +238,7 @@
 
 ### 10.6. Порядок подключения на M0
 
-Состояние на 31.10.2026: dotnet 9 ✓, git ✓, Python 3.12 ✓, Unity ✓ (установлена у Сергея), репозиторий `sergeykorolyov6/coop-rts` ✓, хуки ✓ (`.claude/settings.json`); uv ✓, Unity MCP ✓; **unity-claude-skills не подключён.** Облачные сессии Claude Code: dotnet ставится через apt (`dotnet-sdk-8.0`), Unity там нет — работа со сценами через Remote Control на машину Сергея.
+Состояние на 31.10.2026: dotnet 9 ✓, git ✓, Python 3.12 ✓, Unity ✓ (установлена у Сергея), репозиторий `sergeykorolyov6/coop-rts` ✓, хуки ✓ (`.claude/settings.json`); uv ✓, Unity MCP ✓, unity-claude-skills ✓. Облачные сессии Claude Code: dotnet ставится через apt (`dotnet-sdk-8.0`), Unity там нет — работа со сценами через Remote Control на машину Сергея.
 
 1. Решить, переименовывать ли папку `coop rts` → `coop-rts` (пробел в пути мешает скриптам и хукам) — до создания репозитория.
 2. Репозиторий: `git init`, `CLAUDE.md`, `PLAN.md`, `Docs/Design/`, `.claude/skills/`, `.claude/settings.json` с хуками.
