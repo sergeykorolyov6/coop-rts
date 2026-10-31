@@ -1,0 +1,52 @@
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-buildid.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# IDE и сгенерированные проекты
+.vs/
+.vscode/
+.idea/
+# Unity генерирует их в корне; .csproj у Game.Sim.Tests свой и коммитится
+/*.csproj
+/*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# dotnet (Game.Sim.Tests вне Unity)
+bin/
+obj/
+TestResults/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Claude Code: личные настройки, не общие
+.claude/settings.local.json
