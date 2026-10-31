@@ -103,7 +103,7 @@
 **Статус M0 (31.10.2026):**
 - [x] Три asmdef, Sim (`Simulation.Tick`, команды, кошельки, отношения, RNG, `IntMath`, `StateHash`, `SimEvent`), тест на детерминизм; `dotnet test Game.Sim.Tests` — 79 тестов зелёные. Хуки детерминизма и тестов.
 - [x] Unity-проект (Unity 6000.5.9f1, шаблон Universal 3D), сцена `Assets/Scenes/Main.unity`: камера над картой, объект `SimRunner` (`SimRunner` + `MapView`), `.meta` для всех файлов в `Assets/`. Проверено в Unity batchmode: компилируется без ошибок, сцена открывается, компоненты на месте, сим тикает, земля 64×64 создаётся.
-- [ ] Глазами: открыть проект в Unity, сцена `Main`, Play — видна клетчатая карта 64×64, `Tick` в инспекторе `SimRunner` растёт ~20/с. Закоммитить `Packages/packages-lock.json` и всё, что Unity допишет в `ProjectSettings/`.
+- [x] Глазами (31.10.2026): проект открыт в Unity, сцена `Main`, Play — клетчатая карта 64×64, `Tick` в инспекторе `SimRunner` растёт. Настройки после первого открытия закоммичены.
 - [ ] Unity MCP (CoplayDev) и плагин unity-claude-skills — не подключены (раздел 10.6, шаги 3–4).
 - [ ] Сергей: курс основ Unity. Брат: спека конвейеров, ответы на вопросы 15–18 и 20, утвердить `construction.md`, CSV с числами.
 
