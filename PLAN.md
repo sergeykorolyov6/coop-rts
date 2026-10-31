@@ -100,6 +100,13 @@
 - Sim: `Grid`, `Sim.Tick`, `ICommand` (сериализуемые), `PlayerId` и кошельки игроков, `DeterministicRng`, `IntMath`, `StateHash`, тест на детерминизм.
 - Готово: в редакторе крутится пустая карта, сим тикает, тесты зелёные.
 
+**Статус M0 (31.10.2026):**
+- [x] Три asmdef, Sim (`Simulation.Tick`, команды, кошельки, отношения, RNG, `IntMath`, `StateHash`, `SimEvent`), тест на детерминизм; `dotnet test Game.Sim.Tests` — 79 тестов зелёные. Хуки детерминизма и тестов.
+- [x] Unity-проект (Unity 6000.5.9f1, шаблон Universal 3D), сцена `Assets/Scenes/Main.unity`: камера над картой, объект `SimRunner` (`SimRunner` + `MapView`), `.meta` для всех файлов в `Assets/`. Собрано из файлов без запуска редактора — **не проверено в Unity**.
+- [ ] Активировать лицензию Unity (Hub → Preferences → Licenses → Add → Personal), открыть проект, Play: видна клетчатая карта 64×64, `Tick` в инспекторе `SimRunner` растёт ~20/с. Закоммитить `Packages/packages-lock.json` и всё, что Unity допишет в `ProjectSettings/`.
+- [ ] Unity MCP (CoplayDev) и плагин unity-claude-skills — не подключены (раздел 10.6, шаги 3–4).
+- [ ] Сергей: курс основ Unity. Брат: спека конвейеров, ответы на вопросы 15–18 и 20, утвердить `construction.md`, CSV с числами.
+
 ### M1 — Ядро экономики (3–4 мес)
 - Юниты: рабочий + пехотинец. Выделение рамкой, движение по клику, flow field pathfinding, простое избегание.
 - Карта с месторождениями, общий fog of war команды (месторождение Скрыто → Разведано).
