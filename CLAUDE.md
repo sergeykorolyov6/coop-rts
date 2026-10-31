@@ -45,7 +45,7 @@
 
 ## Стиль кода
 
-- C# 10 (`Assets/csc.rsp`: `-langversion:10 -nullable:enable`; Unity 6 официально — C# 9), `nullable enable`, файловые `namespace`. Не использовать `record` и `init` — в netstandard2.1 нет `IsExternalInit`.
+- C# 10 (`Assets/csc.rsp`: `-langversion:10 -nullable:enable`; Unity 6 официально — C# 9), `nullable enable`, файловые `namespace`. **Исключение:** файлы с `MonoBehaviour` / `ScriptableObject` — только блочный `namespace X { }`: с файловым Unity 6000.5 не связывает скрипт с классом (`MonoScript.GetClass()` = null, в сцене «Missing Script»). Не использовать `record` и `init` — в netstandard2.1 нет `IsExternalInit`.
 - Пространство имён: вся сборка Sim — `Game.Sim` (без подпространств по папкам: `Game.Sim.Math` перекрыл бы `System.Math`).
 - Один публичный класс — один файл. Имена: `PascalCase` типы и методы, `_camelCase` приватные поля.
 - Без «умных» абстракций на будущее. Интерфейс — только когда есть ≥2 реализации.
