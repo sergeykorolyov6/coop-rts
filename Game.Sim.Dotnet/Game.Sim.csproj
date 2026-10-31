@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Builds the Unity-side sources of Game.Sim as a plain .NET library, so tests run without Unity.
+       netstandard2.1 matches the API surface Unity exposes. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Game.Sim</AssemblyName>
+    <RootNamespace>Game.Sim</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../Assets/Game.Sim/**/*.cs" />
+  </ItemGroup>
+
+</Project>
