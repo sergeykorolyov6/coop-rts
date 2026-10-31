@@ -70,7 +70,8 @@
 | владелец, союзник | `OwnerId` (`PlayerId`), `Relation.Ally` |
 | кошелёк ресурсов игрока | `Wallet` (`Player.Wallet`) |
 | отношения игроков (союзник/враг/нейтрал) | `Relations`, `Relation` |
-| Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда, Серые Существа, Чёрный Легион | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star`, `grey_creatures`, `black_legion` |
+| играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (в MVP только `blue_walls`) |
+| неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.
 
