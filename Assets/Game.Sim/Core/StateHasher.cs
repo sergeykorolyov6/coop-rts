@@ -126,5 +126,12 @@ internal sealed class StateHasher
         _writer.Write((byte)b.State);
         _writer.Write(b.BuildProgress);
         _writer.Write(b.BuildersLastTick);
+        if (b.Drill != null)
+        {
+            _writer.Write(b.Drill.Buffer);
+            _writer.Write(b.Drill.Accumulator);
+            _writer.Write(b.Drill.OutputCursor);
+            _writer.Write(b.Drill.IsStopped);
+        }
     }
 }

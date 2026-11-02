@@ -45,6 +45,8 @@ public sealed class Building : Entity
     // Builders that worked on the site in the last tick (for the progress bar).
     public int BuildersLastTick { get; internal set; }
 
+    public Drill? Drill { get; internal set; }
+
     // Builders or repairers counted so far in the current tick, against MaxBuilders.
     internal int WorkersThisTick { get; set; }
 
