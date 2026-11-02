@@ -36,6 +36,9 @@ public sealed class SimState
     public GameRules Rules => Data.Rules;
     public MapState Map { get; }
 
+    // Path cache: derived from the map, not part of the state hash.
+    internal FlowFieldCache Paths { get; } = new FlowFieldCache();
+
     // Owner of the creeps, MatchSetup.NoPlayer when the map has none.
     public int CreepPlayerId { get; }
 

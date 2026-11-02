@@ -20,6 +20,11 @@ public sealed class Unit : Entity
 
     public int Radius => Stats.SizeMilli / 2;
 
+    // Displacement made by the unit's own movement this tick (zero when it stood still).
+    // Reset at the start of every tick, so it never carries state between ticks.
+    internal int StepX { get; set; }
+    internal int StepY { get; set; }
+
     public UnitOrder Order { get; internal set; } = UnitOrder.Idle;
 
     // Present only on units tagged "worker".

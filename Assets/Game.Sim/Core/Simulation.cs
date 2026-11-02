@@ -59,6 +59,11 @@ public sealed class Simulation
                 pending.Command.Execute(State, _events);
         }
 
+        UnitSystem.Tick(State, _events);
+        Movement.Separate(State);
+        Movement.PushOutOfBlockedCells(State);
+        State.RemoveDead();
+
         State.Tick = tick + 1;
         StateHash = _hasher.Compute(State);
     }
