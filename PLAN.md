@@ -3,6 +3,7 @@
 Источники правды:
 - **Видение** — `Docs/Design/vision.md` (из «CoopRTS v0.3.pdf», разделы v0.1–v0.2; фракции — по редакции от 31.10.2026).
 - **Механики** — `Docs/Design/mechanics/*.md`, формат v0.3. Утверждена: `drill.md` (бур). Черновики: `construction.md` (стройка и ремонт), `conveyors.md` (конвейеры), `manual-mining.md` (ручная добыча) — числа в двух последних придумал Claude по просьбе брата, «потом переделаем».
+- **Числа юнитов и зданий** — `Docs/Design/units.csv`, `buildings.csv`, обоснование — `balance-notes.md` (черновик Claude по образцу SC2 и Mindustry, 02.11.2026; утвердить брату).
 - **Открытые вопросы и принятые решения** — `Docs/Design/open-questions.md` (ответы брата от 31.10.2026 и 02.11.2026 уже внесены).
 
 Этот файл — план и скоуп. Если он расходится со спекой механики, права спека, а расхождение уходит в открытые вопросы.
@@ -109,7 +110,8 @@
 - [x] Проверено через MCP из сессии Claude (31.10.2026): консоль без ошибок, сцена `Main` (камера, свет, `SimRunner` + `MapView`), Play — `Ground` создаётся, 217 тиков за 10,8 с игрового времени (20 тиков/с), `StateHash` меняется. Если Unity не в фокусе, Play стоит (`Run In Background` выключен) — для проверки через MCP включать `Application.runInBackground = true` на время сеанса, настройки проекта не трогать.
 - [x] Плагин unity-claude-skills (v1.4.0, `unity@nice-wolf-local`, scope user). В репозитории нет `marketplace.json`, поэтому клон в `~/claude-plugins/unity-claude-skills` + свой `.claude-plugin/marketplace.json` → `claude plugin marketplace add` и `claude plugin install`. Скиллы `unity:*` видны в новой сессии.
 - [x] Брат: ответы на вопросы 14–25 (02.11.2026). По ним написаны черновики `conveyors.md` и `manual-mining.md`, обновлён `construction.md`.
-- [ ] Брат: утвердить `construction.md`, `conveyors.md`, `manual-mining.md`; ответить на вопросы 26–28; CSV с числами (`buildings.csv` с колонкой `max_builders`).
+- [x] Черновик CSV с числами юнитов и зданий (Claude, по просьбе Сергея): `units.csv`, `buildings.csv`, `balance-notes.md`.
+- [ ] Брат: утвердить `construction.md`, `conveyors.md`, `manual-mining.md` и черновик чисел; ответить на вопросы 26–28 и 32.
 
 ### M1 — Ядро экономики (3–4 мес)
 - Юниты: рабочий + пехотинец. Выделение рамкой, движение по клику, flow field pathfinding, простое избегание.

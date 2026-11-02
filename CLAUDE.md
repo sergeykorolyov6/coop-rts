@@ -66,6 +66,8 @@
 | груз рабочего | `Worker.Cargo` |
 | штаб | `Headquarters` (один на игрока одновременно, разрушенный можно отстроить; у ИИ — несколько) |
 | завод | `Factory` |
+| юниты MVP: разведчик, пехотинец, стрелок, тяжёлый, осадный | id в `units.csv`: `scout`, `infantry`, `shooter`, `heavy`, `siege` |
+| юниты Легиона: рабочий, рейдер, стрелок, громила; крипы: малый, большой | `legion_worker`, `legion_raider`, `legion_gunner`, `legion_brute`; `creep_small`, `creep_big` |
 | склад | `Storage` |
 | турель | `Turret` |
 | точка интереса | `PointOfInterest` |
