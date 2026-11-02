@@ -74,6 +74,9 @@
 | юниты MVP: разведчик, пехотинец, стрелок, тяжёлый, осадный | id в `units.csv`: `scout`, `infantry`, `shooter`, `heavy`, `siege` |
 | юниты Легиона: рабочий, рейдер, стрелок, громила; крипы: малый, большой | `legion_worker`, `legion_raider`, `legion_gunner`, `legion_brute`; `creep_small`, `creep_big` |
 | склад | `Storage` |
+| ИИ Легиона, слот базы, точка сбора, волна, предупреждение о волне, атаковать с движением | `LegionAi`, `BaseSlot`, `Rally`, `Wave`, `WaveIncoming`, `UnitOrderKind.AttackMove` |
+| завод Легиона | `legion_factory` |
+| миссия, победа, поражение | `MissionOutcome` (`Victory`, `Defeat`), событие `MissionEnded` |
 | турель | `Turret` |
 | точка интереса | `PointOfInterest` |
 | лагерь крипов, крип, радиус агрессии, поводок, трофей | `CreepCamp`, `Creep`, `AggroRadius`, `LeashRadius`, `Trophy` |
