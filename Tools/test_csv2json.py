@@ -81,10 +81,47 @@ class RulesTest(unittest.TestCase):
             c.convert_rules(HEAD + "a,1,int,,,\na,2,int,,,\n", "r.csv")
 
 
+MAP = """# comment
+map
+#..o
+1..s
+end
+camp guard x 1 1 creeps 1 1 2 1
+"""
+
+
+class MapTest(unittest.TestCase):
+    def test_rows_bottom_up_starts_and_camps(self):
+        m = c.convert_map(MAP.replace(" x ", " "), "m.txt", {"guard": 2}, (1, 1))
+        self.assertEqual(m["rows_bottom_up"], ["1..s", "#..o"])
+        self.assertEqual(m["starts"], [{"slot": 1, "x": 0, "y": 0}])
+        self.assertEqual(m["camps"], [{"type": "guard", "x": 1, "y": 1, "creeps": [[1, 1], [2, 1]]}])
+
+    def test_unknown_char(self):
+        with self.assertRaisesRegex(c.ConvertError, "не из легенды"):
+            c.convert_map("map\n.x\nend\n", "m.txt", {}, (1, 1))
+
+    def test_ragged_rows(self):
+        with self.assertRaisesRegex(c.ConvertError, "длина"):
+            c.convert_map("map\n...\n..\nend\n", "m.txt", {}, (1, 1))
+
+    def test_headquarters_must_fit(self):
+        with self.assertRaisesRegex(c.ConvertError, "не помещается"):
+            c.convert_map("map\n#.\n1.\nend\n", "m.txt", {}, (2, 2))
+
+    def test_camp_with_wrong_creep_count(self):
+        with self.assertRaisesRegex(c.ConvertError, "крипов"):
+            c.convert_map("map\n...\nend\ncamp guard 0 0 creeps 0 0\n", "m.txt", {"guard": 2}, (1, 1))
+
+    def test_unknown_camp_type(self):
+        with self.assertRaisesRegex(c.ConvertError, "нет в creep_camps"):
+            c.convert_map("map\n...\nend\ncamp wolves 0 0 creeps\n", "m.txt", {"guard": 0}, (1, 1))
+
+
 class RepoDataTest(unittest.TestCase):
     def test_repo_csv_converts(self):
         outputs = c.build_all()
-        self.assertEqual(len(outputs), 4)
+        self.assertEqual(len(outputs), 5)
 
 
 if __name__ == "__main__":

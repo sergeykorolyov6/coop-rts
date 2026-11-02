@@ -127,6 +127,7 @@ Docs/
     vision.md          видение
     open-questions.md  вопросы и решения геймдизайна
     mechanics/         спеки механик (_TEMPLATE.md, drill.md, …)
-    *.csv              таблицы чисел в человеческих единицах
+    *.csv              таблицы чисел в человеческих единицах (rules.csv — общие числа механик)
+    maps/*.txt         карты текстом (легенда в начале файла) → Assets/Data/maps/*.json
 Tools/                 csv2json и прочие скрипты
 ```

@@ -6,7 +6,7 @@ ticks (20 per second) and milli-cells (1000 per cell). A value that does not
 convert to a whole number is an error, not a silent rounding: rounding would
 quietly change the balance.
 
-    python3 Tools/csv2json.py           regenerate Assets/Data/*.json
+    python3 Tools/csv2json.py           regenerate Assets/Data/*.json (and maps/*.json from Docs/Design/maps/*.txt)
     python3 Tools/csv2json.py --check   exit 1 if the json is stale (for hooks/CI)
 
 Standard library only, so it runs anywhere python3 does.
@@ -227,6 +227,95 @@ def render(rows) -> str:
     return json.dumps(rows, ensure_ascii=False, indent=2) + "\n"
 
 
+MAP_CHARS = {".": None, "#": "blocked", "o": 0, "s": 1}
+MAPS_DIR = DESIGN_DIR / "maps"
+
+
+def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple) -> dict:
+    """Docs/Design/maps/*.txt → map json. Rows are stored bottom-up: rows[y] is row y."""
+    lines = text.splitlines()
+    grid, camps, inside, done = [], [], False, False
+    for number, raw in enumerate(lines, start=1):
+        line = raw.rstrip("\r")
+        if inside:
+            if line.strip() == "end":
+                inside, done = False, True
+            else:
+                grid.append((number, line))
+            continue
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped == "map":
+            if done:
+                raise ConvertError(f"{file_name}, строка {number}: второй блок map")
+            inside = True
+            continue
+        parts = stripped.split()
+        if parts[0] == "camp":
+            camps.append((number, parts))
+            continue
+        raise ConvertError(f"{file_name}, строка {number}: непонятная строка «{stripped}»")
+    if inside or not grid:
+        raise ConvertError(f"{file_name}: нет блока map … end")
+
+    height = len(grid)
+    width = len(grid[0][1])
+    starts = {}
+    for row_index, (number, row) in enumerate(grid):
+        if len(row) != width:
+            raise ConvertError(f"{file_name}, строка {number}: длина {len(row)}, а у первой строки {width}")
+        y = height - 1 - row_index
+        for x, ch in enumerate(row):
+            if ch.isdigit() and ch != "0":
+                if ch in starts:
+                    raise ConvertError(f"{file_name}, строка {number}: старт {ch} второй раз")
+                starts[ch] = (x, y)
+            elif ch not in MAP_CHARS:
+                raise ConvertError(f"{file_name}, строка {number}, x = {x}: символ «{ch}» не из легенды")
+
+    rows = [row for _, row in reversed(grid)]
+
+    def cell(x, y):
+        return rows[y][x] if 0 <= x < width and 0 <= y < height else None
+
+    w, h = hq_size
+    for slot, (sx, sy) in sorted(starts.items()):
+        for yy in range(sy, sy + h):
+            for xx in range(sx, sx + w):
+                c = cell(xx, yy)
+                if c is None or (c != "." and (xx, yy) != (sx, sy)):
+                    raise ConvertError(f"{file_name}: штаб игрока {slot} ({w}×{h} от {sx},{sy}) не помещается на свободную землю")
+
+    out_camps = []
+    for number, parts in camps:
+        try:
+            if len(parts) < 5 or parts[4] != "creeps":
+                raise ValueError
+            camp_type = parts[1]
+            cx, cy = int(parts[2]), int(parts[3])
+            coords = [int(v) for v in parts[5:]]
+        except ValueError:
+            raise ConvertError(f"{file_name}, строка {number}: ожидается camp <тип> <x> <y> creeps <x> <y> …") from None
+        if camp_type not in camp_types:
+            raise ConvertError(f"{file_name}, строка {number}: тип лагеря «{camp_type}» нет в creep_camps.csv")
+        if len(coords) % 2 or len(coords) // 2 != camp_types[camp_type]:
+            raise ConvertError(f"{file_name}, строка {number}: у «{camp_type}» {camp_types[camp_type]} крипов — нужно столько пар x y")
+        creeps = [[coords[i], coords[i + 1]] for i in range(0, len(coords), 2)]
+        for x, y in [[cx, cy]] + creeps:
+            if cell(x, y) in (None, "#"):
+                raise ConvertError(f"{file_name}, строка {number}: клетка ({x}, {y}) вне карты или в скале")
+        out_camps.append({"type": camp_type, "x": cx, "y": cy, "creeps": creeps})
+
+    return {
+        "width": width,
+        "height": height,
+        "rows_bottom_up": rows,
+        "starts": [{"slot": int(k), "x": v[0], "y": v[1]} for k, v in sorted(starts.items())],
+        "camps": out_camps,
+    }
+
+
 def build_all() -> dict[Path, str]:
     out = {}
     for csv_name, json_name, schema in TABLES:
@@ -234,7 +323,25 @@ def build_all() -> dict[Path, str]:
         out[DATA_DIR / json_name] = render(convert_table(text, schema, csv_name))
     rules = (DESIGN_DIR / "rules.csv").read_text(encoding="utf-8-sig")
     out[DATA_DIR / "rules.json"] = render(convert_rules(rules, "rules.csv"))
+
+    camps = convert_table((DESIGN_DIR / "creep_camps.csv").read_text(encoding="utf-8-sig"), CREEP_CAMPS, "creep_camps.csv")
+    camp_types = {c["id"]: len(c["creeps"]) for c in camps}
+    buildings = convert_table((DESIGN_DIR / "buildings.csv").read_text(encoding="utf-8-sig"), BUILDINGS, "buildings.csv")
+    hq = next(b for b in buildings if b["id"] == "headquarters")
+    for path in sorted(MAPS_DIR.glob("*.txt")):
+        data = convert_map(path.read_text(encoding="utf-8-sig"), "maps/" + path.name, camp_types, (hq["size_w"], hq["size_h"]))
+        out[DATA_DIR / "maps" / (path.stem + ".json")] = render_map(data)
     return out
+
+
+def render_map(data: dict) -> str:
+    # One row per line keeps the json diffable and readable as a picture.
+    rows = ",\n".join("    " + json.dumps(r) for r in data["rows_bottom_up"])
+    head = {k: data[k] for k in ("width", "height")}
+    tail = {k: data[k] for k in ("starts", "camps")}
+    return ("{\n" + ",\n".join(f'  "{k}": {json.dumps(v)}' for k, v in head.items())
+            + ',\n  "rows_bottom_up": [\n' + rows + "\n  ],\n"
+            + ",\n".join(f'  "{k}": {json.dumps(v, ensure_ascii=False)}' for k, v in tail.items()) + "\n}\n")
 
 
 def main(argv: list[str]) -> int:

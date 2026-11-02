@@ -116,8 +116,13 @@
 
 ### M1 — Ядро экономики (3–4 мес)
 
-**Статус M1:**
-- [x] Данные: `Tools/csv2json.py` (CSV в человеческих единицах → `Assets/Data/*.json` в тиках и милли-клетках, дробь — ошибка), `GameData.Parse` в Sim со сверкой ссылок между таблицами; хук сверяет JSON с CSV.
+**Статус M1 (02.11.2026): Sim готов, Presentation — следующий шаг (локальная сессия с Unity MCP).**
+- [x] Данные: `Tools/csv2json.py` (CSV в человеческих единицах → `Assets/Data/*.json` в тиках и милли-клетках, дробь — ошибка), `GameData.Parse` в Sim со сверкой ссылок между таблицами; хук сверяет JSON с CSV. Общие числа механик — `rules.csv`.
+- [x] Карта прототипа `Docs/Design/maps/prototype.txt` (64×64, 2 старта, 5 месторождений 12–40 клеток, одно — второго ресурса, лагерь «Стражи» у богатого) → `Assets/Data/maps/prototype.json` → `MapLoader.Parse`.
+- [x] Sim: старт по ответу 7, движение (flow field, расталкивание), общий туман, ручная добыча, стройка и ремонт, бур, ленты/мост/склад, завод, бой, лагерь крипов — по спекам, тесты на каждую строку Given/When/Then и edge cases (228 тестов), детерминизм 15 минут игры на карте.
+- [x] Спеки, которых не было: `factory.md`, `combat.md` (решение Claude, брат правит).
+- [ ] Presentation (локально, через Unity MCP): `SimRunner` грузит `Assets/Data/*.json` и карту (`GameData.Parse`, `MapLoader.Parse`, новый конструктор `MatchSetup`); рендер юнитов/зданий/руды/лагеря в цвет владельца, форма по типу; выделение рамкой и группы; правый клик → `MoveCommand`/`MineCommand`/`AttackCommand`/`RepairCommand`/`DeliverCargoCommand`/`CarryTrophyCommand`; меню стройки с превью (`Construction.CheckPlacement`, `DrillPreview`), протягивание ленты (`BuildCommand` с участками), мост; панель завода (`ProduceCommand`/`CancelProductionCommand`); камера, миникарта, туман (`Fog`); шкала стройки (`BuildProgress`, `BuildersLastTick`, `BuildState.Frozen`); уведомления из событий (`CommandRejected`, `MiningStopped`, `CargoDelivered`, `ConstructionFrozen`, `BuildingAttacked`, `CampAlerted`, `CampCleared`, `UnitProduced`, `EntityDestroyed`). Чек-листы — разделы «Что нужно от UI и арта» в спеках.
+- [ ] Плейтест M1: 15 минут игры, ответы на вопросы ниже.
 
 - Юниты: рабочий + пехотинец. Выделение рамкой, движение по клику, flow field pathfinding, простое избегание.
 - Карта с месторождениями, общий fog of war команды (месторождение Скрыто → Разведано).
