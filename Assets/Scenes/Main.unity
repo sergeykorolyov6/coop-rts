@@ -558,6 +558,10 @@ GameObject:
   - component: {fileID: 1100000016}
   - component: {fileID: 1100000015}
   - component: {fileID: 1100000014}
+  - component: {fileID: 1100000020}
+  - component: {fileID: 1100000019}
+  - component: {fileID: 1100000018}
+  - component: {fileID: 1100000017}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -643,6 +647,10 @@ MonoBehaviour:
   _primaryCargoColor: {r: 0.8, g: 0.55, b: 0.25, a: 1}
   _secondaryCargoColor: {r: 0.35, g: 0.7, b: 0.85, a: 1}
   _trophyColor: {r: 0.95, g: 0.8, b: 0.3, a: 1}
+  _arrowColor: {r: 0.92, g: 0.94, b: 1, a: 1}
+  _flashColor: {r: 1, g: 1, b: 1, a: 1}
+  _flashSeconds: 0.08
+  _rotorSpeed: 240
   _minSiteHeight: 0.15
 --- !u!114 &1100000006
 MonoBehaviour:
@@ -838,6 +846,73 @@ MonoBehaviour:
   _hpLow: {r: 0.9, g: 0.25, b: 0.2, a: 1}
   _buildColor: {r: 0.95, g: 0.8, b: 0.3, a: 1}
   _frozenColor: {r: 0.55, g: 0.75, b: 0.95, a: 1}
+  _bufferColor: {r: 0.45, g: 0.7, b: 0.95, a: 1}
+  _stoppedColor: {r: 1, g: 0.55, b: 0.25, a: 1}
+--- !u!114 &1100000017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81c2a527582214169b783fcf0fff159a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.HoverInfo
+  _camera: {fileID: 330585548}
+  _hud: {fileID: 1637688649}
+  _placement: {fileID: 1100000013}
+  _trophyPickCells: 0.8
+  _campPickCells: 2.5
+  _ringColor: {r: 0.95, g: 0.3, b: 0.25, a: 1}
+--- !u!114 &1100000018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17caf9bc23eea42a2b43f81cc92ac7a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.OrderQueueView
+  _moveColor: {r: 0.4, g: 0.95, b: 0.45, a: 1}
+  _attackColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  _workColor: {r: 0.98, g: 0.8, b: 0.3, a: 1}
+--- !u!114 &1100000019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a998373b49c54a59b819cce087d52bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.CursorView
+  _attackColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  _mineColor: {r: 0.95, g: 0.65, b: 0.25, a: 1}
+  _carryColor: {r: 0.98, g: 0.85, b: 0.3, a: 1}
+  _deliverColor: {r: 0.45, g: 0.9, b: 0.45, a: 1}
+  _repairColor: {r: 0.45, g: 0.75, b: 1, a: 1}
+--- !u!114 &1100000020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce3fbabf442184d32b6746b921b3ce58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.CombatEffects
+  _streakColor: {r: 1, g: 0.95, b: 0.7, a: 1}
+  _streakSeconds: 0.09
+  _deathSeconds: 0.7
 --- !u!1 &1637688646
 GameObject:
   m_ObjectHideFlags: 0

@@ -152,4 +152,25 @@ public class CombatTests
         var read = (AttackCommand)codec.ReadLog(codec.WriteLog(new ICommand[] { new AttackCommand(1, 2, new[] { 3 }, 4) }))[0];
         Assert.That((read.TargetId, read.UnitIds[0]), Is.EqualTo((4, 3)));
     }
+
+    // combat.md UI: "видно удар" — every applied hit is an event with attacker, target and damage.
+    [Test]
+    public void Event_HitLanded_OnePerAppliedHit_WithDamage()
+    {
+        var sim = Empty();
+        Unit infantry = Spawn(sim, Setups.PlayerA, "infantry", 5, 5);
+        Unit target = Spawn(sim, Setups.EnemyAi, "creep_small", 6, 5);
+        sim.Order(Attack(sim, Setups.PlayerA, target, infantry));
+
+        var hits = new System.Collections.Generic.List<HitLanded>();
+        sim.RunUntil(s =>
+        {
+            hits.AddRange(s.Events.OfType<HitLanded>().Where(h => h.AttackerId == infantry.Id));
+            return hits.Count >= 2;
+        });
+
+        Assert.That(hits[0].TargetId, Is.EqualTo(target.Id));
+        Assert.That(hits[0].Damage, Is.EqualTo(12));
+        Assert.That(target.Hp, Is.EqualTo(target.MaxHp - 24));
+    }
 }

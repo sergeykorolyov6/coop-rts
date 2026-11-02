@@ -36,14 +36,21 @@ namespace Game.Presentation
             _localPlayer = GetComponent<LocalPlayer>();
         }
 
-        private enum Intent { None, Attack, Deliver, Repair, Carry, Mine }
+        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine }
 
         private bool _showingTip;
+
+        // What a right click would do right now; CursorView picks the cursor by it.
+        public Intent CurrentIntent { get; private set; }
+
+        // The cursor tip is this controller's; hover info yields to it.
+        public bool IsShowingTip => _showingTip;
 
         private void Update()
         {
             Mouse? mouse = Mouse.current;
             Simulation? simulation = _runner!.Simulation;
+            CurrentIntent = Intent.None;
             if (mouse == null || simulation == null || _camera == null || _selection!.Selected.Count == 0)
             {
                 HideTip();
@@ -66,6 +73,7 @@ namespace Game.Presentation
             SimState state = simulation.State;
             SplitSelection(state);
             Intent intent = Resolve(state, pointer, ground, out int targetId);
+            CurrentIntent = intent;
             ShowTip(state, intent, targetId, pointer);
             if (mouse.rightButton.wasPressedThisFrame)
                 Order(simulation, intent, targetId, ground);

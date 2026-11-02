@@ -10,7 +10,8 @@ namespace Game.Presentation
     // - HP bar over damaged units and buildings (combat.md);
     // - build bar over unfinished buildings: progress, how many build, "frozen" (drill.md);
     // - buffer of own and ally drills, and "nowhere to give" when it is full and the drill stands (drill.md);
-    // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md).
+    // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md);
+    // - a red "!" over an alerted creep camp (creep-camp.md).
     // Only what the local player sees through the fog.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
     public sealed class WorldOverlay : MonoBehaviour
@@ -28,6 +29,7 @@ namespace Game.Presentation
 
         private readonly List<Bar> _bars = new List<Bar>();
         private readonly List<Floater> _floaters = new List<Floater>();
+        private readonly List<Label> _alerts = new List<Label>();
 
         private SimRunner? _runner;
         private EntityView? _entities;
@@ -106,6 +108,23 @@ namespace Game.Presentation
             for (int i = _barsUsed; i < _bars.Count; i++)
                 _bars[i].Root.style.display = DisplayStyle.None;
 
+            for (int i = 0; i < state.CreepCamps.Count; i++)
+            {
+                CreepCamp camp = state.CreepCamps[i];
+                if (_alerts.Count <= i)
+                    _alerts.Add(CreateAlert());
+                var centre = new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 2.6f, camp.CenterMilliY / (float)Grid.MilliPerCell);
+                bool alerted = camp.State == CreepCampState.Alerted && state.Fog.IsDiscovered(playerId, camp.CenterX, camp.CenterY)
+                    && _camera.WorldToViewportPoint(centre).z > 0f;
+                _alerts[i].style.display = alerted ? DisplayStyle.Flex : DisplayStyle.None;
+                if (alerted)
+                {
+                    Place(_alerts[i], centre, 24f);
+                    // Pulses so the eye finds it.
+                    _alerts[i].style.opacity = 0.6f + 0.4f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 6f));
+                }
+            }
+
             UpdateFloaters();
         }
 
@@ -171,6 +190,21 @@ namespace Game.Presentation
             Vector2 p = RuntimePanelUtils.CameraTransformWorldToPanel(_layer!.panel, world, _camera!);
             element.style.left = p.x - width * 0.5f;
             element.style.top = p.y;
+        }
+
+        private Label CreateAlert()
+        {
+            var label = new Label("!") { pickingMode = PickingMode.Ignore };
+            label.style.position = Position.Absolute;
+            label.style.width = 24;
+            label.style.fontSize = 34;
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.style.color = new Color(1f, 0.25f, 0.2f);
+            label.style.unityTextOutlineWidth = 0.4f;
+            label.style.unityTextOutlineColor = Color.black;
+            _layer!.Add(label);
+            return label;
         }
 
         private Bar CreateBar()

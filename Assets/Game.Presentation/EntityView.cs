@@ -10,6 +10,8 @@ namespace Game.Presentation
     // Others' units and buildings hide in the local player's fog (Visibility).
     // Conveyors and bridge ends show their direction; a conveyor shows the unit it carries in the
     // resource's colour, moving with the sim — a unit that stands means the line is clogged (conveyors.md).
+    // A working drill spins its rotor; a stopped one stands still (drill.md: state visible from afar).
+    // Hit flash and the data for death effects are served to CombatEffects.
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class EntityView : MonoBehaviour
     {
@@ -27,6 +29,10 @@ namespace Game.Presentation
         [SerializeField] private Color _secondaryCargoColor = new Color(0.35f, 0.70f, 0.85f);
         [SerializeField] private Color _trophyColor = new Color(0.95f, 0.80f, 0.30f);
         [SerializeField] private Color _arrowColor = new Color(0.92f, 0.94f, 1.00f);
+        [SerializeField] private Color _flashColor = Color.white;
+        [SerializeField] private float _flashSeconds = 0.08f;
+        [Tooltip("Degrees per second of a working drill's rotor.")]
+        [SerializeField] private float _rotorSpeed = 240f;
         [Tooltip("Height of a construction site at zero progress, as a share of the finished height.")]
         [SerializeField, Range(0.05f, 1f)] private float _minSiteHeight = 0.15f;
 
@@ -35,6 +41,7 @@ namespace Game.Presentation
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
         private readonly List<int> _gone = new List<int>();
         private readonly List<Transform> _trophies = new List<Transform>();
+        private readonly List<Visual> _flashing = new List<Visual>();
 
         private SimRunner? _runner;
         private LocalPlayer? _localPlayer;
@@ -62,6 +69,35 @@ namespace Game.Presentation
             return false;
         }
 
+        // Centre of the body as drawn, its colour and size: where a death or a strike is shown.
+        public bool TryGetEntity(int id, out Vector3 centre, out Color color, out float size)
+        {
+            Visual? visual = _units.TryGetValue(id, out UnitVisual? unit) ? unit : _buildings.TryGetValue(id, out BuildingVisual? building) ? building : null;
+            if (visual == null || !visual.Transform.gameObject.activeInHierarchy)
+            {
+                centre = default;
+                color = default;
+                size = 0f;
+                return false;
+            }
+            centre = visual.Renderer.bounds.center;
+            color = visual.Color;
+            size = visual.Size;
+            return true;
+        }
+
+        // combat.md UI: the struck body flashes for a moment.
+        public void Flash(int id)
+        {
+            Visual? visual = _units.TryGetValue(id, out UnitVisual? unit) ? unit : _buildings.TryGetValue(id, out BuildingVisual? building) ? building : null;
+            if (visual == null)
+                return;
+            if (visual.FlashUntil <= 0f)
+                _flashing.Add(visual);
+            visual.FlashUntil = Time.unscaledTime + _flashSeconds;
+            visual.Renderer.sharedMaterial = MaterialFor(_flashColor);
+        }
+
         // After SimRunner.Update has advanced the sim this frame.
         private void LateUpdate()
         {
@@ -81,6 +117,24 @@ namespace Game.Presentation
             float alpha = _runner!.InterpolationAlpha;
             foreach (UnitVisual visual in _units.Values)
                 visual.Transform.localPosition = Vector3.LerpUnclamped(visual.From, visual.To, alpha);
+
+            for (int i = _flashing.Count - 1; i >= 0; i--)
+            {
+                Visual visual = _flashing[i];
+                if (Time.unscaledTime < visual.FlashUntil)
+                    continue;
+                visual.FlashUntil = 0f;
+                if (visual.Renderer != null)
+                    visual.Renderer.sharedMaterial = MaterialFor(visual.Color);
+                _flashing.RemoveAt(i);
+            }
+
+            float spin = _rotorSpeed * Time.deltaTime;
+            foreach (BuildingVisual visual in _buildings.Values)
+            {
+                if (visual.Rotor != null && visual.Spinning)
+                    visual.Rotor.Rotate(0f, spin, 0f, Space.World);
+            }
         }
 
         private void SyncUnits(SimState state)
@@ -128,6 +182,11 @@ namespace Game.Presentation
                     visual.Arrow.gameObject.SetActive(shown);
                 if (visual.Item != null)
                     SyncItem(visual.Item, building, shown);
+                if (visual.Rotor != null)
+                {
+                    visual.Rotor.gameObject.SetActive(shown && building.IsComplete);
+                    visual.Spinning = building.IsComplete && building.Drill != null && !building.Drill.IsStopped;
+                }
 
                 // A site grows with its progress; the colour stays the owner's (drill.md, conveyors.md).
                 float share = building.IsComplete || building.BuildWork <= 0
@@ -186,7 +245,8 @@ namespace Game.Presentation
             Transform pivot = new GameObject($"{unit.Stats.Id} #{unit.Id}").transform;
             pivot.SetParent(_root, worldPositionStays: false);
 
-            Transform body = CreatePrimitive(shape, "Body", OwnerColor(state, unit.OwnerId));
+            Color color = OwnerColor(state, unit.OwnerId);
+            Transform body = CreatePrimitive(shape, "Body", color);
             body.SetParent(pivot, worldPositionStays: false);
             body.localScale = new Vector3(size, ShapeHeightScale(shape, size), size);
             body.localPosition = new Vector3(0f, size * 0.5f, 0f);
@@ -201,20 +261,21 @@ namespace Game.Presentation
                 cargo.gameObject.SetActive(false);
             }
 
-            return new UnitVisual(pivot, cargo);
+            return new UnitVisual(pivot, body.GetComponent<MeshRenderer>(), color, size, cargo);
         }
 
         private BuildingVisual CreateBuilding(SimState state, Building building)
         {
             PrimitiveType shape = BuildingShape(building.Stats.Id);
             float height = BuildingHeight(building.Stats.Id);
-            Transform body = CreatePrimitive(shape, $"{building.Stats.Id} #{building.Id}", OwnerColor(state, building.OwnerId));
+            Color color = OwnerColor(state, building.OwnerId);
+            Transform body = CreatePrimitive(shape, $"{building.Stats.Id} #{building.Id}", color);
 
             // Cell (x, y) covers world XZ [x, x+1) × [y, y+1); a small inset keeps neighbours apart.
             const float inset = 0.08f;
             body.localScale = new Vector3(building.Width - inset, ShapeHeightScale(shape, height), building.Height - inset);
             body.localPosition = new Vector3(building.CellX + building.Width * 0.5f, height * 0.5f, building.CellY + building.Height * 0.5f);
-            var visual = new BuildingVisual(body, shape, height);
+            var visual = new BuildingVisual(body, body.GetComponent<MeshRenderer>(), color, Mathf.Max(building.Width, building.Height), shape, height);
 
             if (building.Stats.Id == BuildingKinds.Conveyor || building.Stats.Id == BuildingKinds.ConveyorBridge)
             {
@@ -225,6 +286,23 @@ namespace Game.Presentation
                 arrow.localScale = new Vector3(0.16f, 0.04f, 0.5f);
                 arrow.localPosition = CellCentre(building) + new Vector3(0f, height + 0.02f, 0f) + rotation * new Vector3(0f, 0f, 0.15f);
                 visual.Arrow = arrow;
+            }
+            if (building.Drill != null || building.Stats.Id == BuildingKinds.Drill)
+            {
+                // Two crossed bars on the drill's top: they turn while it mines.
+                Transform rotor = new GameObject("Rotor").transform;
+                rotor.SetParent(_root, worldPositionStays: false);
+                rotor.localPosition = CellCentre(building) + new Vector3(0f, height + 0.08f, 0f);
+                Color rotorColor = Color.Lerp(color, Color.black, 0.45f);
+                for (int i = 0; i < 2; i++)
+                {
+                    Transform bar = CreatePrimitive(PrimitiveType.Cube, "Bar", rotorColor);
+                    bar.SetParent(rotor, worldPositionStays: false);
+                    bar.localScale = new Vector3(building.Width * 0.8f, 0.1f, 0.22f);
+                    bar.localRotation = Quaternion.Euler(0f, i * 90f, 0f);
+                }
+                rotor.gameObject.SetActive(false);
+                visual.Rotor = rotor;
             }
             if (building.Conveyor != null)
             {
@@ -340,17 +418,28 @@ namespace Game.Presentation
 
         private abstract class Visual
         {
-            protected Visual(Transform transform) => Transform = transform;
+            protected Visual(Transform transform, MeshRenderer renderer, Color color, float size)
+            {
+                Transform = transform;
+                Renderer = renderer;
+                Color = color;
+                Size = size;
+            }
 
             public Transform Transform { get; }
+            public MeshRenderer Renderer { get; }
+            public Color Color { get; }
+            public float Size { get; }
             public bool Alive { get; set; } = true;
+            public float FlashUntil { get; set; }
 
             public virtual void DestroyObjects() => Destroy(Transform.gameObject);
         }
 
         private sealed class UnitVisual : Visual
         {
-            public UnitVisual(Transform pivot, Transform? cargo) : base(pivot) => Cargo = cargo;
+            public UnitVisual(Transform pivot, MeshRenderer body, Color color, float size, Transform? cargo)
+                : base(pivot, body, color, size) => Cargo = cargo;
 
             public Transform? Cargo { get; }
             public Vector3 From { get; set; }
@@ -359,7 +448,8 @@ namespace Game.Presentation
 
         private sealed class BuildingVisual : Visual
         {
-            public BuildingVisual(Transform body, PrimitiveType shape, float fullHeight) : base(body)
+            public BuildingVisual(Transform body, MeshRenderer renderer, Color color, float size, PrimitiveType shape, float fullHeight)
+                : base(body, renderer, color, size)
             {
                 Shape = shape;
                 FullHeight = fullHeight;
@@ -369,6 +459,8 @@ namespace Game.Presentation
             public float FullHeight { get; }
             public Transform? Arrow { get; set; }
             public Transform? Item { get; set; }
+            public Transform? Rotor { get; set; }
+            public bool Spinning { get; set; }
 
             public override void DestroyObjects()
             {
@@ -377,6 +469,8 @@ namespace Game.Presentation
                     Destroy(Arrow.gameObject);
                 if (Item != null)
                     Destroy(Item.gameObject);
+                if (Rotor != null)
+                    Destroy(Rotor.gameObject);
             }
         }
     }

@@ -35,6 +35,17 @@ namespace Game.Presentation
             }
         }
 
+        // Docs/Design/creep_camps.csv, name_ru.
+        public static string Camp(string id)
+        {
+            switch (id)
+            {
+                case "guard_camp": return "Стражи";
+                case "small_camp": return "Малый лагерь";
+                default: return id;
+            }
+        }
+
         public static string Reject(RejectReason reason, string? buildingId = null)
         {
             switch (reason)

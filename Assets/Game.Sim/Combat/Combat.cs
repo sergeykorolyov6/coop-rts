@@ -132,6 +132,7 @@ internal static class Combat
             target.Hp -= hit.Amount;
             target.LastDamagedTick = state.Tick;
             target.LastAttackerId = hit.AttackerId;
+            events.Add(new HitLanded(state.Tick, hit.AttackerId, target.Id, hit.Amount));
 
             if (target is Building b && state.Tick - b.LastAlarmTick >= state.Rules.AttackAlarmCooldownTicks)
             {
