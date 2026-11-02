@@ -1,0 +1,41 @@
+namespace Game.Sim;
+
+public sealed class Unit : Entity
+{
+    internal Unit(int id, int ownerId, UnitStats stats, int x, int y)
+        : base(id, ownerId, stats.Hp, stats.Armor)
+    {
+        Stats = stats;
+        X = x;
+        Y = y;
+        if (stats.HasTag(UnitTags.Worker))
+            Worker = new Worker();
+    }
+
+    public UnitStats Stats { get; }
+
+    // Position of the unit's center, milli-cells.
+    public int X { get; internal set; }
+    public int Y { get; internal set; }
+
+    public int Radius => Stats.SizeMilli / 2;
+
+    public UnitOrder Order { get; internal set; } = UnitOrder.Idle;
+
+    // Present only on units tagged "worker".
+    public Worker? Worker { get; }
+
+    // Ticks until the next attack is allowed.
+    public int AttackCooldown { get; internal set; }
+
+    // Current attack target (entity id), 0 when none.
+    public int TargetId { get; internal set; }
+
+    // Set for creeps: index of the camp in SimState.CreepCamps.
+    public int CampIndex { get; internal set; } = -1;
+    public int HomeX { get; internal set; }
+    public int HomeY { get; internal set; }
+
+    public int CellX => Grid.MilliToCell(X);
+    public int CellY => Grid.MilliToCell(Y);
+}

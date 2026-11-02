@@ -22,6 +22,31 @@ internal static class Setups
                 new RelationSetup(2, 9, Relation.Enemy),
             });
 
+    public const int PlayerA = 1;
+    public const int PlayerB = 2;
+    public const int EnemyAi = 9;
+    public const int Creeps = 10;
+
+    // The co-op layout with real balance data on a given map: A and B allied,
+    // the enemy AI and the creeps hostile to everyone.
+    public static MatchSetup Coop(MapSetup map, int seed = 42) =>
+        new MatchSetup(
+            seed,
+            RepoData.Get(),
+            map,
+            resourceTypeCount: 2,
+            playerIds: new[] { PlayerA, PlayerB, EnemyAi, Creeps },
+            relations: new[]
+            {
+                new RelationSetup(PlayerA, PlayerB, Relation.Ally),
+                new RelationSetup(PlayerA, EnemyAi, Relation.Enemy),
+                new RelationSetup(PlayerB, EnemyAi, Relation.Enemy),
+                new RelationSetup(PlayerA, Creeps, Relation.Enemy),
+                new RelationSetup(PlayerB, Creeps, Relation.Enemy),
+                new RelationSetup(EnemyAi, Creeps, Relation.Enemy),
+            },
+            creepPlayerId: Creeps);
+
     public static MatchSetup Solo(int seed = 42) =>
         new MatchSetup(seed, 16, 16, 2, new[] { 1 }, Array.Empty<RelationSetup>());
 }

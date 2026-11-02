@@ -28,4 +28,6 @@ public sealed class Grid
     public static int CellToMilli(int cell) => cell * MilliPerCell;
 
     public static int MilliToCell(int milli) => IntMath.FloorDiv(milli, MilliPerCell);
+
+    public static int CellCenter(int cell) => cell * MilliPerCell + MilliPerCell / 2;
 }

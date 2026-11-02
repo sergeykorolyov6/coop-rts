@@ -41,7 +41,71 @@ internal sealed class StateHasher
                 _writer.Write((byte)state.Relations.GetByIndex(a, b));
         }
 
+        _writer.Write(state.NextEntityId);
+        _writer.Write(state.Units.Count);
+        foreach (Unit unit in state.Units)
+            WriteUnit(unit);
+        _writer.Write(state.Buildings.Count);
+        foreach (Building building in state.Buildings)
+            WriteBuilding(building);
+
         _writer.Flush();
         return XxHash64.Compute(new ReadOnlySpan<byte>(_buffer.GetBuffer(), 0, (int)_buffer.Length));
+    }
+
+    private void WriteEntity(Entity e)
+    {
+        _writer.Write(e.Id);
+        _writer.Write(e.OwnerId);
+        _writer.Write(e.Hp);
+        _writer.Write(e.IsDead);
+    }
+
+    private void WriteUnit(Unit u)
+    {
+        WriteEntity(u);
+        _writer.Write(u.Stats.Id);
+        _writer.Write(u.X);
+        _writer.Write(u.Y);
+        _writer.Write((byte)u.Order.Kind);
+        _writer.Write(u.Order.X);
+        _writer.Write(u.Order.Y);
+        _writer.Write(u.Order.TargetId);
+        _writer.Write(u.AttackCooldown);
+        _writer.Write(u.TargetId);
+        _writer.Write(u.CampIndex);
+        _writer.Write(u.HomeX);
+        _writer.Write(u.HomeY);
+
+        Worker? w = u.Worker;
+        if (w == null)
+            return;
+        _writer.Write(w.CargoType);
+        _writer.Write(w.Cargo);
+        _writer.Write(w.MiningAccumulator);
+        _writer.Write(w.DeliverToId);
+        _writer.Write((byte)w.Phase);
+        _writer.Write(w.RepairCostAccumulator);
+        _writer.Write(w.Plans.Count);
+        foreach (PlannedBuild plan in w.Plans)
+        {
+            _writer.Write(plan.BuildingTypeId);
+            _writer.Write(plan.CellX);
+            _writer.Write(plan.CellY);
+            _writer.Write((byte)plan.Direction);
+            _writer.Write(plan.ExistingSiteId);
+        }
+    }
+
+    private void WriteBuilding(Building b)
+    {
+        WriteEntity(b);
+        _writer.Write(b.Stats.Id);
+        _writer.Write(b.CellX);
+        _writer.Write(b.CellY);
+        _writer.Write((byte)b.Direction);
+        _writer.Write((byte)b.State);
+        _writer.Write(b.BuildProgress);
+        _writer.Write(b.BuildersLastTick);
     }
 }

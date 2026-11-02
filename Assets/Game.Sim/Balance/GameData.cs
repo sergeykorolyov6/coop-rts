@@ -22,6 +22,9 @@ public sealed class GameData
 
     public GameRules Rules { get; }
 
+    // No units, buildings or camps and all rules zero: for matches that only test the core loop.
+    public static GameData Empty { get; } = Parse("[]", "[]", "[]", GameRules.ZeroJson());
+
     // Sorted by id (ordinal).
     public IReadOnlyList<UnitStats> Units => _units;
     public IReadOnlyList<BuildingStats> Buildings => _buildings;

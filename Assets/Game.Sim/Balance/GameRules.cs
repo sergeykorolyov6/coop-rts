@@ -7,6 +7,14 @@ namespace Game.Sim;
 // drill rate, conveyor speed, start conditions... Already in ticks and milli-cells.
 public sealed class GameRules
 {
+    private static readonly string[] Keys =
+    {
+        "start_primary", "start_secondary", "start_workers", "construction_start_hp_pct", "repair_cost_pct",
+        "interact_range_mc", "drill_rate_per_ore_cell_ticks_per_unit", "drill_buffer", "manual_cargo",
+        "manual_mining_rate_ticks_per_unit", "conveyor_item_speed_mc_per_tick", "conveyor_item_spacing_mc",
+        "bridge_range", "storage_capacity",
+    };
+
     private readonly List<string> _read = new List<string>();
 
     internal GameRules(JsonNode root)
@@ -58,8 +66,18 @@ public sealed class GameRules
 
     public int StorageCapacity { get; }
 
+    internal static string ZeroJson()
+    {
+        var sb = new System.Text.StringBuilder("{");
+        for (int i = 0; i < Keys.Length; i++)
+            sb.Append(i == 0 ? "" : ",").Append('"').Append(Keys[i]).Append("\":0");
+        return sb.Append('}').ToString();
+    }
+
     private int Read(JsonNode root, string key)
     {
+        if (System.Array.IndexOf(Keys, key) < 0)
+            throw new System.InvalidOperationException($"Rule \"{key}\" is missing from GameRules.Keys.");
         _read.Add(key);
         int value = root.GetInt(key);
         if (value < 0)

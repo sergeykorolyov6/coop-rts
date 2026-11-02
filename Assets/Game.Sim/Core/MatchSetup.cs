@@ -7,9 +7,45 @@ namespace Game.Sim;
 // defines the match: replays and saves are built on that.
 public sealed class MatchSetup
 {
+    public const int NoPlayer = -1;
+
     private readonly List<int> _playerIds;
     private readonly List<RelationSetup> _relations;
 
+    // A real match: balance data, hand-made map with starts and camps.
+    // creepPlayerId owns the creeps (Grey Creatures); it must be one of playerIds when the map has camps.
+    public MatchSetup(
+        int seed,
+        GameData data,
+        MapSetup map,
+        int resourceTypeCount,
+        IEnumerable<int> playerIds,
+        IEnumerable<RelationSetup> relations,
+        int creepPlayerId = NoPlayer)
+        : this(seed, map.Width, map.Height, resourceTypeCount, playerIds, relations)
+    {
+        Data = data;
+        Map = map;
+        CreepPlayerId = creepPlayerId;
+
+        foreach (PlayerStart start in map.Starts)
+        {
+            if (_playerIds.BinarySearch(start.PlayerId) < 0)
+                throw new ArgumentException($"Map start for unknown player {start.PlayerId}.", nameof(map));
+            if (start.PlayerId == creepPlayerId)
+                throw new ArgumentException("The creep player cannot have a start.", nameof(map));
+        }
+        if (map.CreepCamps.Count > 0 && _playerIds.BinarySearch(creepPlayerId) < 0)
+            throw new ArgumentException("The map has creep camps but no creep player.", nameof(creepPlayerId));
+        foreach (CreepCampSetup camp in map.CreepCamps)
+        {
+            CreepCampStats stats = data.CreepCamp(camp.CampTypeId);
+            if (camp.CreepCells.Count != stats.Creeps.Count)
+                throw new ArgumentException($"Camp \"{camp.CampTypeId}\" at ({camp.CenterX}, {camp.CenterY}) needs {stats.Creeps.Count} creep cells, has {camp.CreepCells.Count}.", nameof(map));
+        }
+    }
+
+    // An empty map without balance data: enough for the core tick loop.
     public MatchSetup(
         int seed,
         int mapWidth,
@@ -52,7 +88,14 @@ public sealed class MatchSetup
         MapWidth = mapWidth;
         MapHeight = mapHeight;
         ResourceTypeCount = resourceTypeCount;
+        Data = GameData.Empty;
+        Map = new MapSetup(mapWidth, mapHeight);
+        CreepPlayerId = NoPlayer;
     }
+
+    public GameData Data { get; }
+    public MapSetup Map { get; }
+    public int CreepPlayerId { get; }
 
     public int Seed { get; }
     public int MapWidth { get; }

@@ -178,21 +178,5 @@ public class GameDataTests
         Assert.That(data.Rules.StartPrimary, Is.EqualTo(100));
     }
 
-    internal static GameData LoadRepoData()
-    {
-        string dir = Path.Combine(RepoRoot(), "Assets", "Data");
-        return GameData.Parse(
-            File.ReadAllText(Path.Combine(dir, "units.json")),
-            File.ReadAllText(Path.Combine(dir, "buildings.json")),
-            File.ReadAllText(Path.Combine(dir, "creep_camps.json")),
-            File.ReadAllText(Path.Combine(dir, "rules.json")));
-    }
-
-    private static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
-        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "PLAN.md")))
-            dir = dir.Parent;
-        return dir?.FullName ?? throw new DirectoryNotFoundException("Repository root (PLAN.md) not found.");
-    }
+    private static GameData LoadRepoData() => RepoData.Load();
 }
