@@ -1,0 +1,32 @@
+[
+  {
+    "id": "guard_camp",
+    "name_ru": "Стражи",
+    "creeps": [
+      "creep_big",
+      "creep_small"
+    ],
+    "aggro_radius_mc": 5000,
+    "leash_radius_mc": 8000,
+    "regen_pct_per_s": 5,
+    "calm_delay_ticks": 100,
+    "trophy_primary": 60,
+    "trophy_secondary": 0,
+    "trophy_per_trip": 5
+  },
+  {
+    "id": "small_camp",
+    "name_ru": "Малый лагерь",
+    "creeps": [
+      "creep_small",
+      "creep_small"
+    ],
+    "aggro_radius_mc": 5000,
+    "leash_radius_mc": 8000,
+    "regen_pct_per_s": 5,
+    "calm_delay_ticks": 100,
+    "trophy_primary": 30,
+    "trophy_secondary": 0,
+    "trophy_per_trip": 5
+  }
+]

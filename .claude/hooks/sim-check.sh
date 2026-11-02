@@ -6,12 +6,28 @@ set -uo pipefail
 input=$(cat)
 file=$(printf '%s' "$input" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("tool_input", {}).get("file_path", ""))' 2>/dev/null || true)
 
+root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+
+# Balance tables: Sim loads Assets/Data/*.json, so the json must follow the csv.
+case "$file" in
+  */Docs/Design/*.csv|*/Tools/*.py|*/Assets/Data/*.json)
+    if ! out=$(python3 "$root/Tools/csv2json.py" --check 2>&1); then
+      echo "$out" >&2
+      exit 2
+    fi
+    if ! out=$(cd "$root/Tools" && python3 -m unittest -q 2>&1); then
+      echo "Tools: тесты csv2json упали:" >&2
+      echo "$out" | tail -n 30 >&2
+      exit 2
+    fi
+    exit 0
+    ;;
+esac
+
 case "$file" in
   */Assets/Game.Sim/*|*/Game.Sim.Tests/*|*/Game.Sim.Dotnet/*) ;;
   *) exit 0 ;;
 esac
-
-root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 sim="$root/Assets/Game.Sim"
 
 # Plain Dictionary/HashSet: iteration order is not part of the contract.

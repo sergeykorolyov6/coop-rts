@@ -1,0 +1,263 @@
+[
+  {
+    "id": "creep_big",
+    "name_ru": "Большой крип",
+    "faction": "grey_creatures",
+    "hp": 500,
+    "armor": 2,
+    "damage": 20,
+    "damage_vs_buildings": 20,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 30,
+    "move_speed_mc_per_tick": 80,
+    "vision_mc": 6000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 0,
+    "produced_at": "",
+    "size_mc": 1200,
+    "tags": [
+      "melee",
+      "creep"
+    ]
+  },
+  {
+    "id": "creep_small",
+    "name_ru": "Малый крип",
+    "faction": "grey_creatures",
+    "hp": 80,
+    "armor": 0,
+    "damage": 6,
+    "damage_vs_buildings": 6,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 110,
+    "vision_mc": 5000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 0,
+    "produced_at": "",
+    "size_mc": 600,
+    "tags": [
+      "melee",
+      "creep"
+    ]
+  },
+  {
+    "id": "heavy",
+    "name_ru": "Тяжёлый",
+    "faction": "blue_walls",
+    "hp": 500,
+    "armor": 2,
+    "damage": 25,
+    "damage_vs_buildings": 25,
+    "attack_range_mc": 4000,
+    "attack_cooldown_ticks": 30,
+    "move_speed_mc_per_tick": 75,
+    "vision_mc": 6000,
+    "cost_primary": 50,
+    "cost_secondary": 20,
+    "build_time_ticks": 700,
+    "produced_at": "factory",
+    "size_mc": 1000,
+    "tags": [
+      "ranged",
+      "armored"
+    ]
+  },
+  {
+    "id": "infantry",
+    "name_ru": "Пехотинец",
+    "faction": "blue_walls",
+    "hp": 220,
+    "armor": 1,
+    "damage": 12,
+    "damage_vs_buildings": 12,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 16,
+    "move_speed_mc_per_tick": 95,
+    "vision_mc": 5000,
+    "cost_primary": 30,
+    "cost_secondary": 0,
+    "build_time_ticks": 500,
+    "produced_at": "factory",
+    "size_mc": 700,
+    "tags": [
+      "melee"
+    ]
+  },
+  {
+    "id": "legion_brute",
+    "name_ru": "Громила Легиона",
+    "faction": "black_legion",
+    "hp": 400,
+    "armor": 2,
+    "damage": 20,
+    "damage_vs_buildings": 40,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 30,
+    "move_speed_mc_per_tick": 80,
+    "vision_mc": 5000,
+    "cost_primary": 50,
+    "cost_secondary": 20,
+    "build_time_ticks": 600,
+    "produced_at": "factory",
+    "size_mc": 1000,
+    "tags": [
+      "melee",
+      "armored"
+    ]
+  },
+  {
+    "id": "legion_gunner",
+    "name_ru": "Стрелок Легиона",
+    "faction": "black_legion",
+    "hp": 90,
+    "armor": 0,
+    "damage": 8,
+    "damage_vs_buildings": 8,
+    "attack_range_mc": 4000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 95,
+    "vision_mc": 6000,
+    "cost_primary": 20,
+    "cost_secondary": 0,
+    "build_time_ticks": 360,
+    "produced_at": "factory",
+    "size_mc": 600,
+    "tags": [
+      "ranged"
+    ]
+  },
+  {
+    "id": "legion_raider",
+    "name_ru": "Рейдер Легиона",
+    "faction": "black_legion",
+    "hp": 50,
+    "armor": 0,
+    "damage": 5,
+    "damage_vs_buildings": 5,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 12,
+    "move_speed_mc_per_tick": 150,
+    "vision_mc": 5000,
+    "cost_primary": 10,
+    "cost_secondary": 0,
+    "build_time_ticks": 240,
+    "produced_at": "factory",
+    "size_mc": 500,
+    "tags": [
+      "melee",
+      "fast"
+    ]
+  },
+  {
+    "id": "legion_worker",
+    "name_ru": "Рабочий Легиона",
+    "faction": "black_legion",
+    "hp": 50,
+    "armor": 0,
+    "damage": 3,
+    "damage_vs_buildings": 3,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 120,
+    "vision_mc": 5000,
+    "cost_primary": 10,
+    "cost_secondary": 0,
+    "build_time_ticks": 240,
+    "produced_at": "factory",
+    "size_mc": 500,
+    "tags": [
+      "worker",
+      "melee"
+    ]
+  },
+  {
+    "id": "scout",
+    "name_ru": "Разведчик",
+    "faction": "blue_walls",
+    "hp": 60,
+    "armor": 0,
+    "damage": 5,
+    "damage_vs_buildings": 5,
+    "attack_range_mc": 3000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 180,
+    "vision_mc": 10000,
+    "cost_primary": 15,
+    "cost_secondary": 0,
+    "build_time_ticks": 300,
+    "produced_at": "factory",
+    "size_mc": 500,
+    "tags": [
+      "scout",
+      "ranged"
+    ]
+  },
+  {
+    "id": "shooter",
+    "name_ru": "Стрелок",
+    "faction": "blue_walls",
+    "hp": 100,
+    "armor": 0,
+    "damage": 9,
+    "damage_vs_buildings": 9,
+    "attack_range_mc": 4000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 95,
+    "vision_mc": 6000,
+    "cost_primary": 20,
+    "cost_secondary": 0,
+    "build_time_ticks": 360,
+    "produced_at": "factory",
+    "size_mc": 600,
+    "tags": [
+      "ranged"
+    ]
+  },
+  {
+    "id": "siege",
+    "name_ru": "Осадный",
+    "faction": "blue_walls",
+    "hp": 200,
+    "armor": 1,
+    "damage": 20,
+    "damage_vs_buildings": 60,
+    "attack_range_mc": 8000,
+    "attack_cooldown_ticks": 50,
+    "move_speed_mc_per_tick": 75,
+    "vision_mc": 7000,
+    "cost_primary": 40,
+    "cost_secondary": 30,
+    "build_time_ticks": 700,
+    "produced_at": "factory",
+    "size_mc": 1000,
+    "tags": [
+      "siege",
+      "ranged"
+    ]
+  },
+  {
+    "id": "worker",
+    "name_ru": "Рабочий",
+    "faction": "blue_walls",
+    "hp": 60,
+    "armor": 0,
+    "damage": 4,
+    "damage_vs_buildings": 4,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 120,
+    "vision_mc": 5000,
+    "cost_primary": 10,
+    "cost_secondary": 0,
+    "build_time_ticks": 240,
+    "produced_at": "factory",
+    "size_mc": 500,
+    "tags": [
+      "worker",
+      "melee"
+    ]
+  }
+]
