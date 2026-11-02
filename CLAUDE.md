@@ -61,7 +61,9 @@
 | рабочий, ручная добыча | `Worker`, `ManualMining` |
 | стройка, совместная стройка, предел строителей | `Construction`, builders, `MaxBuilders` |
 | ремонт | `Repair` |
-| конвейер, лента | `Conveyor` (до спеки конвейеров не создавать) |
+| конвейер, лента | `Conveyor` |
+| мост (конвейерный) | `ConveyorBridge` |
+| груз рабочего | `Worker.Cargo` |
 | штаб | `Headquarters` (один на игрока, у ИИ — несколько) |
 | завод | `Factory` |
 | склад | `Storage` |
