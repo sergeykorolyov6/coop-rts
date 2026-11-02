@@ -12,8 +12,8 @@ namespace Game.Presentation
     // Conveyor: press and drag a line, it turns where the mouse turns, arrows show the direction
     // of every cell, the tip shows the total cost (conveyors.md). Bridge: first end, then second
     // end on a straight line within range. R rotates a single conveyor cell or bridge.
-    // Right click or Esc cancels. Placing ends the mode: every BuildCommand replaces the workers'
-    // plans, so a second placement would cancel the first.
+    // Right click or Esc cancels. Placing ends the mode; with Shift the building joins the workers'
+    // queue and the mode stays for the next one (order-queue.md).
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class PlacementController : MonoBehaviour
     {
@@ -171,7 +171,6 @@ namespace Game.Presentation
             if (mouse.leftButton.wasPressedThisFrame && !overUi && reason == null)
             {
                 Order(simulation, new[] { new BuildSite(x, y, _rotation) });
-                End();
             }
             return tip;
         }
@@ -224,7 +223,6 @@ namespace Game.Presentation
                     for (int i = 0; i < count; i++)
                         sites[i] = new BuildSite(_path[i].x, _path[i].y, LineDirection(i));
                     Order(simulation, sites);
-                    End();
                 }
                 else
                 {
@@ -281,7 +279,6 @@ namespace Game.Presentation
             if (mouse.leftButton.wasPressedThisFrame && !overUi && ok)
             {
                 Order(simulation, new[] { new BuildSite(start.x, start.y, direction), new BuildSite(cursor.x, cursor.y, direction) });
-                End();
             }
             return text;
         }
@@ -335,9 +332,19 @@ namespace Game.Presentation
             return delta.y > 0 ? Direction.Up : Direction.Down;
         }
 
+        // Shift queues the building and keeps the mode for the next one; otherwise placing ends it.
         private void Order(Simulation simulation, BuildSite[] sites)
         {
-            simulation.Enqueue(new BuildCommand(_localPlayer!.PlayerId, simulation.State.Tick, _workers.ToArray(), _stats!.Id, sites));
+            bool queued = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+            simulation.Enqueue(new BuildCommand(_localPlayer!.PlayerId, simulation.State.Tick, _workers.ToArray(), _stats!.Id, sites, queued));
+            if (!queued)
+            {
+                End();
+                return;
+            }
+            _dragging = false;
+            _bridgeStart = null;
+            _path.Clear();
         }
 
         private bool CollectWorkers(SimState state)

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Game.Sim;
 
 public sealed class Unit : Entity
@@ -26,6 +28,10 @@ public sealed class Unit : Entity
     internal int StepY { get; set; }
 
     public UnitOrder Order { get; internal set; } = UnitOrder.Idle;
+
+    // Orders given with Shift, next first (order-queue.md).
+    internal readonly List<QueuedOrder> _queue = new List<QueuedOrder>();
+    public IReadOnlyList<QueuedOrder> OrderQueue => _queue;
 
     // Present only on units tagged "worker".
     public Worker? Worker { get; }

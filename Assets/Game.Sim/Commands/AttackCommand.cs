@@ -10,12 +10,13 @@ public sealed class AttackCommand : ICommand
 
     private readonly int[] _unitIds;
 
-    public AttackCommand(int playerId, int tick, int[] unitIds, int targetId)
+    public AttackCommand(int playerId, int tick, int[] unitIds, int targetId, bool queued = false)
     {
         PlayerId = playerId;
         Tick = tick;
         _unitIds = (int[])unitIds.Clone();
         TargetId = targetId;
+        Queued = queued;
     }
 
     public int PlayerId { get; }
@@ -24,14 +25,18 @@ public sealed class AttackCommand : ICommand
     public IReadOnlyList<int> UnitIds => _unitIds;
     public int TargetId { get; }
 
+    // order-queue.md: given with Shift — joins the queue of a busy unit.
+    public bool Queued { get; }
+
     public void WritePayload(BinaryWriter writer)
     {
         UnitSelection.Write(writer, _unitIds);
         writer.Write(TargetId);
+        writer.Write(Queued);
     }
 
     public static AttackCommand Read(int playerId, int tick, BinaryReader reader) =>
-        new AttackCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32());
+        new AttackCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32(), reader.ReadBoolean());
 
     public void Execute(SimState state, List<SimEvent> events)
     {
@@ -41,12 +46,15 @@ public sealed class AttackCommand : ICommand
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
             return;
         }
+        bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
         {
-            if (!Combat.CanAttack(unit))
+            if (!Combat.CanAttack(unit) || UnitOrders.Defer(unit, Queued, UnitOrder.Attack(target.Id), null, ref full))
                 continue;
-            UnitOrders.Give(unit, UnitOrder.Attack(target.Id));
+            UnitOrders.Replace(unit, UnitOrder.Attack(target.Id));
             unit.TargetId = target.Id;
         }
+        if (full)
+            events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
     }
 }

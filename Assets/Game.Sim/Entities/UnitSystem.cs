@@ -32,6 +32,8 @@ internal static class UnitSystem
                 CreepCampSystem.TickCreep(state, unit);
                 continue;
             }
+            if (unit.Order.Kind == UnitOrderKind.Idle && unit._queue.Count > 0)
+                UnitOrders.StartNext(state, unit, events);
             switch (unit.Order.Kind)
             {
                 case UnitOrderKind.Idle:

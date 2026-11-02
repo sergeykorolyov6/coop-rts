@@ -11,6 +11,7 @@ namespace Game.Presentation
     // there (manual-mining.md); unfinished or damaged own/ally building → build/repair
     // (construction.md); trophy → carry (creep-camp.md); ore → mine (manual-mining.md);
     // anything else → move. Worker-only orders go to the workers; the rest of the selection walks there.
+    // With Shift every order joins the units' queues (order-queue.md); delivering cargo is a setting, not queued.
     // The sim validates every command itself; rejections come back as CommandRejected events.
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class OrderController : MonoBehaviour
@@ -59,6 +60,7 @@ namespace Game.Presentation
             SimState state = simulation.State;
             int playerId = _localPlayer!.PlayerId;
             int tick = state.Tick;
+            bool queued = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
             int cellX = Mathf.FloorToInt(ground.x), cellY = Mathf.FloorToInt(ground.z);
             int milliX = Mathf.RoundToInt(ground.x * Grid.MilliPerCell), milliY = Mathf.RoundToInt(ground.z * Grid.MilliPerCell);
             SplitSelection(state);
@@ -69,14 +71,14 @@ namespace Game.Presentation
                 u => state.Relations.IsEnemy(playerId, u.OwnerId) && state.Fog.IsVisible(playerId, u.CellX, u.CellY));
             if (enemyUnit != null)
             {
-                simulation.Enqueue(new AttackCommand(playerId, tick, all, enemyUnit.Id));
+                simulation.Enqueue(new AttackCommand(playerId, tick, all, enemyUnit.Id, queued));
                 return;
             }
 
             Building? building = BuildingAt(state, cellX, cellY);
             if (building != null && state.Relations.IsEnemy(playerId, building.OwnerId) && state.Fog.IsVisible(playerId, cellX, cellY))
             {
-                simulation.Enqueue(new AttackCommand(playerId, tick, all, building.Id));
+                simulation.Enqueue(new AttackCommand(playerId, tick, all, building.Id, queued));
                 return;
             }
 
@@ -91,28 +93,28 @@ namespace Game.Presentation
                     if (building.IsComplete && building.Stats.Id == BuildingKinds.Headquarters && AnyCarries(state))
                         workerCommand = new DeliverCargoCommand(playerId, tick, workers, building.Id);
                     else if (!building.IsComplete || building.Hp < building.MaxHp)
-                        workerCommand = new RepairCommand(playerId, tick, workers, building.Id);
+                        workerCommand = new RepairCommand(playerId, tick, workers, building.Id, queued);
                 }
                 else if (building == null && TrophyAt(state, playerId, ground, out int campIndex))
                 {
-                    workerCommand = new CarryTrophyCommand(playerId, tick, workers, campIndex);
+                    workerCommand = new CarryTrophyCommand(playerId, tick, workers, campIndex, queued);
                 }
                 else if (building == null && state.Map.InBounds(cellX, cellY) && state.Map.OreAt(cellX, cellY) != MapSetup.NoOre
                          && state.Fog.IsDiscovered(playerId, cellX, cellY))
                 {
-                    workerCommand = new MineCommand(playerId, tick, workers, cellX, cellY);
+                    workerCommand = new MineCommand(playerId, tick, workers, cellX, cellY, queued);
                 }
 
                 if (workerCommand != null)
                 {
                     simulation.Enqueue(workerCommand);
                     if (_others.Count > 0)
-                        simulation.Enqueue(new MoveCommand(playerId, tick, _others.ToArray(), milliX, milliY));
+                        simulation.Enqueue(new MoveCommand(playerId, tick, _others.ToArray(), milliX, milliY, queued));
                     return;
                 }
             }
 
-            simulation.Enqueue(new MoveCommand(playerId, tick, all, milliX, milliY));
+            simulation.Enqueue(new MoveCommand(playerId, tick, all, milliX, milliY, queued));
         }
 
         private void SplitSelection(SimState state)

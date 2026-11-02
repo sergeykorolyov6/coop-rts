@@ -63,6 +63,7 @@
 | рабочий, ручная добыча | `Worker`, `ManualMining` |
 | стройка, совместная стройка, предел строителей | `Construction`, builders, `MaxBuilders` |
 | превью размещения (силуэт до клика) | `PlacementPreview`, `DrillPreview` |
+| очередь приказов (Shift) | `Unit.OrderQueue`, `QueuedOrder`, `Queued` у команд |
 | ремонт | `Repair` |
 | конвейер, лента | `Conveyor` |
 | мост (конвейерный) | `ConveyorBridge` |

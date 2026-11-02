@@ -99,6 +99,17 @@ internal sealed class StateHasher
         _writer.Write(u.Order.X);
         _writer.Write(u.Order.Y);
         _writer.Write(u.Order.TargetId);
+        _writer.Write(u.OrderQueue.Count);
+        foreach (QueuedOrder queued in u.OrderQueue)
+        {
+            _writer.Write((byte)queued.Order.Kind);
+            _writer.Write(queued.Order.X);
+            _writer.Write(queued.Order.Y);
+            _writer.Write(queued.Order.TargetId);
+            _writer.Write(queued.Plans.Count);
+            foreach (PlannedBuild plan in queued.Plans)
+                WritePlan(plan);
+        }
         _writer.Write(u.AttackCooldown);
         _writer.Write(u.TargetId);
         _writer.Write(u.CampIndex);
@@ -120,13 +131,16 @@ internal sealed class StateHasher
         _writer.Write(w.CurrentPlanKey);
         _writer.Write(w.Plans.Count);
         foreach (PlannedBuild plan in w.Plans)
-        {
-            _writer.Write(plan.BuildingTypeId);
-            _writer.Write(plan.CellX);
-            _writer.Write(plan.CellY);
-            _writer.Write((byte)plan.Direction);
-            _writer.Write(plan.ExistingSiteId);
-        }
+            WritePlan(plan);
+    }
+
+    private void WritePlan(PlannedBuild plan)
+    {
+        _writer.Write(plan.BuildingTypeId);
+        _writer.Write(plan.CellX);
+        _writer.Write(plan.CellY);
+        _writer.Write((byte)plan.Direction);
+        _writer.Write(plan.ExistingSiteId);
     }
 
     private void WriteBuilding(Building b)

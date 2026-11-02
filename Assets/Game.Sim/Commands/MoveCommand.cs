@@ -10,13 +10,14 @@ public sealed class MoveCommand : ICommand
 
     private readonly int[] _unitIds;
 
-    public MoveCommand(int playerId, int tick, int[] unitIds, int x, int y)
+    public MoveCommand(int playerId, int tick, int[] unitIds, int x, int y, bool queued = false)
     {
         PlayerId = playerId;
         Tick = tick;
         _unitIds = (int[])unitIds.Clone();
         X = x;
         Y = y;
+        Queued = queued;
     }
 
     public int PlayerId { get; }
@@ -28,15 +29,19 @@ public sealed class MoveCommand : ICommand
     public int X { get; }
     public int Y { get; }
 
+    // order-queue.md: given with Shift — joins the queue of a busy unit.
+    public bool Queued { get; }
+
     public void WritePayload(BinaryWriter writer)
     {
         UnitSelection.Write(writer, _unitIds);
         writer.Write(X);
         writer.Write(Y);
+        writer.Write(Queued);
     }
 
     public static MoveCommand Read(int playerId, int tick, BinaryReader reader) =>
-        new MoveCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32(), reader.ReadInt32());
+        new MoveCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32(), reader.ReadInt32(), reader.ReadBoolean());
 
     public void Execute(SimState state, List<SimEvent> events)
     {
@@ -45,7 +50,14 @@ public sealed class MoveCommand : ICommand
         int x = X < 0 ? 0 : X > maxX ? maxX : X;
         int y = Y < 0 ? 0 : Y > maxY ? maxY : Y;
 
+        bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
-            UnitOrders.Give(unit, UnitOrder.MoveTo(x, y));
+        {
+            UnitOrder order = UnitOrder.MoveTo(x, y);
+            if (!UnitOrders.Defer(unit, Queued, order, null, ref full))
+                UnitOrders.Replace(unit, order);
+        }
+        if (full)
+            events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
     }
 }

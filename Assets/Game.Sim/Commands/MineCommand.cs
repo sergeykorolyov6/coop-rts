@@ -10,13 +10,14 @@ public sealed class MineCommand : ICommand
 
     private readonly int[] _unitIds;
 
-    public MineCommand(int playerId, int tick, int[] unitIds, int cellX, int cellY)
+    public MineCommand(int playerId, int tick, int[] unitIds, int cellX, int cellY, bool queued = false)
     {
         PlayerId = playerId;
         Tick = tick;
         _unitIds = (int[])unitIds.Clone();
         CellX = cellX;
         CellY = cellY;
+        Queued = queued;
     }
 
     public int PlayerId { get; }
@@ -26,15 +27,19 @@ public sealed class MineCommand : ICommand
     public int CellX { get; }
     public int CellY { get; }
 
+    // order-queue.md: given with Shift — joins the queue of a busy unit.
+    public bool Queued { get; }
+
     public void WritePayload(BinaryWriter writer)
     {
         UnitSelection.Write(writer, _unitIds);
         writer.Write(CellX);
         writer.Write(CellY);
+        writer.Write(Queued);
     }
 
     public static MineCommand Read(int playerId, int tick, BinaryReader reader) =>
-        new MineCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32(), reader.ReadInt32());
+        new MineCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32(), reader.ReadInt32(), reader.ReadBoolean());
 
     public void Execute(SimState state, List<SimEvent> events)
     {
@@ -47,10 +52,15 @@ public sealed class MineCommand : ICommand
             return;
         }
 
+        bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
         {
-            if (unit.Worker != null)
-                ManualMining.Start(state, unit, CellX, CellY);
+            if (unit.Worker == null || UnitOrders.Defer(unit, Queued, UnitOrder.Mine(CellX, CellY), null, ref full))
+                continue;
+            unit._queue.Clear();
+            ManualMining.Start(state, unit, CellX, CellY);
         }
+        if (full)
+            events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
     }
 }

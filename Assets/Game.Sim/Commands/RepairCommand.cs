@@ -11,12 +11,13 @@ public sealed class RepairCommand : ICommand
 
     private readonly int[] _unitIds;
 
-    public RepairCommand(int playerId, int tick, int[] unitIds, int buildingId)
+    public RepairCommand(int playerId, int tick, int[] unitIds, int buildingId, bool queued = false)
     {
         PlayerId = playerId;
         Tick = tick;
         _unitIds = (int[])unitIds.Clone();
         BuildingId = buildingId;
+        Queued = queued;
     }
 
     public int PlayerId { get; }
@@ -25,14 +26,18 @@ public sealed class RepairCommand : ICommand
     public IReadOnlyList<int> UnitIds => _unitIds;
     public int BuildingId { get; }
 
+    // order-queue.md: given with Shift — joins the queue of a busy unit.
+    public bool Queued { get; }
+
     public void WritePayload(BinaryWriter writer)
     {
         UnitSelection.Write(writer, _unitIds);
         writer.Write(BuildingId);
+        writer.Write(Queued);
     }
 
     public static RepairCommand Read(int playerId, int tick, BinaryReader reader) =>
-        new RepairCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32());
+        new RepairCommand(playerId, tick, UnitSelection.Read(reader), reader.ReadInt32(), reader.ReadBoolean());
 
     public void Execute(SimState state, List<SimEvent> events)
     {
@@ -48,6 +53,7 @@ public sealed class RepairCommand : ICommand
             return;
         }
 
+        bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
         {
             Worker? worker = unit.Worker;
@@ -55,14 +61,19 @@ public sealed class RepairCommand : ICommand
                 continue;
             if (target.IsComplete)
             {
-                UnitOrders.Give(unit, UnitOrder.Repair(target.Id));
+                if (!UnitOrders.Defer(unit, Queued, UnitOrder.Repair(target.Id), null, ref full))
+                    UnitOrders.Replace(unit, UnitOrder.Repair(target.Id));
             }
             else
             {
-                UnitOrders.Give(unit, UnitOrder.Build());
                 var plan = new PlannedBuild(target.Stats.Id, target.CellX, target.CellY, target.Direction) { ExistingSiteId = target.Id };
+                if (UnitOrders.Defer(unit, Queued, UnitOrder.Build(), new[] { plan }, ref full))
+                    continue;
+                UnitOrders.Replace(unit, UnitOrder.Build());
                 worker._plans.Add(plan);
             }
         }
+        if (full)
+            events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
     }
 }
