@@ -44,6 +44,18 @@ namespace Game.Presentation
             _root.SetParent(transform, worldPositionStays: false);
         }
 
+        // Interpolated position on the ground, as drawn this frame: picking matches what the player sees.
+        public bool TryGetUnitPosition(int unitId, out Vector3 position)
+        {
+            if (_units.TryGetValue(unitId, out UnitVisual? visual))
+            {
+                position = visual.Transform.position;
+                return true;
+            }
+            position = default;
+            return false;
+        }
+
         // After SimRunner.Update has advanced the sim this frame.
         private void LateUpdate()
         {

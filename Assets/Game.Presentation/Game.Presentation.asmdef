@@ -2,7 +2,8 @@
     "name": "Game.Presentation",
     "rootNamespace": "Game.Presentation",
     "references": [
-        "Game.Sim"
+        "Game.Sim",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
