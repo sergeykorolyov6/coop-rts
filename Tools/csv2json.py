@@ -64,6 +64,51 @@ def cells_per_second_to_milli_per_tick(text: str) -> int:
     return _whole(_number(text) * MILLI_PER_CELL / TICKS_PER_SECOND, "милли-клеток за тик")
 
 
+def rate_to_ticks_per_unit(text: str) -> int:
+    # 0,125 ед./с → 1 ед. каждые 160 тиков: an integer accumulator threshold, exact.
+    rate = _number(text)
+    if rate <= 0:
+        raise ValueError(f"скорость {rate} должна быть больше нуля")
+    return _whole(Decimal(TICKS_PER_SECOND) / rate, "тиков на единицу")
+
+
+# rules.csv: one value per row, converted by its unit column.
+RULE_UNITS = {
+    "int": ("", int_),
+    "pct": ("_pct", int_),
+    "s": ("_ticks", seconds_to_ticks),
+    "cells": ("_mc", cells_to_milli),
+    "cells_per_s": ("_mc_per_tick", cells_per_second_to_milli_per_tick),
+    "rate": ("_ticks_per_unit", rate_to_ticks_per_unit),
+}
+
+RULES_COLUMNS = ["id", "value", "unit", "name_ru", "source", "notes"]
+
+
+def convert_rules(csv_text: str, file_name: str) -> dict:
+    reader = csv.DictReader(io.StringIO(csv_text))
+    if (reader.fieldnames or []) != RULES_COLUMNS:
+        raise ConvertError(f"{file_name}: колонки должны быть {RULES_COLUMNS}")
+    out = {}
+    for line, record in enumerate(reader, start=2):
+        rule_id = (record["id"] or "").strip()
+        if not rule_id:
+            continue
+        unit = (record["unit"] or "").strip()
+        if unit not in RULE_UNITS:
+            raise ConvertError(f"{file_name}, строка {line}: единица «{unit}» неизвестна, есть {sorted(RULE_UNITS)}")
+        suffix, convert = RULE_UNITS[unit]
+        # pct ids already end in _pct; don't double the suffix.
+        key = rule_id if rule_id.endswith(suffix) else rule_id + suffix
+        if key in out:
+            raise ConvertError(f"{file_name}, строка {line}: «{rule_id}» повторяется")
+        try:
+            out[key] = convert(record["value"] or "")
+        except ValueError as e:
+            raise ConvertError(f"{file_name}, строка {line}, {rule_id}: {e}") from None
+    return dict(sorted(out.items()))
+
+
 def string(text: str) -> str:
     return text.strip()
 
@@ -178,7 +223,7 @@ def convert_table(csv_text: str, schema: dict, file_name: str) -> list[dict]:
     return rows
 
 
-def render(rows: list[dict]) -> str:
+def render(rows) -> str:
     return json.dumps(rows, ensure_ascii=False, indent=2) + "\n"
 
 
@@ -187,6 +232,8 @@ def build_all() -> dict[Path, str]:
     for csv_name, json_name, schema in TABLES:
         text = (DESIGN_DIR / csv_name).read_text(encoding="utf-8-sig")
         out[DATA_DIR / json_name] = render(convert_table(text, schema, csv_name))
+    rules = (DESIGN_DIR / "rules.csv").read_text(encoding="utf-8-sig")
+    out[DATA_DIR / "rules.json"] = render(convert_rules(rules, "rules.csv"))
     return out
 
 

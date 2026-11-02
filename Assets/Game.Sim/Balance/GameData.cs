@@ -12,25 +12,38 @@ public sealed class GameData
     private readonly List<BuildingStats> _buildings;
     private readonly List<CreepCampStats> _creepCamps;
 
-    private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps)
+    private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps, GameRules rules)
     {
         _units = units;
         _buildings = buildings;
         _creepCamps = creepCamps;
+        Rules = rules;
     }
+
+    public GameRules Rules { get; }
 
     // Sorted by id (ordinal).
     public IReadOnlyList<UnitStats> Units => _units;
     public IReadOnlyList<BuildingStats> Buildings => _buildings;
     public IReadOnlyList<CreepCampStats> CreepCamps => _creepCamps;
 
-    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson)
+    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson)
     {
         List<UnitStats> units = ReadTable("units.json", unitsJson, row => new UnitStats(row), u => u.Id);
         List<BuildingStats> buildings = ReadTable("buildings.json", buildingsJson, row => new BuildingStats(row), b => b.Id);
         List<CreepCampStats> camps = ReadTable("creep_camps.json", creepCampsJson, row => new CreepCampStats(row), c => c.Id);
 
-        var data = new GameData(units, buildings, camps);
+        GameRules rules;
+        try
+        {
+            rules = new GameRules(JsonParser.Parse(rulesJson));
+        }
+        catch (FormatException e) when (!e.Message.StartsWith("rules.json", StringComparison.Ordinal))
+        {
+            throw new FormatException($"rules.json: {e.Message}", e);
+        }
+
+        var data = new GameData(units, buildings, camps, rules);
         data.Validate();
         return data;
     }

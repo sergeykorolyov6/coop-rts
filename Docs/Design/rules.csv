@@ -1,0 +1,15 @@
+id,value,unit,name_ru,source,notes
+start_primary,100,int,Стартовый основной ресурс,construction.md (ответ 7),"Прототип; в миссиях может отличаться"
+start_secondary,0,int,Стартовый второй ресурс,construction.md (ответ 7),
+start_workers,3,int,Стартовые рабочие,construction.md (ответ 7),
+construction_start_hp_pct,10,pct,Прочность стройки в начале,решение Claude (SC2),"Стройка начинается с 10 % прочности и набирает остальное по мере прогресса"
+repair_cost_pct,50,pct,Цена полного ремонта от цены постройки,construction.md (ответ 10),
+interact_range,1,cells,Дальность работы рабочего,решение Claude,"Рабочий строит, чинит, копает и сдаёт груз, если до клетки или края здания не больше этого"
+drill_rate_per_ore_cell,0.125,rate,Добыча бура с одной клетки руды,drill.md,"0,5 ед./с на 4 клетках"
+drill_buffer,10,int,Буфер бура,drill.md,
+manual_cargo,5,int,Груз рабочего за рейс,manual-mining.md,
+manual_mining_rate,0.5,rate,Скорость ручной добычи,manual-mining.md,"Пока копает"
+conveyor_item_speed,4,cells_per_s,Скорость ресурса на ленте,conveyors.md,
+conveyor_item_spacing,1,cells,Шаг между единицами на ленте,conveyors.md,"1 ед. на клетку"
+bridge_range,4,int,Дальность моста (клеток между концами по прямой),conveyors.md,
+storage_capacity,100,int,Вместимость склада,conveyors.md (вопрос 28),"Оба ресурса вместе"

@@ -60,10 +60,31 @@ class TableTest(unittest.TestCase):
         self.assertEqual(rows, [{"id": "a", "hp": 1}])
 
 
+HEAD = "id,value,unit,name_ru,source,notes\n"
+
+
+class RulesTest(unittest.TestCase):
+    def test_units_and_suffixes(self):
+        rules = c.convert_rules(HEAD + "a,3,int,,,\nb,0.125,rate,,,\nc,4,cells_per_s,,,\nd_pct,50,pct,,,\ne,2,s,,,\n", "r.csv")
+        self.assertEqual(rules, {"a": 3, "b_ticks_per_unit": 160, "c_mc_per_tick": 200, "d_pct": 50, "e_ticks": 40})
+
+    def test_unknown_unit(self):
+        with self.assertRaisesRegex(c.ConvertError, "единица"):
+            c.convert_rules(HEAD + "a,3,meters,,,\n", "r.csv")
+
+    def test_inexact_rate(self):
+        with self.assertRaisesRegex(c.ConvertError, "строка 2"):
+            c.convert_rules(HEAD + "a,0.3,rate,,,\n", "r.csv")
+
+    def test_duplicate(self):
+        with self.assertRaisesRegex(c.ConvertError, "повторяется"):
+            c.convert_rules(HEAD + "a,1,int,,,\na,2,int,,,\n", "r.csv")
+
+
 class RepoDataTest(unittest.TestCase):
     def test_repo_csv_converts(self):
         outputs = c.build_all()
-        self.assertEqual(len(outputs), 3)
+        self.assertEqual(len(outputs), 4)
 
 
 if __name__ == "__main__":
