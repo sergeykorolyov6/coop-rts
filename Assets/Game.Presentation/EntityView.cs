@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Game.Sim;
 using UnityEngine;
+using Grid = Game.Sim.Grid;
 
 namespace Game.Presentation
 {
