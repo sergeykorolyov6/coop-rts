@@ -562,6 +562,7 @@ GameObject:
   - component: {fileID: 1100000019}
   - component: {fileID: 1100000018}
   - component: {fileID: 1100000017}
+  - component: {fileID: 1100000021}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -913,6 +914,25 @@ MonoBehaviour:
   _streakColor: {r: 1, g: 0.95, b: 0.7, a: 1}
   _streakSeconds: 0.09
   _deathSeconds: 0.7
+--- !u!114 &1100000021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa3895f47a2ac4c62a8cb1aef8053b01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.TerrainView
+  _rockColors:
+  - {r: 0.36, g: 0.34, b: 0.31, a: 1}
+  - {r: 0.42, g: 0.39, b: 0.35, a: 1}
+  - {r: 0.3, g: 0.29, b: 0.28, a: 1}
+  _primaryOreColor: {r: 0.95, g: 0.62, b: 0.25, a: 1}
+  _secondaryOreColor: {r: 0.4, g: 0.8, b: 0.95, a: 1}
+  _rememberedBrightness: 0.5
 --- !u!1 &1637688646
 GameObject:
   m_ObjectHideFlags: 0
