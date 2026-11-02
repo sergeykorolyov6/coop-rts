@@ -1,11 +1,11 @@
 id,name_ru,faction,hp,armor,damage,damage_vs_buildings,attack_range,attack_cooldown_s,move_speed,vision,cost_primary,cost_secondary,build_time_s,produced_at,size,tags,reference,notes
-worker,Рабочий,blue_walls,60,0,4,4,0.5,1.0,2.4,5,10,0,12,headquarters,0.5,worker;melee,"SC2 SCV: 50 мин., 12 с, 45 HP, 5 урона, 3,94 скор.","Строит, чинит, добывает (manual-mining.md). Производится в штабе — как в SC2"
+worker,Рабочий,blue_walls,60,0,4,4,0.5,1.0,2.4,5,10,0,12,factory,0.5,worker;melee,"SC2 SCV: 50 мин., 12 с, 45 HP, 5 урона, 3,94 скор.","Строит, чинит, добывает (manual-mining.md). Производится на заводе, как все юниты (ответ 17)"
 scout,Разведчик,blue_walls,60,0,5,5,3,1.0,3.6,10,15,0,15,factory,0.5,scout;ranged,"SC2 Hellion: 100 мин., 90 HP, 5,95 скор.; Mindustry flare: в 5 раз быстрее dagger, 70 HP",Самый быстрый и самый большой обзор; воевать не должен
 infantry,Пехотинец,blue_walls,220,1,12,12,0.5,0.8,1.9,5,30,0,25,factory,0.7,melee,"SC2 Zealot: 100 мин., 100 HP + 50 щит, 8×2 урона","Ближний бой, держит удар; бьёт стрелка 1 на 1"
 shooter,Стрелок,blue_walls,100,0,9,9,4,1.0,1.9,6,20,0,18,factory,0.6,ranged,"SC2 Marine: 50 мин., 18 с, 45 HP, 6 урона, дальн. 5; Mindustry dagger: 150 HP",Основной дальний юнит; за стеной и турелями сильнее пехоты
 heavy,Тяжёлый,blue_walls,500,2,25,25,4,1.5,1.5,6,50,20,35,factory,1.0,ranged;armored,"SC2 Thor/Marauder: 400/125 HP, броня 1; Mindustry mace: 550 HP, броня 4",Танк: броня 2 срезает урон стрелков и рейдеров почти вдвое. Стоит второй ресурс
 siege,Осадный,blue_walls,200,1,20,60,8,2.5,1.5,7,40,30,35,factory,1.0,siege;ranged,"SC2 осадный танк в осаде: 150/125, 175 HP, 40(+30) урона, дальн. 13; Mindustry fortress: артиллерия, 900 HP","Против зданий и лагерей: урон по зданиям ×3, дальность больше турели. Против юнитов слаб. Стоит второй ресурс"
-legion_worker,Рабочий Легиона,black_legion,50,0,3,3,0.5,1.0,2.4,5,10,0,12,headquarters,0.5,worker;melee,SC2 SCV,"❓ Вопрос 31: входит ли в 3 юнита Легиона. Отстраивает базу, ставит буры (ответы 22, 24)"
+legion_worker,Рабочий Легиона,black_legion,50,0,3,3,0.5,1.0,2.4,5,10,0,12,factory,0.5,worker;melee,SC2 SCV,"Сверх 3 боевых юнитов Легиона (решение Claude, вопрос 31). Отстраивает базу, ставит буры (ответы 22, 24)"
 legion_raider,Рейдер Легиона,black_legion,50,0,5,5,0.5,0.6,3.0,5,10,0,12,factory,0.5,melee;fast,"SC2 Zergling: 25 мин., 35 HP, 5 урона, cd 0,5, 4,13 скор.","Быстрый, дешёвый, идёт резать буры и ленты: клетку ленты (50 HP) рвёт за 6 с"
 legion_gunner,Стрелок Легиона,black_legion,90,0,8,8,4,1.0,1.9,6,20,0,18,factory,0.6,ranged,SC2 Marine/Roach,Основа волны
 legion_brute,Громила Легиона,black_legion,400,2,20,40,0.5,1.5,1.6,5,50,20,30,factory,1.0,melee;armored,SC2 Ultralisk/Thor в уменьшенном виде; Mindustry mace,Ломает оборону: урон по зданиям ×2

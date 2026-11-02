@@ -16,9 +16,9 @@ description: Добавить новый юнит в CoopRTS от строки �
   `id, name_ru, faction, hp, armor, damage, attack_range, attack_cooldown_s, move_speed, vision, cost_primary, cost_secondary, build_time_s, produced_at, size, tags`
   - `faction` — id из глоссария `CLAUDE.md` (`blue_walls`, `black_legion`, `grey_creatures` …);
   - `attack_range`, `vision`, `size` — в клетках; `move_speed` — клеток/с; `*_s` — секунды;
-  - ресурсов в прототипе два; `cost_secondary` может быть 0. Если юнит стоит второй ресурс, а его источник ещё не решён (`Docs/Design/open-questions.md`, вопрос 21), — юнит реализуй, но отметь в отчёте, что заказать его в игре пока нечем;
+  - ресурсов в прототипе два; `cost_secondary` может быть 0. Если юнит стоит второй ресурс, а второго типа месторождения на карте ещё нет (он в M2), — юнит реализуй, но отметь в отчёте, что заказать его в игре пока нечем;
   - `produced_at` — id здания, обычно `factory`.
-- Если строки нет или колонка пустая — **остановись и спроси**. Не придумывай числа.
+- Если строки нет или колонка пустая — заполни сам по образцу соседних строк и `Docs/Design/balance-notes.md` (референсы SC2 и Mindustry), в `notes` пометь «решение Claude» и перечисли в отчёте. Спрашивай, только если юнита нет в `PLAN.md`.
 
 ## 1. Sim (`Assets/Game.Sim`)
 
