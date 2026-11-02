@@ -160,6 +160,14 @@ namespace Game.Presentation
                     _pings.Add(new Ping(legion.RallyX * PixelsPerCell + PixelsPerCell / 2, legion.RallyY * PixelsPerCell + PixelsPerCell / 2, Time.unscaledTime));
                     continue;
                 }
+                // legion-ai.md: the wave is out — mark what it goes for, so the team knows where to defend.
+                if (e is WaveLaunched launched)
+                {
+                    Building? target = simulation.State.FindBuilding(launched.TargetId);
+                    if (target != null)
+                        _pings.Add(new Ping((target.CellX * 2 + target.Width) * PixelsPerCell / 2, (target.CellY * 2 + target.Height) * PixelsPerCell / 2, Time.unscaledTime));
+                    continue;
+                }
                 if (e is BuildingAttacked attacked && simulation.State.Relations.IsAlly(_localPlayer.PlayerId, attacked.OwnerId))
                 {
                     Building? building = simulation.State.FindBuilding(attacked.BuildingId);
