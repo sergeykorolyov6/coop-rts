@@ -100,6 +100,12 @@ public sealed class GameData
         return rows;
     }
 
+    private static long HalfDiagonalMilli(int w, int h)
+    {
+        long wm = Grid.CellToMilli(w), hm = Grid.CellToMilli(h);
+        return (IntMath.Sqrt(wm * wm + hm * hm) + 1) / 2;
+    }
+
     private static bool TryFind<T>(List<T> sorted, string id, Func<T, string> idOf, out T? found) where T : class
     {
         int lo = 0, hi = sorted.Count - 1;
@@ -140,6 +146,14 @@ public sealed class GameData
                 throw new FormatException($"buildings.json: \"{b.Id}\" has size {b.SizeW}x{b.SizeH}, must be positive.");
             if (b.MaxBuilders <= 0)
                 throw new FormatException($"buildings.json: \"{b.Id}\" has max_builders {b.MaxBuilders}, must be positive.");
+            // turret.md: a building that shoots sees everything it can reach from any corner,
+            // with a cell to spare for the target's size.
+            if (b.Damage > 0)
+            {
+                long need = b.AttackRangeMilli + HalfDiagonalMilli(b.SizeW, b.SizeH) + Grid.MilliPerCell;
+                if (b.VisionMilli < need)
+                    throw new FormatException($"buildings.json: \"{b.Id}\" has vision {b.VisionMilli} mc, needs at least {need} (range + half diagonal + 1 cell).");
+            }
             foreach (string unit in b.Produces)
             {
                 if (!TryGetUnit(unit, out _))

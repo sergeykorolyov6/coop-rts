@@ -62,6 +62,7 @@ public sealed class Simulation
         CreepCampSystem.BeginTick(State, _events);
         UnitSystem.Tick(State, _events);
         CreepCampSystem.EndTick(State);
+        TurretSystem.Tick(State);
         Combat.ApplyHits(State, _events);
         FactorySystem.Tick(State, _events);
         DrillSystem.Tick(State);

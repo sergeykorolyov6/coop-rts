@@ -53,6 +53,7 @@ public sealed class Building : Entity
     public Conveyor? Conveyor { get; internal set; }
     public ConveyorBridge? Bridge { get; internal set; }
     public Storage? Storage { get; internal set; }
+    public Turret? Turret { get; internal set; }
 
     // Builders or repairers counted so far in the current tick, against MaxBuilders.
     internal int WorkersThisTick { get; set; }

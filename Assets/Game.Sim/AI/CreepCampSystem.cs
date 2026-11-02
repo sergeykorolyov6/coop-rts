@@ -121,7 +121,7 @@ internal static class CreepCampSystem
 
         foreach (Building b in state.Buildings)
         {
-            if (b.IsDead || b.OwnerId == creep.OwnerId || !InRadius(camp, b) || !Reachable(camp, creep, b))
+            if (b.IsDead || b.OwnerId == creep.OwnerId || !(InRadius(camp, b) || camp._attackers.Contains(b.Id)) || !Reachable(camp, creep, b))
                 continue;
             long d = Combat.DistanceToRectangle(creep.X, creep.Y, b);
             if (d < bestDist)

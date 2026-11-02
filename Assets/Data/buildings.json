@@ -126,7 +126,7 @@
     "cost_secondary": 10,
     "build_time_ticks": 400,
     "max_builders": 3,
-    "vision_mc": 7000,
+    "vision_mc": 9000,
     "damage": 12,
     "attack_range_mc": 6000,
     "attack_cooldown_ticks": 20,

@@ -188,6 +188,11 @@ internal sealed class StateHasher
             foreach (string unit in b.Factory.Queue)
                 _writer.Write(unit);
         }
+        if (b.Turret != null)
+        {
+            _writer.Write(b.Turret.Cooldown);
+            _writer.Write(b.Turret.TargetId);
+        }
         if (b.Storage != null)
         {
             _writer.Write(b.Storage.Primary);

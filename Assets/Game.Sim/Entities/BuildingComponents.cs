@@ -25,6 +25,9 @@ internal static class BuildingComponents
                 building.Factory = new Factory();
                 break;
         }
+        // Any building with a gun shoots by itself (turret.md), whoever owns it.
+        if (building.Stats.Damage > 0)
+            building.Turret = new Turret();
     }
 
     // Before a destroyed building leaves the state. Resources on it are lost (answer 14).
