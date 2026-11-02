@@ -29,6 +29,12 @@ internal static class UnitSystem
                 case UnitOrderKind.Move:
                     TickMove(state, unit);
                     break;
+                case UnitOrderKind.Mine:
+                    ManualMining.TickMine(state, unit, events);
+                    break;
+                case UnitOrderKind.ReturnCargo:
+                    ManualMining.TickReturnCargo(state, unit, events);
+                    break;
             }
         }
     }

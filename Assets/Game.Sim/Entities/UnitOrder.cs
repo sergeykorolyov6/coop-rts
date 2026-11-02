@@ -25,5 +25,6 @@ public sealed class UnitOrder
     public static UnitOrder Mine(int cellX, int cellY) => new UnitOrder(UnitOrderKind.Mine, cellX, cellY, 0);
     public static UnitOrder Build() => new UnitOrder(UnitOrderKind.Build, 0, 0, 0);
     public static UnitOrder Repair(int buildingId) => new UnitOrder(UnitOrderKind.Repair, 0, 0, buildingId);
+    public static UnitOrder ReturnCargo() => new UnitOrder(UnitOrderKind.ReturnCargo, 0, 0, 0);
     public static UnitOrder CarryTrophy(int campIndex) => new UnitOrder(UnitOrderKind.CarryTrophy, 0, 0, campIndex);
 }

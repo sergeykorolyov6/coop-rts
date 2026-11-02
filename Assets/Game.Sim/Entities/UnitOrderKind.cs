@@ -9,4 +9,5 @@ public enum UnitOrderKind : byte
     Build,
     Repair,
     CarryTrophy,
+    ReturnCargo,
 }

@@ -14,5 +14,7 @@ public static class GameCommands
     public static void Register(CommandCodec codec)
     {
         codec.Register(MoveCommand.Id, MoveCommand.Read);
+        codec.Register(MineCommand.Id, MineCommand.Read);
+        codec.Register(DeliverCargoCommand.Id, DeliverCargoCommand.Read);
     }
 }
