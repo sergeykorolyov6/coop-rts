@@ -20,6 +20,7 @@ namespace Game.Presentation
         private Label? _objective;
         private Label? _end;
         private string _shown = "";
+        private int _endTick = -1;
 
         private void Awake()
         {
@@ -82,7 +83,8 @@ namespace Game.Presentation
                 text += $"\nНайдено и ещё стоит: {seen}";
             if (state.Outcome == MissionOutcome.InProgress && legion.NextWaveTick != int.MaxValue)
                 text += $"\nВолна {legion.NextWave} через {DisplayNames.Clock(legion.NextWaveTick - state.Tick)}";
-            text += $"\nВремя миссии: {DisplayNames.Clock(state.Tick)}";
+            // The clock stops when the mission ends; the sim keeps ticking behind the banner.
+            text += $"\nВремя миссии: {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
             if (text != _shown)
             {
                 _shown = text;
@@ -92,11 +94,12 @@ namespace Game.Presentation
 
         private void OnTickEvents(IReadOnlyList<SimEvent> events)
         {
-            if (_end == null)
-                return;
             foreach (SimEvent e in events)
             {
                 if (e is not MissionEnded ended)
+                    continue;
+                _endTick = ended.Tick;
+                if (_end == null)
                     continue;
                 bool won = ended.Outcome == MissionOutcome.Victory;
                 _end.text = won
