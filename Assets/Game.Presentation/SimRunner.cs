@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Game.Sim;
 using UnityEngine;
@@ -37,6 +38,10 @@ namespace Game.Presentation
         private float _accumulatedSeconds;
 
         public Simulation? Simulation => _simulation;
+
+        // The sim clears its events every tick and a frame may run several ticks: views that show
+        // events (notifications, minimap pings, "+5") hear them here, tick by tick, none lost.
+        public event Action<IReadOnlyList<SimEvent>>? TickEvents;
 
         // How far the frame is between the last tick and the next one, 0..1: views interpolate
         // movement with it so units do not step at 20 Hz.
@@ -86,6 +91,8 @@ namespace Game.Presentation
             while (_accumulatedSeconds >= secondsPerTick && ticks < MaxTicksPerFrame)
             {
                 _simulation.Tick();
+                if (_simulation.Events.Count > 0)
+                    TickEvents?.Invoke(_simulation.Events);
                 _accumulatedSeconds -= secondsPerTick;
                 ticks++;
             }

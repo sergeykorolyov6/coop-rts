@@ -4,9 +4,10 @@ using UnityEngine;
 namespace Game.Presentation
 {
     // Ground of the map in the Game view: one texel per cell — terrain, rock and ore of both
-    // resources; checkerboard so cells read without gizmos.
+    // resources; checkerboard so cells read without gizmos. Shaded by the local player's fog:
+    // never seen — dark, nothing of the ground shows; seen before — dimmed; seen now — full.
     // Same layout as SimRunner's gizmo grid: cell (x, y) → world XZ [x, x+1) × [y, y+1).
-    [RequireComponent(typeof(SimRunner))]
+    [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class MapView : MonoBehaviour
     {
         [SerializeField] private Color _cellColorA = new Color(0.32f, 0.36f, 0.30f);
@@ -16,20 +17,40 @@ namespace Game.Presentation
         [SerializeField] private Color _secondaryOreColor = new Color(0.35f, 0.70f, 0.85f);
         [Tooltip("Ore cells keep a faint checker so single cells stay countable.")]
         [SerializeField, Range(0f, 0.2f)] private float _oreCheckerShade = 0.06f;
+        [Header("Fog of war")]
+        [SerializeField] private Color _undiscoveredColor = new Color(0.05f, 0.05f, 0.06f);
+        [Tooltip("Brightness of discovered cells no one of the team sees right now.")]
+        [SerializeField, Range(0f, 1f)] private float _rememberedBrightness = 0.5f;
 
+        private SimRunner? _runner;
+        private LocalPlayer? _localPlayer;
         private Texture2D? _texture;
         private Material? _material;
+        private Color32[] _baseColors = new Color32[0];
+        private Color32[] _shaded = new Color32[0];
+        private int _shadedTick = -1;
+        private int _shadedPlayer = -1;
+
+        // Fog-shaded colour of a cell as on the ground this frame; the minimap draws the same.
+        public Color32 ShadedCell(int x, int y) => _shaded[y * (_texture != null ? _texture.width : 1) + x];
 
         // Start, not Awake: SimRunner creates the Simulation in its Awake.
         private void Start()
         {
-            var simulation = GetComponent<SimRunner>().Simulation;
+            _runner = GetComponent<SimRunner>();
+            _localPlayer = GetComponent<LocalPlayer>();
+            var simulation = _runner.Simulation;
             if (simulation == null)
                 return;
 
             MapState map = simulation.State.Map;
             int width = map.Width;
             int height = map.Height;
+            _baseColors = new Color32[width * height];
+            _shaded = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    _baseColors[y * width + x] = CellColor(map, x, y);
 
             _texture = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false)
             {
@@ -37,12 +58,7 @@ namespace Game.Presentation
                 wrapMode = TextureWrapMode.Clamp,
                 name = "MapCells",
             };
-            var pixels = new Color[width * height];
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                    pixels[y * width + x] = CellColor(map, x, y);
-            _texture.SetPixels(pixels);
-            _texture.Apply();
+            Shade(simulation.State);
 
             // A primitive gets the active render pipeline's default material, so this works
             // with URP and Built-in alike without Shader.Find.
@@ -59,6 +75,44 @@ namespace Game.Presentation
             var groundRenderer = ground.GetComponent<MeshRenderer>();
             _material = groundRenderer.material;
             _material.mainTexture = _texture;
+        }
+
+        // The fog changes only on ticks; 64×64 cells per tick is nothing to repaint.
+        private void LateUpdate()
+        {
+            Simulation? simulation = _runner != null ? _runner.Simulation : null;
+            if (simulation == null || _texture == null)
+                return;
+            if (simulation.State.Tick != _shadedTick || _localPlayer!.PlayerId != _shadedPlayer)
+                Shade(simulation.State);
+        }
+
+        private void Shade(SimState state)
+        {
+            int playerId = _localPlayer!.PlayerId;
+            int width = state.Map.Width, height = state.Map.Height;
+            Color32 undiscovered = _undiscoveredColor;
+            byte remembered = (byte)(_rememberedBrightness * 255f);
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int i = y * width + x;
+                    if (!state.Fog.IsDiscovered(playerId, x, y))
+                        _shaded[i] = undiscovered;
+                    else if (state.Fog.IsVisible(playerId, x, y))
+                        _shaded[i] = _baseColors[i];
+                    else
+                    {
+                        Color32 c = _baseColors[i];
+                        _shaded[i] = new Color32((byte)(c.r * remembered / 255), (byte)(c.g * remembered / 255), (byte)(c.b * remembered / 255), 255);
+                    }
+                }
+            }
+            _texture!.SetPixels32(_shaded);
+            _texture.Apply();
+            _shadedTick = state.Tick;
+            _shadedPlayer = playerId;
         }
 
         private Color CellColor(MapState map, int x, int y)

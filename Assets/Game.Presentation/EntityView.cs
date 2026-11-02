@@ -7,7 +7,8 @@ namespace Game.Presentation
 {
     // Placeholder look of units, buildings and creep camps until there is art: primitives in the
     // owner's colour (creeps neutral grey), shape by type. Only reads the sim state.
-    [RequireComponent(typeof(SimRunner))]
+    // Others' units and buildings hide in the local player's fog (Visibility).
+    [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class EntityView : MonoBehaviour
     {
         [Tooltip("Colour of player N is element N-1. Every object of the player, unfinished ones included.")]
@@ -33,6 +34,7 @@ namespace Game.Presentation
         private readonly List<Transform> _trophies = new List<Transform>();
 
         private SimRunner? _runner;
+        private LocalPlayer? _localPlayer;
         private Material? _baseMaterial;
         private Transform? _root;
         private int _lastTick = -1;
@@ -40,6 +42,7 @@ namespace Game.Presentation
         private void Start()
         {
             _runner = GetComponent<SimRunner>();
+            _localPlayer = GetComponent<LocalPlayer>();
             _root = new GameObject("Entities").transform;
             _root.SetParent(transform, worldPositionStays: false);
         }
@@ -91,6 +94,7 @@ namespace Game.Presentation
                 visual.From = visual.To;
                 visual.To = position;
                 visual.Alive = true;
+                visual.Transform.gameObject.SetActive(Visibility.UnitShown(state, _localPlayer!.PlayerId, unit));
 
                 // manual-mining.md: it is visible that the worker carries cargo, and of which type.
                 if (visual.Cargo != null && unit.Worker != null)
@@ -115,6 +119,7 @@ namespace Game.Presentation
                     _buildings.Add(building.Id, visual);
                 }
                 visual.Alive = true;
+                visual.Transform.gameObject.SetActive(Visibility.BuildingShown(state, _localPlayer!.PlayerId, building));
 
                 // A site grows with its progress; the colour stays the owner's (drill.md, conveyors.md).
                 float share = building.IsComplete || building.BuildWork <= 0
@@ -142,7 +147,8 @@ namespace Game.Presentation
                     trophy.localScale = new Vector3(0.7f, 0.5f, 0.7f);
                     _trophies.Add(trophy);
                 }
-                bool lying = camp.State == CreepCampState.Cleared && camp.TrophyPrimary + camp.TrophySecondary > 0;
+                bool lying = camp.State == CreepCampState.Cleared && camp.TrophyPrimary + camp.TrophySecondary > 0
+                    && Visibility.CellDiscovered(state, _localPlayer!.PlayerId, camp.CenterX, camp.CenterY);
                 _trophies[i].gameObject.SetActive(lying);
             }
         }

@@ -555,6 +555,9 @@ GameObject:
   - component: {fileID: 1100000012}
   - component: {fileID: 1100000011}
   - component: {fileID: 1100000010}
+  - component: {fileID: 1100000016}
+  - component: {fileID: 1100000015}
+  - component: {fileID: 1100000014}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -617,6 +620,8 @@ MonoBehaviour:
   _primaryOreColor: {r: 0.8, g: 0.55, b: 0.25, a: 1}
   _secondaryOreColor: {r: 0.35, g: 0.7, b: 0.85, a: 1}
   _oreCheckerShade: 0.06
+  _undiscoveredColor: {r: 0.05, g: 0.05, b: 0.06, a: 1}
+  _rememberedBrightness: 0.5
 --- !u!114 &1100000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -777,6 +782,62 @@ MonoBehaviour:
   _blockedColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
   _warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
   _spanColor: {r: 0.55, g: 0.65, b: 0.8, a: 1}
+--- !u!114 &1100000014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e6a7fcb5ea645c5b5901a9492c0073, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.Minimap
+  _hud: {fileID: 1637688649}
+  _camera: {fileID: 330585548}
+  _localPlayer: {fileID: 1100000009}
+  _size: 220
+  _redrawSeconds: 0.1
+  _campColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+  _trophyColor: {r: 0.95, g: 0.8, b: 0.3, a: 1}
+  _pingColor: {r: 1, g: 0.25, b: 0.2, a: 1}
+--- !u!114 &1100000015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 886f1b2ee7d2c4a0b8700aa8360ed026, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.NotificationFeed
+  _hud: {fileID: 1637688649}
+  _seconds: 4
+  _maxShown: 6
+  _infoColor: {r: 0.9, g: 0.92, b: 0.88, a: 1}
+  _warningColor: {r: 0.98, g: 0.82, b: 0.35, a: 1}
+  _alarmColor: {r: 1, g: 0.45, b: 0.4, a: 1}
+--- !u!114 &1100000016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51225806712b0409995ad39a18fc0c49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.WorldOverlay
+  _hud: {fileID: 1637688649}
+  _camera: {fileID: 330585545}
+  _hpHigh: {r: 0.35, g: 0.85, b: 0.35, a: 1}
+  _hpLow: {r: 0.9, g: 0.25, b: 0.2, a: 1}
+  _buildColor: {r: 0.95, g: 0.8, b: 0.3, a: 1}
+  _frozenColor: {r: 0.55, g: 0.75, b: 0.95, a: 1}
 --- !u!1 &1637688646
 GameObject:
   m_ObjectHideFlags: 0

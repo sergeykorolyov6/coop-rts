@@ -1,0 +1,221 @@
+using System.Collections.Generic;
+using Game.Sim;
+using UnityEngine;
+using UnityEngine.UIElements;
+using Grid = Game.Sim.Grid;
+
+namespace Game.Presentation
+{
+    // UI pinned to things on the map, drawn on the HUD panel:
+    // - HP bar over damaged units and buildings (combat.md);
+    // - build bar over unfinished buildings: progress, how many build, "frozen" (drill.md);
+    // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md).
+    // Only what the local player sees through the fog.
+    [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
+    public sealed class WorldOverlay : MonoBehaviour
+    {
+        private const float FloatSeconds = 1.6f;
+
+        [SerializeField] private Hud? _hud;
+        [SerializeField] private Camera? _camera;
+        [SerializeField] private Color _hpHigh = new Color(0.35f, 0.85f, 0.35f);
+        [SerializeField] private Color _hpLow = new Color(0.90f, 0.25f, 0.20f);
+        [SerializeField] private Color _buildColor = new Color(0.95f, 0.80f, 0.30f);
+        [SerializeField] private Color _frozenColor = new Color(0.55f, 0.75f, 0.95f);
+
+        private readonly List<Bar> _bars = new List<Bar>();
+        private readonly List<Floater> _floaters = new List<Floater>();
+
+        private SimRunner? _runner;
+        private EntityView? _entities;
+        private LocalPlayer? _localPlayer;
+        private VisualElement? _layer;
+        private int _barsUsed;
+
+        private void Awake()
+        {
+            _runner = GetComponent<SimRunner>();
+            _entities = GetComponent<EntityView>();
+            _localPlayer = GetComponent<LocalPlayer>();
+        }
+
+        private void OnEnable() => _runner!.TickEvents += OnTickEvents;
+
+        private void OnDisable() => _runner!.TickEvents -= OnTickEvents;
+
+        private void Start()
+        {
+            if (_hud?.Root == null)
+                return;
+            // Under every panel: bars never cover buttons.
+            _layer = new VisualElement { name = "WorldOverlay", pickingMode = PickingMode.Ignore };
+            _layer.style.position = Position.Absolute;
+            _layer.style.left = _layer.style.top = _layer.style.right = _layer.style.bottom = 0;
+            _hud.Root.Insert(0, _layer);
+        }
+
+        // After EntityView has placed the units for this frame.
+        private void LateUpdate()
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (simulation == null || _layer?.panel == null || _camera == null)
+                return;
+            SimState state = simulation.State;
+            int playerId = _localPlayer!.PlayerId;
+            _barsUsed = 0;
+
+            foreach (Unit unit in state.Units)
+            {
+                if (unit.IsDead || unit.Hp >= unit.MaxHp || !Visibility.UnitShown(state, playerId, unit)
+                    || !_entities!.TryGetUnitPosition(unit.Id, out Vector3 ground))
+                    continue;
+                float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
+                ShowBar(ground + Vector3.up * (size * 1.4f + 0.2f), 34f, unit.Hp / (float)unit.MaxHp, HpColor(unit), null);
+            }
+
+            foreach (Building building in state.Buildings)
+            {
+                if (building.IsDead || !Visibility.BuildingShown(state, playerId, building))
+                    continue;
+                var top = new Vector3(building.CellX + building.Width * 0.5f, 2.3f, building.CellY + building.Height * 0.5f);
+                float width = 24f + 14f * building.Width;
+                if (!building.IsComplete)
+                {
+                    bool frozen = building.State == BuildState.Frozen;
+                    float progress = building.BuildWork > 0 ? building.BuildProgress / (float)building.BuildWork : 1f;
+                    string label = frozen ? "заморожена" : $"строят: {building.BuildersLastTick}";
+                    ShowBar(top, width, progress, frozen ? _frozenColor : _buildColor, label);
+                }
+                else if (building.Hp < building.MaxHp)
+                {
+                    ShowBar(top, width, building.Hp / (float)building.MaxHp, HpColor(building), null);
+                }
+            }
+
+            for (int i = _barsUsed; i < _bars.Count; i++)
+                _bars[i].Root.style.display = DisplayStyle.None;
+
+            UpdateFloaters();
+        }
+
+        private void OnTickEvents(IReadOnlyList<SimEvent> events)
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (simulation == null || _layer == null)
+                return;
+            foreach (SimEvent e in events)
+            {
+                if (e is not CargoDelivered delivered)
+                    continue;
+                Building? hq = simulation.State.FindBuilding(delivered.HeadquartersId);
+                if (hq == null || !simulation.State.Fog.IsVisible(_localPlayer!.PlayerId, hq.CellX, hq.CellY))
+                    continue;
+                var label = new Label($"+{delivered.Amount}") { pickingMode = PickingMode.Ignore };
+                label.style.position = Position.Absolute;
+                label.style.fontSize = 20;
+                label.style.unityFontStyleAndWeight = FontStyle.Bold;
+                label.style.color = _entities!.OwnerColor(simulation.State, delivered.CarrierOwnerId);
+                _layer.Add(label);
+                var start = new Vector3(hq.CellX + hq.Width * 0.5f, 2.2f, hq.CellY + hq.Height * 0.5f);
+                _floaters.Add(new Floater(label, start, Time.unscaledTime));
+            }
+        }
+
+        private void UpdateFloaters()
+        {
+            for (int i = _floaters.Count - 1; i >= 0; i--)
+            {
+                Floater floater = _floaters[i];
+                float t = (Time.unscaledTime - floater.Born) / FloatSeconds;
+                if (t >= 1f)
+                {
+                    floater.Label.RemoveFromHierarchy();
+                    _floaters.RemoveAt(i);
+                    continue;
+                }
+                Place(floater.Label, floater.Start + Vector3.up * t * 1.2f, 0f);
+                floater.Label.style.opacity = 1f - t * t;
+            }
+        }
+
+        private void ShowBar(Vector3 world, float width, float share, Color color, string? label)
+        {
+            if (_camera!.WorldToViewportPoint(world).z <= 0f)
+                return;
+            Bar bar = _barsUsed < _bars.Count ? _bars[_barsUsed] : CreateBar();
+            _barsUsed++;
+            bar.Root.style.display = DisplayStyle.Flex;
+            bar.Root.style.width = width;
+            bar.Fill.style.width = Length.Percent(Mathf.Clamp01(share) * 100f);
+            bar.Fill.style.backgroundColor = color;
+            bar.Label.style.display = label != null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (label != null && bar.Label.text != label)
+                bar.Label.text = label;
+            Place(bar.Root, world, width);
+        }
+
+        // Centred horizontally over the world point.
+        private void Place(VisualElement element, Vector3 world, float width)
+        {
+            Vector2 p = RuntimePanelUtils.CameraTransformWorldToPanel(_layer!.panel, world, _camera!);
+            element.style.left = p.x - width * 0.5f;
+            element.style.top = p.y;
+        }
+
+        private Bar CreateBar()
+        {
+            var root = new VisualElement { pickingMode = PickingMode.Ignore };
+            root.style.position = Position.Absolute;
+            var track = new VisualElement { pickingMode = PickingMode.Ignore };
+            track.style.height = 5;
+            track.style.backgroundColor = new Color(0f, 0f, 0f, 0.7f);
+            track.style.borderTopWidth = track.style.borderBottomWidth = track.style.borderLeftWidth = track.style.borderRightWidth = 1;
+            track.style.borderTopColor = track.style.borderBottomColor = track.style.borderLeftColor = track.style.borderRightColor = new Color(0f, 0f, 0f, 0.9f);
+            var fill = new VisualElement { pickingMode = PickingMode.Ignore };
+            fill.style.height = Length.Percent(100f);
+            track.Add(fill);
+            var label = new Label { pickingMode = PickingMode.Ignore };
+            label.style.fontSize = 11;
+            label.style.color = Color.white;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.style.paddingTop = label.style.paddingBottom = 0;
+            label.style.marginTop = label.style.marginBottom = 0;
+            root.Add(track);
+            root.Add(label);
+            _layer!.Add(root);
+            var bar = new Bar(root, fill, label);
+            _bars.Add(bar);
+            return bar;
+        }
+
+        private Color HpColor(Entity entity) => Color.Lerp(_hpLow, _hpHigh, entity.Hp / (float)entity.MaxHp);
+
+        private sealed class Bar
+        {
+            public Bar(VisualElement root, VisualElement fill, Label label)
+            {
+                Root = root;
+                Fill = fill;
+                Label = label;
+            }
+
+            public VisualElement Root { get; }
+            public VisualElement Fill { get; }
+            public Label Label { get; }
+        }
+
+        private sealed class Floater
+        {
+            public Floater(Label label, Vector3 start, float born)
+            {
+                Label = label;
+                Start = start;
+                Born = born;
+            }
+
+            public Label Label { get; }
+            public Vector3 Start { get; }
+            public float Born { get; }
+        }
+    }
+}
