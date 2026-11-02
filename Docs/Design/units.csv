@@ -9,5 +9,5 @@ legion_worker,Рабочий Легиона,black_legion,50,0,3,3,0.5,1.0,2.4,5,
 legion_raider,Рейдер Легиона,black_legion,50,0,5,5,0.5,0.6,3.0,5,10,0,12,factory,0.5,melee;fast,"SC2 Zergling: 25 мин., 35 HP, 5 урона, cd 0,5, 4,13 скор.","Быстрый, дешёвый, идёт резать буры и ленты: клетку ленты (50 HP) рвёт за 6 с"
 legion_gunner,Стрелок Легиона,black_legion,90,0,8,8,4,1.0,1.9,6,20,0,18,factory,0.6,ranged,SC2 Marine/Roach,Основа волны
 legion_brute,Громила Легиона,black_legion,400,2,20,40,0.5,1.5,1.6,5,50,20,30,factory,1.0,melee;armored,SC2 Ultralisk/Thor в уменьшенном виде; Mindustry mace,Ломает оборону: урон по зданиям ×2
-creep_small,Малый крип,grey_creatures,80,0,6,6,0.5,1.0,2.2,5,0,0,0,,0.6,melee;creep,SC2 Zergling ×2 HP,Охраняет лагерь; радиус агрессии — в спеке лагеря крипов
+creep_small,Малый крип,grey_creatures,80,0,6,6,0.5,1.0,2.2,5,0,0,0,,0.6,melee;creep,SC2 Zergling ×2 HP,Охраняет лагерь; радиус агрессии и поводок — creep-camp.md, creep_camps.csv
 creep_big,Большой крип,grey_creatures,500,2,20,20,0.5,1.5,1.6,6,0,0,0,,1.2,melee;creep,SC2 Ultralisk в уменьшенном виде,Страж лагеря

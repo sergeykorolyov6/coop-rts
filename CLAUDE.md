@@ -73,6 +73,7 @@
 | склад | `Storage` |
 | турель | `Turret` |
 | точка интереса | `PointOfInterest` |
+| лагерь крипов, крип, радиус агрессии, поводок, трофей | `CreepCamp`, `Creep`, `AggroRadius`, `LeashRadius`, `Trophy` |
 | владелец, союзник | `OwnerId` (`PlayerId`), `Relation.Ally` |
 | кошелёк ресурсов игрока | `Wallet` (`Player.Wallet`) |
 | отношения игроков (союзник/враг/нейтрал) | `Relations`, `Relation` |
