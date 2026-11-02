@@ -32,7 +32,10 @@ internal sealed class StateHasher
         {
             _writer.Write(player.Id);
             for (int type = 0; type < player.Wallet.ResourceTypeCount; type++)
+            {
                 _writer.Write(player.Wallet.Get(type));
+                _writer.Write(player.Wallet.Earned(type));
+            }
         }
 
         for (int a = 0; a < state.Relations.PlayerCount; a++)

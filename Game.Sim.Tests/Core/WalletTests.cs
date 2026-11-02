@@ -73,4 +73,32 @@ public class WalletTests
         Assert.That(state.GetPlayer(2).Wallet.Get(Setups.Primary), Is.Zero);
         Assert.That(state.GetPlayer(9).Wallet.Get(Setups.Primary), Is.Zero);
     }
+
+    // The HUD shows income per minute from this counter: only what a headquarters credited
+    // counts — not the start money, not refunds, and spending never lowers it.
+    [Test]
+    public void Earned_CountsCreditsOnly()
+    {
+        var wallet = new Wallet(2);
+        wallet.Add(Setups.Primary, 100);
+        wallet.Credit(Setups.Primary, 5);
+        wallet.Credit(Setups.Secondary, 2);
+        Assert.That(wallet.TrySpend(Setups.Primary, 50), Is.True);
+
+        Assert.That(wallet.Earned(Setups.Primary), Is.EqualTo(5));
+        Assert.That(wallet.Earned(Setups.Secondary), Is.EqualTo(2));
+        Assert.That(wallet.Get(Setups.Primary), Is.EqualTo(55));
+    }
+
+    [Test]
+    public void Earned_ManualDelivery_CountedForHeadquartersOwner()
+    {
+        var map = new MapSetup(32, 16).Start(Setups.PlayerA, 2, 2).OreRect(10, 2, 2, 2, Resources.Primary);
+        var sim = new Simulation(Setups.Coop(map));
+        Unit worker = sim.State.UnitsOf(Setups.PlayerA)[0];
+        sim.Order(new MineCommand(Setups.PlayerA, sim.State.Tick, new[] { worker.Id }, 10, 2));
+
+        sim.RunUntil(s => s.State.GetPlayer(Setups.PlayerA).Wallet.Earned(Resources.Primary) > 0);
+        Assert.That(sim.State.GetPlayer(Setups.PlayerA).Wallet.Earned(Resources.Primary), Is.EqualTo(sim.State.Rules.ManualCargo));
+    }
 }

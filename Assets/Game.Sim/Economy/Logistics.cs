@@ -57,7 +57,7 @@ internal static class Logistics
                 if (kind == Giver.Storage)
                     return false;
                 // Only a headquarters credits a wallet: its owner's (answers 2, 15).
-                state.GetPlayer(receiver.OwnerId).Wallet.Add(resourceType, 1);
+                state.GetPlayer(receiver.OwnerId).Wallet.Credit(resourceType, 1);
                 return true;
 
             case BuildingKinds.Storage:

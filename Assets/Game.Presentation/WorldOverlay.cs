@@ -9,6 +9,7 @@ namespace Game.Presentation
     // UI pinned to things on the map, drawn on the HUD panel:
     // - HP bar over damaged units and buildings (combat.md);
     // - build bar over unfinished buildings: progress, how many build, "frozen" (drill.md);
+    // - buffer of own and ally drills, and "nowhere to give" when it is full and the drill stands (drill.md);
     // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md).
     // Only what the local player sees through the fog.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
@@ -22,6 +23,8 @@ namespace Game.Presentation
         [SerializeField] private Color _hpLow = new Color(0.90f, 0.25f, 0.20f);
         [SerializeField] private Color _buildColor = new Color(0.95f, 0.80f, 0.30f);
         [SerializeField] private Color _frozenColor = new Color(0.55f, 0.75f, 0.95f);
+        [SerializeField] private Color _bufferColor = new Color(0.45f, 0.70f, 0.95f);
+        [SerializeField] private Color _stoppedColor = new Color(1.00f, 0.55f, 0.25f);
 
         private readonly List<Bar> _bars = new List<Bar>();
         private readonly List<Floater> _floaters = new List<Floater>();
@@ -89,6 +92,14 @@ namespace Game.Presentation
                 else if (building.Hp < building.MaxHp)
                 {
                     ShowBar(top, width, building.Hp / (float)building.MaxHp, HpColor(building), null);
+                }
+
+                Drill? drill = building.Drill;
+                if (drill != null && building.IsComplete && state.Relations.IsAlly(playerId, building.OwnerId))
+                {
+                    int capacity = state.Rules.DrillBuffer;
+                    string label = drill.IsStopped ? "полон — некуда отдавать" : $"буфер {drill.Buffer}/{capacity}";
+                    ShowBar(top + Vector3.down * 0.9f, width, drill.Buffer / (float)capacity, drill.IsStopped ? _stoppedColor : _bufferColor, label);
                 }
             }
 

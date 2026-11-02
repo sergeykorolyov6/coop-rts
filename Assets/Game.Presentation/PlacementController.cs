@@ -164,6 +164,7 @@ namespace Game.Presentation
             {
                 int cells = DrillPreview.OreCellsUnder(state.Map, x, y);
                 tip += $"\nРуды под буром: {cells} из 4 · {DisplayNames.PerSecond(cells, state.Rules.DrillTicksPerUnitPerOreCell)}";
+                tip += "\nОтдаёт в соседнюю ленту, склад или штаб; в кошелёк зачисляет только штаб";
             }
             if (nearCamp)
                 tip += "\nРядом лагерь крипов: нападут";
@@ -213,7 +214,7 @@ namespace Game.Presentation
             if (first != null)
                 tip += "\n" + DisplayNames.Reject(first.Value, _stats.Id);
             if (!_dragging)
-                tip += "\nЗажмите и тяните · R — поворот";
+                tip += "\nЗажмите и тяните · R — поворот\nРесурс едет по стрелкам: конец ленты направьте в штаб";
 
             if (_dragging && !mouse.leftButton.isPressed)
             {

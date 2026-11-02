@@ -156,7 +156,7 @@ internal static class ManualMining
             return CarryResult.Carrying;
         }
 
-        state.GetPlayer(hq.OwnerId).Wallet.Add(worker.CargoType, worker.Cargo);
+        state.GetPlayer(hq.OwnerId).Wallet.Credit(worker.CargoType, worker.Cargo);
         events.Add(new CargoDelivered(state.Tick, unit.Id, unit.OwnerId, hq.Id, hq.OwnerId, worker.CargoType, worker.Cargo));
         worker.Cargo = 0;
         worker.CargoType = Worker.NoCargo;

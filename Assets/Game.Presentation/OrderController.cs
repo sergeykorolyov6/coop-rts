@@ -36,26 +36,88 @@ namespace Game.Presentation
             _localPlayer = GetComponent<LocalPlayer>();
         }
 
+        private enum Intent { None, Attack, Deliver, Repair, Carry, Mine }
+
+        private bool _showingTip;
+
         private void Update()
         {
             Mouse? mouse = Mouse.current;
             Simulation? simulation = _runner!.Simulation;
             if (mouse == null || simulation == null || _camera == null || _selection!.Selected.Count == 0)
+            {
+                HideTip();
                 return;
-            if (!mouse.rightButton.wasPressedThisFrame)
-                return;
+            }
 
             Vector2 pointer = mouse.position.ReadValue();
-            // Right click while placing cancels the placement, not an order.
-            if ((_placement != null && _placement.IsBusy) || (_hud != null && _hud.IsPointerOverUi(pointer)))
+            // Placing owns the tip and the right click (it cancels the placement, not an order).
+            if (_placement != null && _placement.IsBusy)
+            {
+                _showingTip = false;
                 return;
-            if (!_camera.GroundPoint(pointer, out Vector3 ground))
+            }
+            if ((_hud != null && _hud.IsPointerOverUi(pointer)) || !_camera.GroundPoint(pointer, out Vector3 ground))
+            {
+                HideTip();
                 return;
+            }
 
-            Order(simulation, pointer, ground);
+            SimState state = simulation.State;
+            SplitSelection(state);
+            Intent intent = Resolve(state, pointer, ground, out int targetId);
+            ShowTip(state, intent, targetId, pointer);
+            if (mouse.rightButton.wasPressedThisFrame)
+                Order(simulation, intent, targetId, ground);
         }
 
-        private void Order(Simulation simulation, Vector2 pointer, Vector3 ground)
+        // What a right click here would do; the cursor tip and the order use the same answer.
+        // Fog: the player can only target what they see (the sim would allow it, the screen must not).
+        private Intent Resolve(SimState state, Vector2 pointer, Vector3 ground, out int targetId)
+        {
+            int playerId = _localPlayer!.PlayerId;
+            int cellX = Mathf.FloorToInt(ground.x), cellY = Mathf.FloorToInt(ground.z);
+            targetId = 0;
+
+            Unit? enemyUnit = _selection!.UnitAt(state, pointer,
+                u => state.Relations.IsEnemy(playerId, u.OwnerId) && state.Fog.IsVisible(playerId, u.CellX, u.CellY));
+            if (enemyUnit != null)
+            {
+                targetId = enemyUnit.Id;
+                return Intent.Attack;
+            }
+
+            Building? building = BuildingAt(state, cellX, cellY);
+            if (building != null && state.Relations.IsEnemy(playerId, building.OwnerId) && state.Fog.IsVisible(playerId, cellX, cellY))
+            {
+                targetId = building.Id;
+                return Intent.Attack;
+            }
+            if (_workers.Count == 0)
+                return Intent.None;
+
+            if (building != null && state.Relations.IsAlly(playerId, building.OwnerId))
+            {
+                targetId = building.Id;
+                // Only picks the intent; DeliverCargoCommand checks the full rule itself.
+                if (building.IsComplete && building.Stats.Id == BuildingKinds.Headquarters && AnyCarries(state))
+                    return Intent.Deliver;
+                if (!building.IsComplete || building.Hp < building.MaxHp)
+                    return Intent.Repair;
+                return Intent.None;
+            }
+            if (building == null && TrophyAt(state, playerId, ground, out int campIndex))
+            {
+                targetId = campIndex;
+                return Intent.Carry;
+            }
+            if (building == null && state.Map.InBounds(cellX, cellY) && state.Map.OreAt(cellX, cellY) != MapSetup.NoOre
+                && state.Fog.IsDiscovered(playerId, cellX, cellY))
+                return Intent.Mine;
+            return Intent.None;
+        }
+
+        private void Order(Simulation simulation, Intent intent, int targetId, Vector3 ground)
         {
             SimState state = simulation.State;
             int playerId = _localPlayer!.PlayerId;
@@ -63,58 +125,62 @@ namespace Game.Presentation
             bool queued = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
             int cellX = Mathf.FloorToInt(ground.x), cellY = Mathf.FloorToInt(ground.z);
             int milliX = Mathf.RoundToInt(ground.x * Grid.MilliPerCell), milliY = Mathf.RoundToInt(ground.z * Grid.MilliPerCell);
-            SplitSelection(state);
-            int[] all = Concat(_workers, _others);
+            int[] workers = _workers.ToArray();
 
-            // Fog: the player can only target what they see (the sim would allow it, the screen must not).
-            Unit? enemyUnit = _selection!.UnitAt(state, pointer,
-                u => state.Relations.IsEnemy(playerId, u.OwnerId) && state.Fog.IsVisible(playerId, u.CellX, u.CellY));
-            if (enemyUnit != null)
+            ICommand? workerCommand = intent switch
             {
-                simulation.Enqueue(new AttackCommand(playerId, tick, all, enemyUnit.Id, queued));
+                Intent.Deliver => new DeliverCargoCommand(playerId, tick, workers, targetId),
+                Intent.Repair => new RepairCommand(playerId, tick, workers, targetId, queued),
+                Intent.Carry => new CarryTrophyCommand(playerId, tick, workers, targetId, queued),
+                Intent.Mine => new MineCommand(playerId, tick, workers, cellX, cellY, queued),
+                _ => null,
+            };
+
+            if (intent == Intent.Attack)
+                simulation.Enqueue(new AttackCommand(playerId, tick, Concat(_workers, _others), targetId, queued));
+            else if (workerCommand != null)
+            {
+                simulation.Enqueue(workerCommand);
+                if (_others.Count > 0)
+                    simulation.Enqueue(new MoveCommand(playerId, tick, _others.ToArray(), milliX, milliY, queued));
+            }
+            else
+                simulation.Enqueue(new MoveCommand(playerId, tick, Concat(_workers, _others), milliX, milliY, queued));
+        }
+
+        // A hint at the cursor for what the right click does, so mining and the rest are discoverable.
+        private void ShowTip(SimState state, Intent intent, int targetId, Vector2 pointer)
+        {
+            string? text = intent switch
+            {
+                Intent.Attack => "ПКМ — атаковать",
+                Intent.Deliver => "ПКМ — сдать груз в этот штаб",
+                Intent.Repair => state.FindBuilding(targetId) is { IsComplete: false } ? "ПКМ — помочь достроить" : "ПКМ — чинить",
+                Intent.Carry => $"ПКМ — нести трофей (осталось {Trophy(state, targetId)})",
+                Intent.Mine => $"ПКМ — копать: {state.Rules.ManualCargo} ед. за {DisplayNames.Seconds(state.Rules.ManualCargo * state.Rules.ManualMiningTicksPerUnit)}, рабочий сам носит в штаб",
+                _ => null,
+            };
+            if (text == null)
+            {
+                HideTip();
                 return;
             }
+            _hud?.ShowTip(text + "\nShift — в очередь", pointer);
+            _showingTip = true;
+        }
 
-            Building? building = BuildingAt(state, cellX, cellY);
-            if (building != null && state.Relations.IsEnemy(playerId, building.OwnerId) && state.Fog.IsVisible(playerId, cellX, cellY))
-            {
-                simulation.Enqueue(new AttackCommand(playerId, tick, all, building.Id, queued));
+        private void HideTip()
+        {
+            if (!_showingTip)
                 return;
-            }
+            _showingTip = false;
+            _hud?.ShowTip(null, Vector2.zero);
+        }
 
-            if (_workers.Count > 0)
-            {
-                int[] workers = _workers.ToArray();
-                ICommand? workerCommand = null;
-
-                if (building != null && state.Relations.IsAlly(playerId, building.OwnerId))
-                {
-                    // Only picks the intent; DeliverCargoCommand checks the full rule itself.
-                    if (building.IsComplete && building.Stats.Id == BuildingKinds.Headquarters && AnyCarries(state))
-                        workerCommand = new DeliverCargoCommand(playerId, tick, workers, building.Id);
-                    else if (!building.IsComplete || building.Hp < building.MaxHp)
-                        workerCommand = new RepairCommand(playerId, tick, workers, building.Id, queued);
-                }
-                else if (building == null && TrophyAt(state, playerId, ground, out int campIndex))
-                {
-                    workerCommand = new CarryTrophyCommand(playerId, tick, workers, campIndex, queued);
-                }
-                else if (building == null && state.Map.InBounds(cellX, cellY) && state.Map.OreAt(cellX, cellY) != MapSetup.NoOre
-                         && state.Fog.IsDiscovered(playerId, cellX, cellY))
-                {
-                    workerCommand = new MineCommand(playerId, tick, workers, cellX, cellY, queued);
-                }
-
-                if (workerCommand != null)
-                {
-                    simulation.Enqueue(workerCommand);
-                    if (_others.Count > 0)
-                        simulation.Enqueue(new MoveCommand(playerId, tick, _others.ToArray(), milliX, milliY, queued));
-                    return;
-                }
-            }
-
-            simulation.Enqueue(new MoveCommand(playerId, tick, all, milliX, milliY, queued));
+        private static int Trophy(SimState state, int campIndex)
+        {
+            CreepCamp camp = state.CreepCamps[campIndex];
+            return camp.TrophyPrimary + camp.TrophySecondary;
         }
 
         private void SplitSelection(SimState state)

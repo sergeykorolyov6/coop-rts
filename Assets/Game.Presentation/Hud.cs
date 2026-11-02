@@ -5,7 +5,8 @@ using UnityEngine.UIElements;
 namespace Game.Presentation
 {
     // Root of the in-game UI (UI Toolkit, built in code until there is a designer for it):
-    // the wallet bar on top, a bottom bar that panels fill, and a tip that follows the cursor.
+    // the wallet bar on top (with income over the last minute), a bottom bar that panels fill,
+    // and a tip that follows the cursor.
     // Mouse input on the map asks IsPointerOverUi first so a button click never also orders units.
     [RequireComponent(typeof(UIDocument))]
     public sealed class Hud : MonoBehaviour
@@ -16,6 +17,15 @@ namespace Game.Presentation
         private Label? _wallet;
         private Label? _tip;
         private int _shownPrimary = -1, _shownSecondary = -1, _shownPlayer = -1;
+        private int _shownIncomePrimary = -1, _shownIncomeSecondary = -1;
+
+        // Wallet.Earned once per sim second, last minute: income = now minus a minute ago.
+        private const int IncomeWindowSeconds = 60;
+        private readonly int[] _earnedPrimary = new int[IncomeWindowSeconds + 1];
+        private readonly int[] _earnedSecondary = new int[IncomeWindowSeconds + 1];
+        private int _samples;
+        private int _lastSampleSecond = -1;
+        private int _samplePlayer = -1;
 
         public VisualElement? Root { get; private set; }
         public VisualElement? BottomBar { get; private set; }
@@ -54,15 +64,44 @@ namespace Game.Presentation
                 return;
             int playerId = _localPlayer.PlayerId;
             Wallet wallet = simulation.State.GetPlayer(playerId).Wallet;
+            bool hasSecondary = wallet.ResourceTypeCount > Game.Sim.Resources.Secondary;
             int primary = wallet.Get(Game.Sim.Resources.Primary);
-            int secondary = wallet.ResourceTypeCount > Game.Sim.Resources.Secondary ? wallet.Get(Game.Sim.Resources.Secondary) : 0;
+            int secondary = hasSecondary ? wallet.Get(Game.Sim.Resources.Secondary) : 0;
+
+            SampleIncome(simulation.State.Tick, playerId, wallet, hasSecondary);
+            int oldest = _samples > IncomeWindowSeconds ? (_samples - IncomeWindowSeconds - 1) % _earnedPrimary.Length : 0;
+            int newest = (_samples - 1 + _earnedPrimary.Length) % _earnedPrimary.Length;
+            int incomePrimary = _samples > 0 ? _earnedPrimary[newest] - _earnedPrimary[oldest] : 0;
+            int incomeSecondary = _samples > 0 ? _earnedSecondary[newest] - _earnedSecondary[oldest] : 0;
+
             // Text only when it changes: a label rebuilds its layout on every assignment.
-            if (primary == _shownPrimary && secondary == _shownSecondary && playerId == _shownPlayer)
+            if (primary == _shownPrimary && secondary == _shownSecondary && playerId == _shownPlayer
+                && incomePrimary == _shownIncomePrimary && incomeSecondary == _shownIncomeSecondary)
                 return;
             _shownPrimary = primary;
             _shownSecondary = secondary;
             _shownPlayer = playerId;
-            _wallet.text = $"Игрок {playerId}    Основной ресурс: {primary}    Второй: {secondary}";
+            _shownIncomePrimary = incomePrimary;
+            _shownIncomeSecondary = incomeSecondary;
+            _wallet.text = $"Игрок {playerId}    Основной ресурс: {primary} (+{incomePrimary}/мин)    Второй: {secondary} (+{incomeSecondary}/мин)";
+        }
+
+        private void SampleIncome(int tick, int playerId, Wallet wallet, bool hasSecondary)
+        {
+            if (playerId != _samplePlayer)
+            {
+                _samplePlayer = playerId;
+                _samples = 0;
+                _lastSampleSecond = -1;
+            }
+            int second = tick / Simulation.TicksPerSecond;
+            if (second == _lastSampleSecond)
+                return;
+            _lastSampleSecond = second;
+            int slot = _samples % _earnedPrimary.Length;
+            _earnedPrimary[slot] = wallet.Earned(Game.Sim.Resources.Primary);
+            _earnedSecondary[slot] = hasSecondary ? wallet.Earned(Game.Sim.Resources.Secondary) : 0;
+            _samples++;
         }
 
         // Anything of the HUD that takes clicks lies under the pointer (the root and pass-through
