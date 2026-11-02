@@ -5,8 +5,8 @@ using Grid = Game.Sim.Grid;
 
 namespace Game.Presentation
 {
-    // Placeholder look of units, buildings and creep camps until there is art: primitives in the
-    // owner's colour (creeps neutral grey), shape by type. Only reads the sim state.
+    // Look of units, buildings and creep camps: models put together from primitives
+    // (PrimitiveModels) in the owner's colour (creeps neutral grey), shape by type. Only reads the sim state.
     // Others' units and buildings hide in the local player's fog (Visibility).
     // Conveyors and bridge ends show their direction; a conveyor shows the unit it carries in the
     // resource's colour, moving with the sim — a unit that stands means the line is clogged (conveyors.md).
@@ -80,7 +80,7 @@ namespace Game.Presentation
                 size = 0f;
                 return false;
             }
-            centre = visual.Renderer.bounds.center;
+            centre = visual.Transform.position + Vector3.up * visual.CentreHeight;
             color = visual.Color;
             size = visual.Size;
             return true;
@@ -95,7 +95,9 @@ namespace Game.Presentation
             if (visual.FlashUntil <= 0f)
                 _flashing.Add(visual);
             visual.FlashUntil = Time.unscaledTime + _flashSeconds;
-            visual.Renderer.sharedMaterial = MaterialFor(_flashColor);
+            Material flash = MaterialFor(_flashColor);
+            foreach (MeshRenderer renderer in visual.Renderers)
+                renderer.sharedMaterial = flash;
         }
 
         // After SimRunner.Update has advanced the sim this frame.
@@ -124,8 +126,7 @@ namespace Game.Presentation
                 if (Time.unscaledTime < visual.FlashUntil)
                     continue;
                 visual.FlashUntil = 0f;
-                if (visual.Renderer != null)
-                    visual.Renderer.sharedMaterial = MaterialFor(visual.Color);
+                visual.RestoreMaterials();
                 _flashing.RemoveAt(i);
             }
 
@@ -192,10 +193,7 @@ namespace Game.Presentation
                 float share = building.IsComplete || building.BuildWork <= 0
                     ? 1f
                     : Mathf.Lerp(_minSiteHeight, 1f, building.BuildProgress / (float)building.BuildWork);
-                float height = visual.FullHeight * share;
-                Transform body = visual.Transform;
-                body.localScale = new Vector3(body.localScale.x, ShapeHeightScale(visual.Shape, height), body.localScale.z);
-                body.localPosition = new Vector3(body.localPosition.x, height * 0.5f, body.localPosition.z);
+                visual.Transform.localScale = new Vector3(1f, share, 1f);
             }
 
             RemoveMissing(_buildings);
@@ -238,44 +236,27 @@ namespace Game.Presentation
 
         private UnitVisual CreateUnit(SimState state, Unit unit)
         {
-            PrimitiveType shape = UnitShape(unit.Stats);
             float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
-
-            // The pivot stands on the ground at the unit's position; the body is lifted onto it.
-            Transform pivot = new GameObject($"{unit.Stats.Id} #{unit.Id}").transform;
-            pivot.SetParent(_root, worldPositionStays: false);
-
             Color color = OwnerColor(state, unit.OwnerId);
-            Transform body = CreatePrimitive(shape, "Body", color);
-            body.SetParent(pivot, worldPositionStays: false);
-            body.localScale = new Vector3(size, ShapeHeightScale(shape, size), size);
-            body.localPosition = new Vector3(0f, size * 0.5f, 0f);
-
-            Transform? cargo = null;
-            if (unit.Worker != null)
-            {
-                cargo = CreatePrimitive(PrimitiveType.Cube, "Cargo", _primaryCargoColor);
-                cargo.SetParent(pivot, worldPositionStays: false);
-                cargo.localScale = Vector3.one * size * 0.45f;
-                cargo.localPosition = new Vector3(0f, size * 1.15f, 0f);
-                cargo.gameObject.SetActive(false);
-            }
-
-            return new UnitVisual(pivot, body.GetComponent<MeshRenderer>(), color, size, cargo);
+            var renderers = new List<MeshRenderer>();
+            // The root stands on the ground at the unit's position; parts sit on it.
+            Transform pivot = PrimitiveModels.Unit(unit.Stats, color, Part, renderers, out Transform? cargo);
+            pivot.name = $"{unit.Stats.Id} #{unit.Id}";
+            pivot.SetParent(_root, worldPositionStays: false);
+            return new UnitVisual(pivot, renderers, color, size, size * 0.5f, cargo);
         }
 
         private BuildingVisual CreateBuilding(SimState state, Building building)
         {
-            PrimitiveType shape = BuildingShape(building.Stats.Id);
-            float height = BuildingHeight(building.Stats.Id);
+            float height = PrimitiveModels.BuildingHeight(building.Stats.Id);
             Color color = OwnerColor(state, building.OwnerId);
-            Transform body = CreatePrimitive(shape, $"{building.Stats.Id} #{building.Id}", color);
-
-            // Cell (x, y) covers world XZ [x, x+1) × [y, y+1); a small inset keeps neighbours apart.
-            const float inset = 0.08f;
-            body.localScale = new Vector3(building.Width - inset, ShapeHeightScale(shape, height), building.Height - inset);
-            body.localPosition = new Vector3(building.CellX + building.Width * 0.5f, height * 0.5f, building.CellY + building.Height * 0.5f);
-            var visual = new BuildingVisual(body, body.GetComponent<MeshRenderer>(), color, Mathf.Max(building.Width, building.Height), shape, height);
+            var renderers = new List<MeshRenderer>();
+            // Cell (x, y) covers world XZ [x, x+1) × [y, y+1); the root stands at the footprint's centre.
+            Transform root = PrimitiveModels.Building(building, color, Part, renderers);
+            root.name = $"{building.Stats.Id} #{building.Id}";
+            root.SetParent(_root, worldPositionStays: false);
+            root.localPosition = CellCentre(building);
+            var visual = new BuildingVisual(root, renderers, color, Mathf.Max(building.Width, building.Height), height * 0.5f);
 
             if (building.Stats.Id == BuildingKinds.Conveyor || building.Stats.Id == BuildingKinds.ConveyorBridge)
             {
@@ -287,18 +268,18 @@ namespace Game.Presentation
                 arrow.localPosition = CellCentre(building) + new Vector3(0f, height + 0.02f, 0f) + rotation * new Vector3(0f, 0f, 0.15f);
                 visual.Arrow = arrow;
             }
-            if (building.Drill != null || building.Stats.Id == BuildingKinds.Drill)
+            if (building.Stats.Id == BuildingKinds.Drill)
             {
                 // Two crossed bars on the drill's top: they turn while it mines.
                 Transform rotor = new GameObject("Rotor").transform;
                 rotor.SetParent(_root, worldPositionStays: false);
-                rotor.localPosition = CellCentre(building) + new Vector3(0f, height + 0.08f, 0f);
+                rotor.localPosition = CellCentre(building) + new Vector3(0f, height + 0.06f, 0f);
                 Color rotorColor = Color.Lerp(color, Color.black, 0.45f);
                 for (int i = 0; i < 2; i++)
                 {
                     Transform bar = CreatePrimitive(PrimitiveType.Cube, "Bar", rotorColor);
                     bar.SetParent(rotor, worldPositionStays: false);
-                    bar.localScale = new Vector3(building.Width * 0.8f, 0.1f, 0.22f);
+                    bar.localScale = new Vector3(building.Width * 0.75f, 0.1f, 0.2f);
                     bar.localRotation = Quaternion.Euler(0f, i * 90f, 0f);
                 }
                 rotor.gameObject.SetActive(false);
@@ -313,6 +294,8 @@ namespace Game.Presentation
             }
             return visual;
         }
+
+        private Transform Part(PrimitiveType type, Color color) => CreatePrimitive(type, type.ToString(), color);
 
         // ItemPos runs 0..CellLength from the back edge to the front edge of the cell.
         private void SyncItem(Transform item, Building building, bool shown)
@@ -378,38 +361,6 @@ namespace Game.Presentation
         private static Vector3 ToWorld(int milliX, int milliY) =>
             new Vector3(milliX / (float)Grid.MilliPerCell, 0f, milliY / (float)Grid.MilliPerCell);
 
-        private static PrimitiveType UnitShape(UnitStats stats)
-        {
-            if (stats.HasTag(UnitTags.Creep))
-                return PrimitiveType.Sphere;
-            if (stats.HasTag(UnitTags.Worker))
-                return PrimitiveType.Cube;
-            if (stats.HasTag("ranged"))
-                return PrimitiveType.Cylinder;
-            return PrimitiveType.Capsule;
-        }
-
-        private static PrimitiveType BuildingShape(string id) =>
-            id == BuildingKinds.Drill || id == "turret" ? PrimitiveType.Cylinder : PrimitiveType.Cube;
-
-        private static float BuildingHeight(string id)
-        {
-            switch (id)
-            {
-                case BuildingKinds.Headquarters: return 2.0f;
-                case BuildingKinds.Factory: return 1.5f;
-                case BuildingKinds.Drill: return 1.0f;
-                case BuildingKinds.Storage: return 1.0f;
-                case BuildingKinds.Conveyor: return 0.12f;
-                case BuildingKinds.ConveyorBridge: return 0.4f;
-                default: return 1.2f;
-            }
-        }
-
-        // Unity's capsule and cylinder are 2 units tall at scale 1, cube and sphere are 1.
-        private static float ShapeHeightScale(PrimitiveType shape, float height) =>
-            shape == PrimitiveType.Capsule || shape == PrimitiveType.Cylinder ? height * 0.5f : height;
-
         private void OnDestroy()
         {
             foreach (Material material in _materials.Values)
@@ -418,28 +369,45 @@ namespace Game.Presentation
 
         private abstract class Visual
         {
-            protected Visual(Transform transform, MeshRenderer renderer, Color color, float size)
+            private readonly Material[] _materials;
+
+            protected Visual(Transform transform, List<MeshRenderer> renderers, Color color, float size, float centreHeight)
             {
                 Transform = transform;
-                Renderer = renderer;
+                Renderers = renderers;
                 Color = color;
                 Size = size;
+                CentreHeight = centreHeight;
+                _materials = new Material[renderers.Count];
+                for (int i = 0; i < renderers.Count; i++)
+                    _materials[i] = renderers[i].sharedMaterial;
             }
 
             public Transform Transform { get; }
-            public MeshRenderer Renderer { get; }
+            public List<MeshRenderer> Renderers { get; }
             public Color Color { get; }
             public float Size { get; }
+            public float CentreHeight { get; }
             public bool Alive { get; set; } = true;
             public float FlashUntil { get; set; }
+
+            // After a flash: every part gets its own colour back.
+            public void RestoreMaterials()
+            {
+                for (int i = 0; i < Renderers.Count; i++)
+                {
+                    if (Renderers[i] != null)
+                        Renderers[i].sharedMaterial = _materials[i];
+                }
+            }
 
             public virtual void DestroyObjects() => Destroy(Transform.gameObject);
         }
 
         private sealed class UnitVisual : Visual
         {
-            public UnitVisual(Transform pivot, MeshRenderer body, Color color, float size, Transform? cargo)
-                : base(pivot, body, color, size) => Cargo = cargo;
+            public UnitVisual(Transform pivot, List<MeshRenderer> renderers, Color color, float size, float centreHeight, Transform? cargo)
+                : base(pivot, renderers, color, size, centreHeight) => Cargo = cargo;
 
             public Transform? Cargo { get; }
             public Vector3 From { get; set; }
@@ -448,15 +416,11 @@ namespace Game.Presentation
 
         private sealed class BuildingVisual : Visual
         {
-            public BuildingVisual(Transform body, MeshRenderer renderer, Color color, float size, PrimitiveType shape, float fullHeight)
-                : base(body, renderer, color, size)
+            public BuildingVisual(Transform root, List<MeshRenderer> renderers, Color color, float size, float centreHeight)
+                : base(root, renderers, color, size, centreHeight)
             {
-                Shape = shape;
-                FullHeight = fullHeight;
             }
 
-            public PrimitiveType Shape { get; }
-            public float FullHeight { get; }
             public Transform? Arrow { get; set; }
             public Transform? Item { get; set; }
             public Transform? Rotor { get; set; }
