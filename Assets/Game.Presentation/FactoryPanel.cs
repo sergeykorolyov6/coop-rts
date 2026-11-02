@@ -60,12 +60,14 @@ namespace Game.Presentation
                 };
                 button.style.width = 110;
                 button.style.height = 52;
+                Hud.StyleButton(button);
                 row.Add(button);
                 _buttons.Add(button);
             }
             _cancel = new Button(Cancel) { text = "Отменить\nпоследний" };
             _cancel.style.width = 92;
             _cancel.style.height = 52;
+            Hud.StyleButton(_cancel);
             row.Add(_cancel);
             _panel.Add(row);
 

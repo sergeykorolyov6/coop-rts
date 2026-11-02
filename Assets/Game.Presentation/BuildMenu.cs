@@ -71,12 +71,12 @@ namespace Game.Presentation
                 button.style.width = 92;
                 button.style.height = 52;
                 button.style.whiteSpace = WhiteSpace.Normal;
+                Hud.StyleButton(button);
                 _panel.Add(button);
                 _buttons.Add(button);
                 _affordable.Add(true);
             }
-            if (_buttons.Count > 0)
-                _normalColor = _buttons[0].style.backgroundColor;
+            _normalColor = Hud.ButtonColor;
             _hud.BottomBar.Add(_panel);
         }
 

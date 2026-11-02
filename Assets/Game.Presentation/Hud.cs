@@ -92,10 +92,23 @@ namespace Game.Presentation
             _tip.style.top = panel.y + 18;
         }
 
-        // Dark translucent plate with light text: readable over any part of the map.
+        public static readonly Color ButtonColor = new Color(0.17f, 0.18f, 0.20f);
+
+        // Dark buttons with white text, matching the plates (the default theme's light grey
+        // buttons wash out white text).
+        public static void StyleButton(Button button)
+        {
+            button.style.backgroundColor = ButtonColor;
+            button.style.color = Color.white;
+            button.style.borderTopColor = button.style.borderBottomColor = new Color(0.35f, 0.37f, 0.40f);
+            button.style.borderLeftColor = button.style.borderRightColor = new Color(0.35f, 0.37f, 0.40f);
+            button.style.fontSize = 14;
+        }
+
+        // Near-opaque dark plate with light text: readable over any part of the map.
         public static void Panelise(VisualElement element)
         {
-            element.style.backgroundColor = new Color(0.08f, 0.09f, 0.10f, 0.82f);
+            element.style.backgroundColor = new Color(0.04f, 0.045f, 0.05f, 0.94f);
             element.style.color = new Color(0.92f, 0.93f, 0.90f);
             element.style.paddingLeft = element.style.paddingRight = 8;
             element.style.paddingTop = element.style.paddingBottom = 4;
