@@ -57,6 +57,16 @@ internal static class Movement
     public static void StepToRectangle(SimState state, Unit unit, int x, int y, int w, int h)
     {
         FlowField field = state.Paths.ToRectangle(state.Map, x, y, w, h);
+        if (field.DistanceAt(unit.CellX, unit.CellY) == 0)
+        {
+            // Next to it but pushed out of reach by the crowd: close in on the nearest point of the
+            // rectangle. The caller stops the unit once it can work, long before the edge.
+            int minX = Grid.CellToMilli(x), maxX = Grid.CellToMilli(x + w), minY = Grid.CellToMilli(y), maxY = Grid.CellToMilli(y + h);
+            int px = unit.X < minX ? minX : unit.X > maxX ? maxX : unit.X;
+            int py = unit.Y < minY ? minY : unit.Y > maxY ? maxY : unit.Y;
+            StepStraight(unit, px, py);
+            return;
+        }
         StepAlong(state, unit, field);
     }
 

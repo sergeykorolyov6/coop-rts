@@ -41,6 +41,9 @@ public sealed class SimState
     public GameRules Rules => Data.Rules;
     public MapState Map { get; }
 
+    // Builders per plan key in the current tick; rebuilt every tick from hashed worker state.
+    internal SortedDictionary<int, int> BuildAssignments { get; } = new SortedDictionary<int, int>();
+
     // Path cache: derived from the map, not part of the state hash.
     internal FlowFieldCache Paths { get; } = new FlowFieldCache();
 
@@ -102,6 +105,7 @@ public sealed class SimState
         var building = new Building(NextEntityId++, ownerId, stats, cellX, cellY, direction, complete, Rules.ConstructionStartHpPercent);
         _buildings.Add(building);
         Map.Occupy(building);
+        BuildingComponents.Attach(this, building);
         return building;
     }
 

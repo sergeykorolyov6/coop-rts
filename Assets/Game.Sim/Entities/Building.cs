@@ -45,6 +45,9 @@ public sealed class Building : Entity
     // Builders that worked on the site in the last tick (for the progress bar).
     public int BuildersLastTick { get; internal set; }
 
+    // Builders or repairers counted so far in the current tick, against MaxBuilders.
+    internal int WorkersThisTick { get; set; }
+
     public bool OccupiesCell(int x, int y) =>
         x >= CellX && y >= CellY && x < CellX + Width && y < CellY + Height;
 

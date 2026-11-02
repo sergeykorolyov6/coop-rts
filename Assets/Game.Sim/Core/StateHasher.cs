@@ -102,6 +102,9 @@ internal sealed class StateHasher
         _writer.Write(w.DeliverToId);
         _writer.Write((byte)w.Phase);
         _writer.Write(w.RepairCostAccumulator);
+        _writer.Write(w.RepairCostAccumulatorSecondary);
+        _writer.Write(w.RepairHpAccumulator);
+        _writer.Write(w.CurrentPlanKey);
         _writer.Write(w.Plans.Count);
         foreach (PlannedBuild plan in w.Plans)
         {

@@ -11,6 +11,7 @@ internal static class UnitSystem
 
     public static void Tick(SimState state, List<SimEvent> events)
     {
+        Construction.BeginTick(state);
         IReadOnlyList<Unit> units = state.Units;
         // Index loop: behaviours may spawn units, which land at the end and act next tick.
         int count = units.Count;
@@ -35,8 +36,15 @@ internal static class UnitSystem
                 case UnitOrderKind.ReturnCargo:
                     ManualMining.TickReturnCargo(state, unit, events);
                     break;
+                case UnitOrderKind.Build:
+                    Construction.TickBuild(state, unit, events);
+                    break;
+                case UnitOrderKind.Repair:
+                    Construction.TickRepair(state, unit, events);
+                    break;
             }
         }
+        Construction.EndTick(state, events);
     }
 
     private static void TickMove(SimState state, Unit unit)

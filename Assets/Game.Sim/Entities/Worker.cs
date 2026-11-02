@@ -24,6 +24,12 @@ public sealed class Worker
     // Planned and started construction sites, built in order (drill.md: "Запланирован").
     public IReadOnlyList<PlannedBuild> Plans => _plans;
 
-    // Repair cost accumulator of this worker (construction.md, "Реализация в Sim").
+    // Key (cell index) of the plan this worker is on, -1 when it has none.
+    internal int CurrentPlanKey { get; set; } = -1;
+
+    // Repair: HP accumulator (MaxHp per tick against the build work) and cost accumulators
+    // per resource (construction.md, "Реализация в Sim").
+    internal int RepairHpAccumulator { get; set; }
     internal int RepairCostAccumulator { get; set; }
+    internal int RepairCostAccumulatorSecondary { get; set; }
 }

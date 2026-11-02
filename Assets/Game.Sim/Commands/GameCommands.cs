@@ -16,5 +16,7 @@ public static class GameCommands
         codec.Register(MoveCommand.Id, MoveCommand.Read);
         codec.Register(MineCommand.Id, MineCommand.Read);
         codec.Register(DeliverCargoCommand.Id, DeliverCargoCommand.Read);
+        codec.Register(BuildCommand.Id, BuildCommand.Read);
+        codec.Register(RepairCommand.Id, RepairCommand.Read);
     }
 }
