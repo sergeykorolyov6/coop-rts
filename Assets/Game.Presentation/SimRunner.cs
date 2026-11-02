@@ -38,6 +38,10 @@ namespace Game.Presentation
 
         public Simulation? Simulation => _simulation;
 
+        // How far the frame is between the last tick and the next one, 0..1: views interpolate
+        // movement with it so units do not step at 20 Hz.
+        public float InterpolationAlpha => Mathf.Clamp01(_accumulatedSeconds * Simulation.TicksPerSecond);
+
         private void Awake()
         {
             if (_unitsJson == null || _buildingsJson == null || _creepCampsJson == null || _rulesJson == null || _mapJson == null)
