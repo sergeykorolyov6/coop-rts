@@ -21,4 +21,11 @@ public abstract class Entity
 
     // Set when HP reaches 0; the entity is removed at the end of the tick.
     public bool IsDead { get; internal set; }
+
+    // Last blow taken: when and from whom (creeps answer attackers, creep-camp.md).
+    public int LastDamagedTick { get; internal set; } = NeverTick;
+    public int LastAttackerId { get; internal set; }
+
+    // Far enough in the past that every "N ticks since" check passes, without overflow.
+    internal const int NeverTick = int.MinValue / 2;
 }

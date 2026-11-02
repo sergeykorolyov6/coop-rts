@@ -13,3 +13,5 @@ conveyor_item_speed,4,cells_per_s,Скорость ресурса на лент�
 conveyor_item_spacing,1,cells,Шаг между единицами на ленте,conveyors.md,"1 ед. на клетку"
 bridge_range,4,int,Дальность моста (клеток между концами по прямой),conveyors.md,
 storage_capacity,100,int,Вместимость склада,conveyors.md (вопрос 28),"Оба ресурса вместе"
+factory_queue,5,int,Длина очереди завода,factory.md (решение Claude),
+attack_alarm_cooldown,5,s,Пауза между тревогами «здание атаковано»,combat.md (решение Claude),"Не чаще раза в 5 с на здание"

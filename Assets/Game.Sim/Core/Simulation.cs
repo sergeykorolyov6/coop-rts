@@ -60,6 +60,8 @@ public sealed class Simulation
         }
 
         UnitSystem.Tick(State, _events);
+        Combat.ApplyHits(State, _events);
+        FactorySystem.Tick(State, _events);
         DrillSystem.Tick(State);
         ConveyorSystem.Tick(State);
         Movement.Separate(State);

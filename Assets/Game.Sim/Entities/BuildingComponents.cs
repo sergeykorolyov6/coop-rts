@@ -21,6 +21,9 @@ internal static class BuildingComponents
             case BuildingKinds.Storage:
                 building.Storage = new Storage();
                 break;
+            case BuildingKinds.Factory:
+                building.Factory = new Factory();
+                break;
         }
     }
 

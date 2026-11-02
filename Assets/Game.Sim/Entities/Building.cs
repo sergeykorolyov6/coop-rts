@@ -46,6 +46,10 @@ public sealed class Building : Entity
     public int BuildersLastTick { get; internal set; }
 
     public Drill? Drill { get; internal set; }
+    public Factory? Factory { get; internal set; }
+
+    // Tick of the last "building attacked" alarm (combat.md: at most once per cooldown).
+    internal int LastAlarmTick { get; set; } = NeverTick;
     public Conveyor? Conveyor { get; internal set; }
     public ConveyorBridge? Bridge { get; internal set; }
     public Storage? Storage { get; internal set; }

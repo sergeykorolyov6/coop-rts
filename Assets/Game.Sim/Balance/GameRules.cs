@@ -12,7 +12,7 @@ public sealed class GameRules
         "start_primary", "start_secondary", "start_workers", "construction_start_hp_pct", "repair_cost_pct",
         "interact_range_mc", "drill_rate_per_ore_cell_ticks_per_unit", "drill_buffer", "manual_cargo",
         "manual_mining_rate_ticks_per_unit", "conveyor_item_speed_mc_per_tick", "conveyor_item_spacing_mc",
-        "bridge_range", "storage_capacity",
+        "bridge_range", "storage_capacity", "factory_queue", "attack_alarm_cooldown_ticks",
     };
 
     private readonly List<string> _read = new List<string>();
@@ -36,6 +36,8 @@ public sealed class GameRules
         ConveyorItemSpacingMilli = Read(root, "conveyor_item_spacing_mc");
         BridgeRange = Read(root, "bridge_range");
         StorageCapacity = Read(root, "storage_capacity");
+        FactoryQueue = Read(root, "factory_queue");
+        AttackAlarmCooldownTicks = Read(root, "attack_alarm_cooldown_ticks");
 
         // An unknown key is a typo or a rule the sim does not implement yet; both should be loud.
         foreach (KeyValuePair<string, JsonNode> field in root.Fields)
@@ -65,6 +67,8 @@ public sealed class GameRules
     public int BridgeRange { get; }
 
     public int StorageCapacity { get; }
+    public int FactoryQueue { get; }
+    public int AttackAlarmCooldownTicks { get; }
 
     internal static string ZeroJson()
     {

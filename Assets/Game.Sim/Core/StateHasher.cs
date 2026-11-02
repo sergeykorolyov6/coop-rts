@@ -75,6 +75,8 @@ internal sealed class StateHasher
         _writer.Write(e.OwnerId);
         _writer.Write(e.Hp);
         _writer.Write(e.IsDead);
+        _writer.Write(e.LastDamagedTick);
+        _writer.Write(e.LastAttackerId);
     }
 
     private void WriteUnit(Unit u)
@@ -149,6 +151,14 @@ internal sealed class StateHasher
                 _writer.Write(item.Type);
                 _writer.Write(item.Pos);
             }
+        }
+        _writer.Write(b.LastAlarmTick);
+        if (b.Factory != null)
+        {
+            _writer.Write(b.Factory.Progress);
+            _writer.Write(b.Factory.Queue.Count);
+            foreach (string unit in b.Factory.Queue)
+                _writer.Write(unit);
         }
         if (b.Storage != null)
         {

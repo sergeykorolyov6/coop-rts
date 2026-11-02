@@ -44,6 +44,9 @@ public sealed class SimState
     // Builders per plan key in the current tick; rebuilt every tick from hashed worker state.
     internal SortedDictionary<int, int> BuildAssignments { get; } = new SortedDictionary<int, int>();
 
+    // Blows struck in the current tick, applied together after all units acted.
+    internal List<PendingHit> PendingHits { get; } = new List<PendingHit>();
+
     // Path cache: derived from the map, not part of the state hash.
     internal FlowFieldCache Paths { get; } = new FlowFieldCache();
 

@@ -19,6 +19,8 @@ internal static class UnitSystem
         {
             units[i].StepX = 0;
             units[i].StepY = 0;
+            if (units[i].AttackCooldown > 0)
+                units[i].AttackCooldown--;
         }
         for (int i = 0; i < count; i++)
         {
@@ -27,7 +29,14 @@ internal static class UnitSystem
                 continue;
             switch (unit.Order.Kind)
             {
+                case UnitOrderKind.Idle:
+                    Combat.TickIdle(state, unit);
+                    break;
+                case UnitOrderKind.Attack:
+                    Combat.TickAttackOrder(state, unit);
+                    break;
                 case UnitOrderKind.Move:
+                    unit.TargetId = 0;
                     TickMove(state, unit);
                     break;
                 case UnitOrderKind.Mine:
