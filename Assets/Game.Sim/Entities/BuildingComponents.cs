@@ -21,10 +21,10 @@ internal static class BuildingComponents
             case BuildingKinds.Storage:
                 building.Storage = new Storage();
                 break;
-            case BuildingKinds.Factory:
-                building.Factory = new Factory();
-                break;
         }
+        // Whatever produces units (the players' factory, the Legion's own) has a queue (factory.md).
+        if (building.Stats.Produces.Count > 0)
+            building.Factory = new Factory();
         // Any building with a gun shoots by itself (turret.md), whoever owns it.
         if (building.Stats.Damage > 0)
             building.Turret = new Turret();

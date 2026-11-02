@@ -5,9 +5,9 @@ infantry,Пехотинец,blue_walls,220,1,12,12,0.5,0.8,1.9,5,30,0,25,factory
 shooter,Стрелок,blue_walls,100,0,9,9,4,1.0,1.9,6,20,0,18,factory,0.6,ranged,"SC2 Marine: 50 мин., 18 с, 45 HP, 6 урона, дальн. 5; Mindustry dagger: 150 HP",Основной дальний юнит; за стеной и турелями сильнее пехоты
 heavy,Тяжёлый,blue_walls,500,2,25,25,4,1.5,1.5,6,50,20,35,factory,1.0,ranged;armored,"SC2 Thor/Marauder: 400/125 HP, броня 1; Mindustry mace: 550 HP, броня 4",Танк: броня 2 срезает урон стрелков и рейдеров почти вдвое. Стоит второй ресурс
 siege,Осадный,blue_walls,200,1,20,60,8,2.5,1.5,7,40,30,35,factory,1.0,siege;ranged,"SC2 осадный танк в осаде: 150/125, 175 HP, 40(+30) урона, дальн. 13; Mindustry fortress: артиллерия, 900 HP","Против зданий и лагерей: урон по зданиям ×3, дальность больше турели. Против юнитов слаб. Стоит второй ресурс"
-legion_worker,Рабочий Легиона,black_legion,50,0,3,3,0.5,1.0,2.4,5,10,0,12,factory,0.5,worker;melee,SC2 SCV,"Сверх 3 боевых юнитов Легиона (решение Claude, вопрос 31). Отстраивает базу, ставит буры (ответы 22, 24)"
-legion_raider,Рейдер Легиона,black_legion,50,0,5,5,0.5,0.6,3.0,5,10,0,12,factory,0.5,melee;fast,"SC2 Zergling: 25 мин., 35 HP, 5 урона, cd 0,5, 4,13 скор.","Быстрый, дешёвый, идёт резать буры и ленты: клетку ленты (50 HP) рвёт за 6 с"
-legion_gunner,Стрелок Легиона,black_legion,90,0,8,8,4,1.0,1.9,6,20,0,18,factory,0.6,ranged,SC2 Marine/Roach,Основа волны
-legion_brute,Громила Легиона,black_legion,400,2,20,40,0.5,1.5,1.6,5,50,20,30,factory,1.0,melee;armored,SC2 Ultralisk/Thor в уменьшенном виде; Mindustry mace,Ломает оборону: урон по зданиям ×2
+legion_worker,Рабочий Легиона,black_legion,50,0,3,3,0.5,1.0,2.4,5,10,0,12,legion_factory,0.5,worker;melee,SC2 SCV,"Сверх 3 боевых юнитов Легиона (решение Claude, вопрос 31). Отстраивает базу, ставит буры (ответы 22, 24)"
+legion_raider,Рейдер Легиона,black_legion,50,0,5,5,0.5,0.6,3.0,5,10,0,12,legion_factory,0.5,melee;fast,"SC2 Zergling: 25 мин., 35 HP, 5 урона, cd 0,5, 4,13 скор.","Быстрый, дешёвый, идёт резать буры и ленты: клетку ленты (50 HP) рвёт за 6 с"
+legion_gunner,Стрелок Легиона,black_legion,90,0,8,8,4,1.0,1.9,6,20,0,18,legion_factory,0.6,ranged,SC2 Marine/Roach,Основа волны
+legion_brute,Громила Легиона,black_legion,400,2,20,40,0.5,1.5,1.6,5,50,20,30,legion_factory,1.0,melee;armored,SC2 Ultralisk/Thor в уменьшенном виде; Mindustry mace,Ломает оборону: урон по зданиям ×2
 creep_small,Малый крип,grey_creatures,80,0,6,6,0.5,1.0,2.2,5,0,0,0,,0.6,melee;creep,SC2 Zergling ×2 HP,Охраняет лагерь; радиус агрессии и поводок — creep-camp.md, creep_camps.csv
 creep_big,Большой крип,grey_creatures,500,2,20,20,0.5,1.5,1.6,6,0,0,0,,1.2,melee;creep,SC2 Ultralisk в уменьшенном виде,Страж лагеря

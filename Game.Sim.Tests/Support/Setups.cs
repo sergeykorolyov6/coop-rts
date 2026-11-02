@@ -47,6 +47,23 @@ internal static class Setups
             },
             creepPlayerId: Creeps);
 
+    // A and (when two) B against the Black Legion played by the enemy AI player (legion-ai.md).
+    public static MatchSetup WithLegion(MapSetup map, int seed = 42) =>
+        new MatchSetup(
+            seed,
+            RepoData.Get(),
+            map,
+            resourceTypeCount: 2,
+            playerIds: new[] { PlayerA, PlayerB, EnemyAi, Creeps },
+            relations: new[]
+            {
+                new RelationSetup(PlayerA, PlayerB, Relation.Ally),
+                new RelationSetup(PlayerA, EnemyAi, Relation.Enemy),
+                new RelationSetup(PlayerB, EnemyAi, Relation.Enemy),
+            },
+            creepPlayerId: Creeps,
+            legionPlayerId: EnemyAi);
+
     public static MatchSetup Solo(int seed = 42) =>
         new MatchSetup(seed, 16, 16, 2, new[] { 1 }, Array.Empty<RelationSetup>());
 }

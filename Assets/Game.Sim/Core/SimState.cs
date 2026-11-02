@@ -11,11 +11,13 @@ public sealed class SimState
     private readonly List<Unit> _units = new List<Unit>();
     private readonly List<Building> _buildings = new List<Building>();
     private readonly List<CreepCamp> _camps = new List<CreepCamp>();
+    private readonly List<int> _teamPlayerIds = new List<int>();
 
     internal SimState(MatchSetup setup)
     {
         Data = setup.Data;
         CreepPlayerId = setup.CreepPlayerId;
+        LegionPlayerId = setup.LegionPlayerId;
         Map = new MapState(setup.Map);
         Grid = new Grid(setup.MapWidth, setup.MapHeight);
         Rng = new DeterministicRng(setup.Seed);
@@ -30,7 +32,13 @@ public sealed class SimState
             Relations.Set(relation.PlayerA, relation.PlayerB, relation.Relation);
 
         foreach (PlayerStart start in setup.Map.Starts)
+        {
             ApplyStart(start);
+            _teamPlayerIds.Add(start.PlayerId);
+        }
+        _teamPlayerIds.Sort();
+        if (LegionPlayerId != MatchSetup.NoPlayer)
+            Legion = SpawnLegion(setup.Map);
 
         // Grey Creatures are enemies of everyone else, whatever the setup says (creep-camp.md, assumption 1).
         if (CreepPlayerId != MatchSetup.NoPlayer)
@@ -65,6 +73,17 @@ public sealed class SimState
 
     // Owner of the creeps, MatchSetup.NoPlayer when the map has none.
     public int CreepPlayerId { get; }
+
+    // The Black Legion (legion-ai.md), MatchSetup.NoPlayer and null without one.
+    public int LegionPlayerId { get; }
+    public LegionAi? Legion { get; }
+
+    // Players with a start on the map, ascending: the team that wins or loses together (mission.md).
+    public IReadOnlyList<int> TeamPlayerIds => _teamPlayerIds;
+
+    public bool IsTeamPlayer(int playerId) => _teamPlayerIds.BinarySearch(playerId) >= 0;
+
+    public MissionOutcome Outcome { get; internal set; }
 
     // In map order; the index is the camp's id in commands.
     public IReadOnlyList<CreepCamp> CreepCamps => _camps;
@@ -190,6 +209,45 @@ public sealed class SimState
     }
 
     private const string StartWorkerUnitId = "worker";
+
+    // legion-ai.md: every slot built at the start, workers next to the first headquarters,
+    // money and income by the number of players.
+    private LegionAi SpawnLegion(MapSetup map)
+    {
+        LegionStats stats = Data.LegionFor(_teamPlayerIds.Count);
+        var ai = new LegionAi(LegionPlayerId, stats, map.RallyX, map.RallyY);
+        Building? hq = null;
+        foreach (BaseSlotSetup setup in map.LegionSlots)
+        {
+            Building b = PlaceBuilding(LegionPlayerId, Data.Building(setup.BuildingTypeId), setup.CellX, setup.CellY, setup.Direction, complete: true);
+            ai._slots.Add(new BaseSlot(setup) { BuildingId = b.Id });
+            if (hq == null && b.Stats.Id == BuildingKinds.Headquarters)
+                hq = b;
+        }
+
+        UnitStats? workerStats = null;
+        foreach (UnitStats u in Data.Units)
+        {
+            if (u.Faction == LegionAiSystem.Faction && u.HasTag(UnitTags.Worker))
+            {
+                workerStats = u;
+                break;
+            }
+        }
+        Building home = hq ?? FindBuilding(ai.Slots[0].BuildingId)!;
+        if (workerStats != null)
+        {
+            foreach ((int x, int y) in FreeCellsAround(home.CellX, home.CellY, home.Width, home.Height, stats.StartWorkers))
+                SpawnUnit(LegionPlayerId, workerStats, Grid.CellCenter(x), Grid.CellCenter(y));
+        }
+
+        Wallet wallet = GetPlayer(LegionPlayerId).Wallet;
+        wallet.Add(Resources.Primary, stats.StartPrimary);
+        if (ResourceTypeCount > Resources.Secondary)
+            wallet.Add(Resources.Secondary, stats.StartSecondary);
+        wallet.IncomePercent = stats.IncomePercent;
+        return ai;
+    }
 
     private void SpawnCamp(CreepCampSetup setup)
     {

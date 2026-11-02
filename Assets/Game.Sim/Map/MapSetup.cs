@@ -13,6 +13,7 @@ public sealed class MapSetup
     private readonly int[] _ore;
     private readonly List<PlayerStart> _starts = new List<PlayerStart>();
     private readonly List<CreepCampSetup> _camps = new List<CreepCampSetup>();
+    private readonly List<BaseSlotSetup> _legionSlots = new List<BaseSlotSetup>();
 
     public MapSetup(int width, int height)
     {
@@ -32,6 +33,12 @@ public sealed class MapSetup
     public int Height { get; }
     public IReadOnlyList<PlayerStart> Starts => _starts;
     public IReadOnlyList<CreepCampSetup> CreepCamps => _camps;
+
+    // legion-ai.md: the Legion's base in rebuild order, and where its army gathers.
+    public IReadOnlyList<BaseSlotSetup> LegionSlots => _legionSlots;
+    public bool HasRally { get; private set; }
+    public int RallyX { get; private set; }
+    public int RallyY { get; private set; }
 
     public bool IsBlocked(int x, int y) => _blocked[Index(x, y)];
 
@@ -79,6 +86,35 @@ public sealed class MapSetup
     public MapSetup CreepCamp(string campTypeId, int centerX, int centerY, params (int X, int Y)[] creepCells)
     {
         _camps.Add(new CreepCampSetup(campTypeId, centerX, centerY, creepCells));
+        return this;
+    }
+
+    public MapSetup LegionSlot(string buildingTypeId, int cellX, int cellY, Direction direction = Direction.Right)
+    {
+        Index(cellX, cellY);
+        _legionSlots.Add(new BaseSlotSetup(buildingTypeId, cellX, cellY, direction));
+        return this;
+    }
+
+    // A straight conveyor line from (x1, y1) to (x2, y2), every cell facing the end.
+    public MapSetup LegionLine(int x1, int y1, int x2, int y2)
+    {
+        if ((x1 != x2) == (y1 != y2))
+            throw new ArgumentException("A conveyor line goes straight and has at least two cells.");
+        int dx = System.Math.Sign(x2 - x1), dy = System.Math.Sign(y2 - y1);
+        Direction d = dx > 0 ? Direction.Right : dx < 0 ? Direction.Left : dy > 0 ? Direction.Up : Direction.Down;
+        int n = System.Math.Max(System.Math.Abs(x2 - x1), System.Math.Abs(y2 - y1)) + 1;
+        for (int i = 0; i < n; i++)
+            LegionSlot(BuildingKinds.Conveyor, x1 + dx * i, y1 + dy * i, d);
+        return this;
+    }
+
+    public MapSetup Rally(int cellX, int cellY)
+    {
+        Index(cellX, cellY);
+        HasRally = true;
+        RallyX = cellX;
+        RallyY = cellY;
         return this;
     }
 

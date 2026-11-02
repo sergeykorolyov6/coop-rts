@@ -118,10 +118,46 @@ class MapTest(unittest.TestCase):
             c.convert_map("map\n...\nend\ncamp wolves 0 0 creeps\n", "m.txt", {"guard": 0}, (1, 1))
 
 
+class LegionMapTest(unittest.TestCase):
+    SIZES = {"headquarters": (2, 2), "drill": (2, 2), "conveyor": (1, 1)}
+
+    def test_slots_lines_and_rally(self):
+        text = "map\n......\n..oo..\n..oo..\n......\nend\nlegion drill 2 1\nlegion_line 0 0 3 0\nrally 5 3\n"
+        data = c.convert_map(text, "m.txt", {}, (1, 1), self.SIZES)
+        slots = data["legion"]["slots"]
+        self.assertEqual(slots[0], {"building": "drill", "x": 2, "y": 1, "dir": "right"})
+        self.assertEqual([(s["x"], s["dir"]) for s in slots[1:]], [(0, "right"), (1, "right"), (2, "right"), (3, "right")])
+        self.assertEqual(data["legion"]["rally"], [5, 3])
+
+    def test_no_legion_no_key(self):
+        self.assertNotIn("legion", c.convert_map("map\n..\nend\n", "m.txt", {}, (1, 1), self.SIZES))
+
+    def test_drill_off_ore(self):
+        with self.assertRaisesRegex(c.ConvertError, "руде"):
+            c.convert_map("map\n....\n....\nend\nlegion drill 0 0\nrally 3 1\n", "m.txt", {}, (1, 1), self.SIZES)
+
+    def test_overlapping_slots(self):
+        with self.assertRaisesRegex(c.ConvertError, "занята"):
+            c.convert_map("map\n....\nend\nlegion_line 0 0 3 0\nlegion conveyor 2 0\nrally 0 0\n", "m.txt", {}, (1, 1), self.SIZES)
+
+    def test_missing_rally(self):
+        with self.assertRaisesRegex(c.ConvertError, "сбора"):
+            c.convert_map("map\n....\nend\nlegion conveyor 0 0\n", "m.txt", {}, (1, 1), self.SIZES)
+
+    def test_unit_counts(self):
+        self.assertEqual(c.id_count_list("a:2; b:1"), [{"id": "a", "count": 2}, {"id": "b", "count": 1}])
+        with self.assertRaises(ValueError):
+            c.id_count_list("a")
+        with self.assertRaises(ValueError):
+            c.id_count_list("a:0")
+
+
 class RepoDataTest(unittest.TestCase):
     def test_repo_csv_converts(self):
         outputs = c.build_all()
-        self.assertEqual(len(outputs), 5)
+        names = sorted(p.name for p in outputs)
+        for name in ("units.json", "buildings.json", "creep_camps.json", "rules.json", "legion.json", "waves.json", "prototype.json"):
+            self.assertIn(name, names)
 
 
 if __name__ == "__main__":

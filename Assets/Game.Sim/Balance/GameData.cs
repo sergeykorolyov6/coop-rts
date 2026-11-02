@@ -11,12 +11,17 @@ public sealed class GameData
     private readonly List<UnitStats> _units;
     private readonly List<BuildingStats> _buildings;
     private readonly List<CreepCampStats> _creepCamps;
+    private readonly List<LegionStats> _legion;
+    private readonly List<WaveStats> _waves;
 
-    private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps, GameRules rules)
+    private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps,
+        List<LegionStats> legion, List<WaveStats> waves, GameRules rules)
     {
         _units = units;
         _buildings = buildings;
         _creepCamps = creepCamps;
+        _legion = legion;
+        _waves = waves;
         Rules = rules;
     }
 
@@ -30,11 +35,22 @@ public sealed class GameData
     public IReadOnlyList<BuildingStats> Buildings => _buildings;
     public IReadOnlyList<CreepCampStats> CreepCamps => _creepCamps;
 
-    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson)
+    // legion-ai.md: rows for 1, 2, … players, in order; waves 1, 2, … in order. Empty without a Legion.
+    public IReadOnlyList<LegionStats> Legion => _legion;
+    public IReadOnlyList<WaveStats> Waves => _waves;
+
+    // Without the Legion tables: matches with no enemy AI (the M1 prototype, most tests).
+    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson) =>
+        Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, "[]", "[]");
+
+    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
+        string legionJson, string wavesJson)
     {
         List<UnitStats> units = ReadTable("units.json", unitsJson, row => new UnitStats(row), u => u.Id);
         List<BuildingStats> buildings = ReadTable("buildings.json", buildingsJson, row => new BuildingStats(row), b => b.Id);
         List<CreepCampStats> camps = ReadTable("creep_camps.json", creepCampsJson, row => new CreepCampStats(row), c => c.Id);
+        List<LegionStats> legion = ReadNumbered("legion.json", legionJson, row => new LegionStats(row), l => l.Players);
+        List<WaveStats> waves = ReadNumbered("waves.json", wavesJson, row => new WaveStats(row), w => w.Wave);
 
         GameRules rules;
         try
@@ -46,7 +62,7 @@ public sealed class GameData
             throw new FormatException($"rules.json: {e.Message}", e);
         }
 
-        var data = new GameData(units, buildings, camps, rules);
+        var data = new GameData(units, buildings, camps, legion, waves, rules);
         data.Validate();
         return data;
     }
@@ -59,6 +75,15 @@ public sealed class GameData
 
     public CreepCampStats CreepCamp(string id) =>
         TryGetCreepCamp(id, out CreepCampStats? stats) ? stats! : throw new ArgumentException($"Unknown creep camp \"{id}\".", nameof(id));
+
+    // The row for this many players; past the table's end, its last row.
+    public LegionStats LegionFor(int players)
+    {
+        if (_legion.Count == 0)
+            throw new InvalidOperationException("No legion.json rows: this data has no Black Legion.");
+        int index = System.Math.Min(System.Math.Max(players, 1), _legion.Count) - 1;
+        return _legion[index];
+    }
 
     public bool TryGetUnit(string id, out UnitStats? stats) => TryFind(_units, id, u => u.Id, out stats);
     public bool TryGetBuilding(string id, out BuildingStats? stats) => TryFind(_buildings, id, b => b.Id, out stats);
@@ -104,6 +129,41 @@ public sealed class GameData
     {
         long wm = Grid.CellToMilli(w), hm = Grid.CellToMilli(h);
         return (IntMath.Sqrt(wm * wm + hm * hm) + 1) / 2;
+    }
+
+    // Rows numbered 1, 2, … with no gaps (players in legion.json, waves in waves.json).
+    private static List<T> ReadNumbered<T>(string fileName, string json, Func<JsonNode, T> create, Func<T, int> numberOf)
+    {
+        JsonNode root;
+        try
+        {
+            root = JsonParser.Parse(json);
+        }
+        catch (FormatException e)
+        {
+            throw new FormatException($"{fileName}: {e.Message}", e);
+        }
+        if (root.Kind != JsonKind.Array)
+            throw new FormatException($"{fileName}: expected a list of rows.");
+        var rows = new List<T>(root.Items.Count);
+        for (int i = 0; i < root.Items.Count; i++)
+        {
+            try
+            {
+                rows.Add(create(root.Items[i]));
+            }
+            catch (FormatException e)
+            {
+                throw new FormatException($"{fileName}, row {i}: {e.Message}", e);
+            }
+        }
+        rows.Sort((a, b) => numberOf(a).CompareTo(numberOf(b)));
+        for (int i = 0; i < rows.Count; i++)
+        {
+            if (numberOf(rows[i]) != i + 1)
+                throw new FormatException($"{fileName}: rows must be numbered 1, 2, … without gaps; found {numberOf(rows[i])} at place {i + 1}.");
+        }
+        return rows;
     }
 
     private static bool TryFind<T>(List<T> sorted, string id, Func<T, string> idOf, out T? found) where T : class
@@ -159,6 +219,26 @@ public sealed class GameData
                 if (!TryGetUnit(unit, out _))
                     throw new FormatException($"buildings.json: \"{b.Id}\" produces unknown unit \"{unit}\".");
             }
+        }
+
+        int lastTime = -1;
+        foreach (WaveStats w in _waves)
+        {
+            if (w.TimeTicks <= lastTime)
+                throw new FormatException($"waves.json: wave {w.Wave} comes no later than the one before.");
+            lastTime = w.TimeTicks;
+            if (w.Units.Count == 0)
+                throw new FormatException($"waves.json: wave {w.Wave} has no units.");
+            foreach (WaveUnit u in w.Units)
+            {
+                if (!TryGetUnit(u.UnitId, out _))
+                    throw new FormatException($"waves.json: wave {w.Wave} has unknown unit \"{u.UnitId}\".");
+            }
+        }
+        foreach (LegionStats l in _legion)
+        {
+            if (l.IncomePercent <= 0 || l.WaveSizePercent <= 0 || l.WaveTimePercent <= 0)
+                throw new FormatException($"legion.json: row for {l.Players} players has a zero percentage.");
         }
 
         foreach (CreepCampStats c in _creepCamps)

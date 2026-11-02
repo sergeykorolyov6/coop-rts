@@ -97,6 +97,29 @@
     "produces": []
   },
   {
+    "id": "legion_factory",
+    "name_ru": "Завод Легиона",
+    "faction": "black_legion",
+    "hp": 1200,
+    "armor": 1,
+    "size_w": 3,
+    "size_h": 3,
+    "cost_primary": 50,
+    "cost_secondary": 0,
+    "build_time_ticks": 700,
+    "max_builders": 4,
+    "vision_mc": 7000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "produces": [
+      "legion_worker",
+      "legion_raider",
+      "legion_gunner",
+      "legion_brute"
+    ]
+  },
+  {
     "id": "storage",
     "name_ru": "Склад",
     "faction": "blue_walls",

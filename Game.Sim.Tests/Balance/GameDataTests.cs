@@ -35,7 +35,9 @@ public class GameDataTests
       ""conveyor_item_speed_mc_per_tick"": 200, ""drill_buffer"": 10, ""drill_rate_per_ore_cell_ticks_per_unit"": 160,
       ""interact_range_mc"": 1000, ""manual_cargo"": 5, ""manual_mining_rate_ticks_per_unit"": 40,
       ""repair_cost_pct"": 50, ""start_primary"": 100, ""start_secondary"": 0, ""start_workers"": 3,
-      ""storage_capacity"": 100, ""factory_queue"": 5, ""attack_alarm_cooldown_ticks"": 100
+      ""storage_capacity"": 100, ""factory_queue"": 5, ""attack_alarm_cooldown_ticks"": 100,
+      ""ai_think_interval_ticks"": 20, ""ai_wave_repeat_ticks"": 2400, ""ai_wave_warning_ticks"": 400,
+      ""ai_defense_calm_ticks"": 200, ""ai_rebuild_safe_radius_mc"": 8000
     }";
 
     [Test]

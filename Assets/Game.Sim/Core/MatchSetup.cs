@@ -14,6 +14,7 @@ public sealed class MatchSetup
 
     // A real match: balance data, hand-made map with starts and camps.
     // creepPlayerId owns the creeps (Grey Creatures); it must be one of playerIds when the map has camps.
+    // legionPlayerId plays the Black Legion's base from the map (legion-ai.md); the map must have one.
     public MatchSetup(
         int seed,
         GameData data,
@@ -21,12 +22,36 @@ public sealed class MatchSetup
         int resourceTypeCount,
         IEnumerable<int> playerIds,
         IEnumerable<RelationSetup> relations,
-        int creepPlayerId = NoPlayer)
+        int creepPlayerId = NoPlayer,
+        int legionPlayerId = NoPlayer)
         : this(seed, map.Width, map.Height, resourceTypeCount, playerIds, relations)
     {
         Data = data;
         Map = map;
         CreepPlayerId = creepPlayerId;
+        LegionPlayerId = legionPlayerId;
+
+        if (legionPlayerId != NoPlayer)
+        {
+            if (_playerIds.BinarySearch(legionPlayerId) < 0)
+                throw new ArgumentException($"Unknown Legion player {legionPlayerId}.", nameof(legionPlayerId));
+            if (legionPlayerId == creepPlayerId)
+                throw new ArgumentException("The Legion and the creeps are different players.", nameof(legionPlayerId));
+            if (map.LegionSlots.Count == 0 || !map.HasRally)
+                throw new ArgumentException("The Legion needs base slots and a rally point on the map.", nameof(map));
+            if (data.Legion.Count == 0)
+                throw new ArgumentException("The Legion needs legion.json rows.", nameof(data));
+            foreach (PlayerStart start in map.Starts)
+            {
+                if (start.PlayerId == legionPlayerId)
+                    throw new ArgumentException("The Legion cannot have a player start.", nameof(map));
+            }
+        }
+        foreach (BaseSlotSetup slot in map.LegionSlots)
+        {
+            if (!data.TryGetBuilding(slot.BuildingTypeId, out _))
+                throw new ArgumentException($"Legion slot with unknown building \"{slot.BuildingTypeId}\".", nameof(map));
+        }
 
         foreach (PlayerStart start in map.Starts)
         {
@@ -91,11 +116,13 @@ public sealed class MatchSetup
         Data = GameData.Empty;
         Map = new MapSetup(mapWidth, mapHeight);
         CreepPlayerId = NoPlayer;
+        LegionPlayerId = NoPlayer;
     }
 
     public GameData Data { get; }
     public MapSetup Map { get; }
     public int CreepPlayerId { get; }
+    public int LegionPlayerId { get; }
 
     public int Seed { get; }
     public int MapWidth { get; }

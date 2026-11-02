@@ -101,7 +101,7 @@
     "cost_primary": 50,
     "cost_secondary": 20,
     "build_time_ticks": 600,
-    "produced_at": "factory",
+    "produced_at": "legion_factory",
     "size_mc": 1000,
     "tags": [
       "melee",
@@ -123,7 +123,7 @@
     "cost_primary": 20,
     "cost_secondary": 0,
     "build_time_ticks": 360,
-    "produced_at": "factory",
+    "produced_at": "legion_factory",
     "size_mc": 600,
     "tags": [
       "ranged"
@@ -144,7 +144,7 @@
     "cost_primary": 10,
     "cost_secondary": 0,
     "build_time_ticks": 240,
-    "produced_at": "factory",
+    "produced_at": "legion_factory",
     "size_mc": 500,
     "tags": [
       "melee",
@@ -166,7 +166,7 @@
     "cost_primary": 10,
     "cost_secondary": 0,
     "build_time_ticks": 240,
-    "produced_at": "factory",
+    "produced_at": "legion_factory",
     "size_mc": 500,
     "tags": [
       "worker",

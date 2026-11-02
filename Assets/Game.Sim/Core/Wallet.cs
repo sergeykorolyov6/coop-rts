@@ -8,12 +8,21 @@ public sealed class Wallet
 {
     private readonly int[] _amounts;
     private readonly int[] _earned;
+    private readonly int[] _incomeRemainder;
 
     internal Wallet(int resourceTypeCount)
     {
         _amounts = new int[resourceTypeCount];
         _earned = new int[resourceTypeCount];
+        _incomeRemainder = new int[resourceTypeCount];
     }
+
+    // legion-ai.md: the Black Legion's headquarters credits income_pct of what it accepts;
+    // 100 for everyone else.
+    public int IncomePercent { get; internal set; } = 100;
+
+    // Hundredths of a unit of income not credited yet.
+    internal int IncomeRemainder(int resourceType) => _incomeRemainder[CheckType(resourceType)];
 
     public int ResourceTypeCount => _amounts.Length;
 
@@ -33,6 +42,12 @@ public sealed class Wallet
     // Income accepted by a headquarters (answers 2, 15).
     internal void Credit(int resourceType, int amount)
     {
+        if (IncomePercent != 100)
+        {
+            int total = checked(_incomeRemainder[CheckType(resourceType)] + amount * IncomePercent);
+            amount = total / 100;
+            _incomeRemainder[resourceType] = total % 100;
+        }
         Add(resourceType, amount);
         _earned[resourceType] = checked(_earned[resourceType] + amount);
     }

@@ -35,6 +35,7 @@ internal sealed class StateHasher
             {
                 _writer.Write(player.Wallet.Get(type));
                 _writer.Write(player.Wallet.Earned(type));
+                _writer.Write(player.Wallet.IncomeRemainder(type));
             }
         }
 
@@ -60,6 +61,32 @@ internal sealed class StateHasher
             _writer.Write(camp.Attackers.Count);
             foreach (int id in camp.Attackers)
                 _writer.Write(id);
+        }
+
+        _writer.Write((byte)state.Outcome);
+        LegionAi? ai = state.Legion;
+        if (ai != null)
+        {
+            _writer.Write(ai.NextWave);
+            _writer.Write(ai.NextWaveTargetPlayerId);
+            _writer.Write(ai.NextWaveWarned);
+            _writer.Write(ai.DefendBuildingId);
+            foreach (BaseSlot slot in ai.Slots)
+            {
+                _writer.Write(slot.BuildingId);
+                _writer.Write(slot.DestroyedTick);
+                _writer.Write(slot.WorkerId);
+            }
+            _writer.Write(ai.Waves.Count);
+            foreach (Wave wave in ai.Waves)
+            {
+                _writer.Write(wave.Number);
+                _writer.Write(wave.TargetPlayerId);
+                _writer.Write(wave.TargetId);
+                _writer.Write(wave.UnitIds.Count);
+                foreach (int id in wave.UnitIds)
+                    _writer.Write(id);
+            }
         }
 
         // Discovered cells per player as bits; visibility itself follows from positions.

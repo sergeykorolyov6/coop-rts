@@ -6,3 +6,4 @@ conveyor,Лента,blue_walls,50,0,1,1,1,0,0.5,1,0,0,0,0,,"conveyors.md; Mindus
 conveyor_bridge,Мост (один конец),blue_walls,100,0,1,1,6,0,1,1,0,0,0,0,,"conveyors.md; Mindustry bridge: 6 меди + 6 свинца, дальн. 4",Из conveyors.md
 turret,Турель,blue_walls,400,1,2,2,40,10,20,3,9,12,6,1.0,,"SC2 Photon Cannon: 150 мин., 150+150, 20 урона, дальн. 7; Mindustry duo: 35 меди, 250 HP, бьёт дальше dagger","Дальше стрелка (4), ближе осадного (8). Стоит второй ресурс"
 storage,Склад,blue_walls,600,1,2,2,40,0,15,3,4,0,0,0,,"SC2 Supply Depot: 100 мин., 400 HP; Mindustry container","Буфер на линии: принимает с лент и буров до 100 ед., отдаёт в соседние ленты как бур; в кошелёк не зачисляет (решение Claude, вопрос 28)"
+legion_factory,Завод Легиона,black_legion,1200,1,3,3,50,0,35,4,7,0,0,0,legion_worker;legion_raider;legion_gunner;legion_brute,Как завод игрока,"Производит юнитов Легиона (вопрос 49). Игрок его не строит"

@@ -59,6 +59,7 @@ public sealed class Simulation
                 pending.Command.Execute(State, _events);
         }
 
+        LegionAiSystem.Tick(State, _events);
         CreepCampSystem.BeginTick(State, _events);
         UnitSystem.Tick(State, _events);
         CreepCampSystem.EndTick(State);
@@ -70,6 +71,7 @@ public sealed class Simulation
         Movement.Separate(State);
         Movement.PushOutOfBlockedCells(State);
         State.RemoveDead();
+        MissionRules.Check(State, _events);
         State.Fog.Update(State);
 
         State.Tick = tick + 1;

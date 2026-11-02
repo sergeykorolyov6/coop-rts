@@ -117,6 +117,20 @@ def id_list(text: str) -> list[str]:
     return [part.strip() for part in text.split(";") if part.strip()]
 
 
+def id_count_list(text: str) -> list[dict]:
+    # "legion_raider:2;legion_gunner:3" -> [{"id": "legion_raider", "count": 2}, ...]
+    out = []
+    for part in id_list(text):
+        name, sep, count = part.partition(":")
+        if not sep or not name.strip():
+            raise ValueError(f"«{part}» — нужно «id:число»")
+        n = int_(count)
+        if n <= 0:
+            raise ValueError(f"«{part}» — число должно быть больше нуля")
+        out.append({"id": name.strip(), "count": n})
+    return out
+
+
 # column -> (json key, converter); None drops the column (design-only text).
 UNITS = {
     "id": ("id", string),
@@ -179,14 +193,41 @@ CREEP_CAMPS = {
     "notes": None,
 }
 
+# legion-ai.md: one row per number of players.
+LEGION = {
+    "players": ("players", int_),
+    "start_primary": ("start_primary", int_),
+    "start_secondary": ("start_secondary", int_),
+    "start_workers": ("start_workers", int_),
+    "worker_limit": ("worker_limit", int_),
+    "army_limit": ("army_limit", int_),
+    "income_pct": ("income_pct", int_),
+    "wave_size_pct": ("wave_size_pct", int_),
+    "wave_time_pct": ("wave_time_pct", int_),
+    "rebuild_delay_s": ("rebuild_delay_ticks", seconds_to_ticks),
+    "notes": None,
+}
+
+# legion-ai.md: one row per wave, for one player.
+WAVES = {
+    "wave": ("wave", int_),
+    "time_s": ("time_ticks", seconds_to_ticks),
+    "units": ("units", id_count_list),
+    "target": ("target", string),
+    "notes": None,
+}
+
+# (csv, json, schema, key column)
 TABLES = [
-    ("units.csv", "units.json", UNITS),
-    ("buildings.csv", "buildings.json", BUILDINGS),
-    ("creep_camps.csv", "creep_camps.json", CREEP_CAMPS),
+    ("units.csv", "units.json", UNITS, "id"),
+    ("buildings.csv", "buildings.json", BUILDINGS, "id"),
+    ("creep_camps.csv", "creep_camps.json", CREEP_CAMPS, "id"),
+    ("legion.csv", "legion.json", LEGION, "players"),
+    ("waves.csv", "waves.json", WAVES, "wave"),
 ]
 
 
-def convert_table(csv_text: str, schema: dict, file_name: str) -> list[dict]:
+def convert_table(csv_text: str, schema: dict, file_name: str, key_column: str = "id") -> list[dict]:
     reader = csv.DictReader(io.StringIO(csv_text))
     header = reader.fieldnames or []
     unknown = [c for c in header if c not in schema]
@@ -211,15 +252,15 @@ def convert_table(csv_text: str, schema: dict, file_name: str) -> list[dict]:
                 row[key] = convert(record[column] or "")
             except ValueError as e:
                 raise ConvertError(f"{file_name}, строка {line}, колонка {column}: {e}") from None
-        if not row["id"]:
-            raise ConvertError(f"{file_name}, строка {line}: пустой id")
-        if row["id"] in seen:
-            raise ConvertError(f"{file_name}, строка {line}: id «{row['id']}» повторяется")
-        seen.add(row["id"])
+        if row[key_column] == "":
+            raise ConvertError(f"{file_name}, строка {line}: пустой {key_column}")
+        if row[key_column] in seen:
+            raise ConvertError(f"{file_name}, строка {line}: {key_column} «{row[key_column]}» повторяется")
+        seen.add(row[key_column])
         rows.append(row)
 
-    # Sorted by id: diffs stay small and order never depends on how the csv was edited.
-    rows.sort(key=lambda r: r["id"])
+    # Sorted by key: diffs stay small and order never depends on how the csv was edited.
+    rows.sort(key=lambda r: r[key_column])
     return rows
 
 
@@ -231,10 +272,14 @@ MAP_CHARS = {".": None, "#": "blocked", "o": 0, "s": 1}
 MAPS_DIR = DESIGN_DIR / "maps"
 
 
-def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple) -> dict:
+DIRECTIONS = {"right": (1, 0), "up": (0, 1), "left": (-1, 0), "down": (0, -1)}
+
+
+def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, building_sizes: dict | None = None) -> dict:
     """Docs/Design/maps/*.txt → map json. Rows are stored bottom-up: rows[y] is row y."""
+    building_sizes = building_sizes or {}
     lines = text.splitlines()
-    grid, camps, inside, done = [], [], False, False
+    grid, camps, legion, rally, inside, done = [], [], [], None, False, False
     for number, raw in enumerate(lines, start=1):
         line = raw.rstrip("\r")
         if inside:
@@ -254,6 +299,17 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple) -> 
         parts = stripped.split()
         if parts[0] == "camp":
             camps.append((number, parts))
+            continue
+        if parts[0] in ("legion", "legion_line"):
+            legion.append((number, parts))
+            continue
+        if parts[0] == "rally":
+            try:
+                if len(parts) != 3 or rally is not None:
+                    raise ValueError
+                rally = (number, int(parts[1]), int(parts[2]))
+            except ValueError:
+                raise ConvertError(f"{file_name}, строка {number}: ожидается одна строка rally <x> <y>") from None
             continue
         raise ConvertError(f"{file_name}, строка {number}: непонятная строка «{stripped}»")
     if inside or not grid:
@@ -307,20 +363,66 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple) -> 
                 raise ConvertError(f"{file_name}, строка {number}: клетка ({x}, {y}) вне карты или в скале")
         out_camps.append({"type": camp_type, "x": cx, "y": cy, "creeps": creeps})
 
-    return {
+    # legion-ai.md: base slots in file order (the rebuild order).
+    slots, taken = [], {}
+    for number, parts in legion:
+        try:
+            if parts[0] == "legion":
+                if len(parts) not in (4, 5):
+                    raise ValueError
+                direction = parts[4] if len(parts) == 5 else "right"
+                items = [(parts[1], int(parts[2]), int(parts[3]), direction)]
+            else:
+                if len(parts) != 5:
+                    raise ValueError
+                x1, y1, x2, y2 = (int(v) for v in parts[1:5])
+                if (x1 != x2) == (y1 != y2):
+                    raise ConvertError(f"{file_name}, строка {number}: legion_line — по прямой и не из одной клетки")
+                dx, dy = (x2 > x1) - (x2 < x1), (y2 > y1) - (y2 < y1)
+                direction = next(k for k, v in DIRECTIONS.items() if v == (dx, dy))
+                n = max(abs(x2 - x1), abs(y2 - y1)) + 1
+                items = [("conveyor", x1 + dx * i, y1 + dy * i, direction) for i in range(n)]
+        except ValueError:
+            raise ConvertError(f"{file_name}, строка {number}: ожидается legion <здание> <x> <y> [направление] или legion_line <x1> <y1> <x2> <y2>") from None
+        for building, x, y, direction in items:
+            if building not in building_sizes:
+                raise ConvertError(f"{file_name}, строка {number}: здания «{building}» нет в buildings.csv")
+            if direction not in DIRECTIONS:
+                raise ConvertError(f"{file_name}, строка {number}: направление «{direction}», есть {list(DIRECTIONS)}")
+            w, h = building_sizes[building]
+            for yy in range(y, y + h):
+                for xx in range(x, x + w):
+                    c = cell(xx, yy)
+                    if c in (None, "#") or c.isdigit():
+                        raise ConvertError(f"{file_name}, строка {number}: «{building}» в ({x}, {y}) задевает клетку ({xx}, {yy}) вне карты, в скале или на старте")
+                    if (xx, yy) in taken:
+                        raise ConvertError(f"{file_name}, строка {number}: клетка ({xx}, {yy}) уже занята слотом из строки {taken[(xx, yy)]}")
+                    taken[(xx, yy)] = number
+            if building == "drill" and not any(cell(xx, yy) in ("o", "s") for yy in range(y, y + h) for xx in range(x, x + w)):
+                raise ConvertError(f"{file_name}, строка {number}: бур в ({x}, {y}) не стоит на руде")
+            slots.append({"building": building, "x": x, "y": y, "dir": direction})
+    if slots and rally is None:
+        raise ConvertError(f"{file_name}: у базы Легиона нет точки сбора (rally <x> <y>)")
+    if rally is not None and cell(rally[1], rally[2]) in (None, "#"):
+        raise ConvertError(f"{file_name}, строка {rally[0]}: точка сбора вне карты или в скале")
+
+    out = {
         "width": width,
         "height": height,
         "rows_bottom_up": rows,
         "starts": [{"slot": int(k), "x": v[0], "y": v[1]} for k, v in sorted(starts.items())],
         "camps": out_camps,
     }
+    if slots:
+        out["legion"] = {"slots": slots, "rally": [rally[1], rally[2]]}
+    return out
 
 
 def build_all() -> dict[Path, str]:
     out = {}
-    for csv_name, json_name, schema in TABLES:
+    for csv_name, json_name, schema, key in TABLES:
         text = (DESIGN_DIR / csv_name).read_text(encoding="utf-8-sig")
-        out[DATA_DIR / json_name] = render(convert_table(text, schema, csv_name))
+        out[DATA_DIR / json_name] = render(convert_table(text, schema, csv_name, key))
     rules = (DESIGN_DIR / "rules.csv").read_text(encoding="utf-8-sig")
     out[DATA_DIR / "rules.json"] = render(convert_rules(rules, "rules.csv"))
 
@@ -328,8 +430,9 @@ def build_all() -> dict[Path, str]:
     camp_types = {c["id"]: len(c["creeps"]) for c in camps}
     buildings = convert_table((DESIGN_DIR / "buildings.csv").read_text(encoding="utf-8-sig"), BUILDINGS, "buildings.csv")
     hq = next(b for b in buildings if b["id"] == "headquarters")
+    sizes = {b["id"]: (b["size_w"], b["size_h"]) for b in buildings}
     for path in sorted(MAPS_DIR.glob("*.txt")):
-        data = convert_map(path.read_text(encoding="utf-8-sig"), "maps/" + path.name, camp_types, (hq["size_w"], hq["size_h"]))
+        data = convert_map(path.read_text(encoding="utf-8-sig"), "maps/" + path.name, camp_types, (hq["size_w"], hq["size_h"]), sizes)
         out[DATA_DIR / "maps" / (path.stem + ".json")] = render_map(data)
     return out
 
@@ -338,7 +441,7 @@ def render_map(data: dict) -> str:
     # One row per line keeps the json diffable and readable as a picture.
     rows = ",\n".join("    " + json.dumps(r) for r in data["rows_bottom_up"])
     head = {k: data[k] for k in ("width", "height")}
-    tail = {k: data[k] for k in ("starts", "camps")}
+    tail = {k: data[k] for k in ("starts", "camps", "legion") if k in data}
     return ("{\n" + ",\n".join(f'  "{k}": {json.dumps(v)}' for k, v in head.items())
             + ',\n  "rows_bottom_up": [\n' + rows + "\n  ],\n"
             + ",\n".join(f'  "{k}": {json.dumps(v, ensure_ascii=False)}' for k, v in tail.items()) + "\n}\n")

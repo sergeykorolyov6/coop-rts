@@ -1,0 +1,7 @@
+wave,time_s,units,target,notes
+1,180,legion_raider:2,economy,"Учит охранять буры: 2 рейдера рвут бур за 18 с"
+2,300,legion_raider:2;legion_gunner:2,economy,
+3,420,legion_raider:2;legion_gunner:3,base,"Первая волна на штаб"
+4,540,legion_raider:2;legion_gunner:4;legion_brute:1,economy,"Первый громила: одна турель его не держит"
+5,660,legion_raider:3;legion_gunner:4;legion_brute:1,base,
+6,780,legion_raider:3;legion_gunner:5;legion_brute:2,base,"Дальше повторяется каждые ai_wave_repeat"

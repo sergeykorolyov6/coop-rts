@@ -6,6 +6,18 @@ namespace Game.Sim;
 // Assets/Data/maps/*.json (made by Tools/csv2json.py from Docs/Design/maps/*.txt) → MapSetup.
 public static class MapLoader
 {
+    private static Direction ParseDirection(string text)
+    {
+        switch (text)
+        {
+            case "right": return Direction.Right;
+            case "up": return Direction.Up;
+            case "left": return Direction.Left;
+            case "down": return Direction.Down;
+            default: throw new FormatException($"Unknown direction \"{text}\".");
+        }
+    }
+
     // playerIdsBySlot[i] plays start slot i + 1; slots beyond the list stay empty
     // (a 4-player map works for 2).
     public static MapSetup Parse(string json, IReadOnlyList<int> playerIdsBySlot)
@@ -55,6 +67,18 @@ public static class MapLoader
                 cells.Add((pair.Items[0].Integer, pair.Items[1].Integer));
             }
             map.CreepCamp(camp.GetString("type"), camp.GetInt("x"), camp.GetInt("y"), cells.ToArray());
+        }
+
+        foreach (KeyValuePair<string, JsonNode> field in root.Fields)
+        {
+            if (field.Key != "legion")
+                continue;
+            foreach (JsonNode slot in field.Value.Get("slots").Items)
+                map.LegionSlot(slot.GetString("building"), slot.GetInt("x"), slot.GetInt("y"), ParseDirection(slot.GetString("dir")));
+            JsonNode rally = field.Value.Get("rally");
+            if (rally.Items.Count != 2)
+                throw new FormatException("The Legion's rally point is a pair [x, y].");
+            map.Rally(rally.Items[0].Integer, rally.Items[1].Integer);
         }
         return map;
     }

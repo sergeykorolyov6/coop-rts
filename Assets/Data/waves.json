@@ -1,0 +1,100 @@
+[
+  {
+    "wave": 1,
+    "time_ticks": 3600,
+    "units": [
+      {
+        "id": "legion_raider",
+        "count": 2
+      }
+    ],
+    "target": "economy"
+  },
+  {
+    "wave": 2,
+    "time_ticks": 6000,
+    "units": [
+      {
+        "id": "legion_raider",
+        "count": 2
+      },
+      {
+        "id": "legion_gunner",
+        "count": 2
+      }
+    ],
+    "target": "economy"
+  },
+  {
+    "wave": 3,
+    "time_ticks": 8400,
+    "units": [
+      {
+        "id": "legion_raider",
+        "count": 2
+      },
+      {
+        "id": "legion_gunner",
+        "count": 3
+      }
+    ],
+    "target": "base"
+  },
+  {
+    "wave": 4,
+    "time_ticks": 10800,
+    "units": [
+      {
+        "id": "legion_raider",
+        "count": 2
+      },
+      {
+        "id": "legion_gunner",
+        "count": 4
+      },
+      {
+        "id": "legion_brute",
+        "count": 1
+      }
+    ],
+    "target": "economy"
+  },
+  {
+    "wave": 5,
+    "time_ticks": 13200,
+    "units": [
+      {
+        "id": "legion_raider",
+        "count": 3
+      },
+      {
+        "id": "legion_gunner",
+        "count": 4
+      },
+      {
+        "id": "legion_brute",
+        "count": 1
+      }
+    ],
+    "target": "base"
+  },
+  {
+    "wave": 6,
+    "time_ticks": 15600,
+    "units": [
+      {
+        "id": "legion_raider",
+        "count": 3
+      },
+      {
+        "id": "legion_gunner",
+        "count": 5
+      },
+      {
+        "id": "legion_brute",
+        "count": 2
+      }
+    ],
+    "target": "base"
+  }
+]

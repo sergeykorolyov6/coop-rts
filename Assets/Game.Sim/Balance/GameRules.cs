@@ -13,6 +13,8 @@ public sealed class GameRules
         "interact_range_mc", "drill_rate_per_ore_cell_ticks_per_unit", "drill_buffer", "manual_cargo",
         "manual_mining_rate_ticks_per_unit", "conveyor_item_speed_mc_per_tick", "conveyor_item_spacing_mc",
         "bridge_range", "storage_capacity", "factory_queue", "attack_alarm_cooldown_ticks",
+        "ai_think_interval_ticks", "ai_wave_repeat_ticks", "ai_wave_warning_ticks", "ai_defense_calm_ticks",
+        "ai_rebuild_safe_radius_mc",
     };
 
     private readonly List<string> _read = new List<string>();
@@ -38,6 +40,11 @@ public sealed class GameRules
         StorageCapacity = Read(root, "storage_capacity");
         FactoryQueue = Read(root, "factory_queue");
         AttackAlarmCooldownTicks = Read(root, "attack_alarm_cooldown_ticks");
+        AiThinkIntervalTicks = Read(root, "ai_think_interval_ticks");
+        AiWaveRepeatTicks = Read(root, "ai_wave_repeat_ticks");
+        AiWaveWarningTicks = Read(root, "ai_wave_warning_ticks");
+        AiDefenseCalmTicks = Read(root, "ai_defense_calm_ticks");
+        AiRebuildSafeRadiusMilli = Read(root, "ai_rebuild_safe_radius_mc");
 
         // An unknown key is a typo or a rule the sim does not implement yet; both should be loud.
         foreach (KeyValuePair<string, JsonNode> field in root.Fields)
@@ -69,6 +76,13 @@ public sealed class GameRules
     public int StorageCapacity { get; }
     public int FactoryQueue { get; }
     public int AttackAlarmCooldownTicks { get; }
+
+    // legion-ai.md.
+    public int AiThinkIntervalTicks { get; }
+    public int AiWaveRepeatTicks { get; }
+    public int AiWaveWarningTicks { get; }
+    public int AiDefenseCalmTicks { get; }
+    public int AiRebuildSafeRadiusMilli { get; }
 
     internal static string ZeroJson()
     {

@@ -11,9 +11,12 @@ internal static class Construction
     public static RejectReason? CheckPlacement(SimState state, int playerId, BuildingStats stats, int x, int y, Direction direction)
     {
         MapState map = state.Map;
-        // One headquarters at a time for every player (the enemy AI's extra ones come with its base).
-        if (stats.Id == BuildingKinds.Headquarters && state.FindHeadquarters(playerId) != null)
+        // One headquarters at a time for every player; the Legion may have several (answer 6).
+        if (stats.Id == BuildingKinds.Headquarters && playerId != state.LegionPlayerId && state.FindHeadquarters(playerId) != null)
             return RejectReason.OneHeadquartersOnly;
+        // The Legion's own buildings (its factory) are not for players (question 49).
+        if (stats.Faction == LegionAiSystem.Faction && playerId != state.LegionPlayerId)
+            return RejectReason.NotAllowed;
         if (!map.InBounds(x, y) || !map.InBounds(x + stats.SizeW - 1, y + stats.SizeH - 1))
             return RejectReason.NotAllowed;
         if (!state.Fog.IsAreaDiscovered(playerId, x, y, stats.SizeW, stats.SizeH))

@@ -61,6 +61,35 @@ internal static class Combat
         Engage(state, unit, target!);
     }
 
+    // legion-ai.md: fight the enemy in sight (kept while it stays in sight), else walk on;
+    // at the point the unit stops and behaves as idle.
+    public static void TickAttackMove(SimState state, Unit unit)
+    {
+        Entity? target = state.FindEntity(unit.TargetId);
+        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli)
+            target = CanAttack(unit) ? NearestEnemy(state, unit, unit.X, unit.Y, unit.Stats.VisionMilli) : null;
+        if (target != null)
+        {
+            Engage(state, unit, target);
+            return;
+        }
+
+        unit.TargetId = 0;
+        int x = unit.Order.X, y = unit.Order.Y;
+        switch (Movement.StepToPoint(state, unit, x, y))
+        {
+            case MoveResult.Arrived:
+                unit.Order = UnitOrder.Idle;
+                return;
+            case MoveResult.Unreachable:
+                (int cx, int cy) = Movement.NearestReachableCell(state, unit, x, y);
+                unit.Order = cx == unit.CellX && cy == unit.CellY
+                    ? UnitOrder.Idle
+                    : UnitOrder.AttackMoveTo(Grid.CellCenter(cx), Grid.CellCenter(cy));
+                return;
+        }
+    }
+
     // Idle fighters (not workers) answer enemies within their own sight; a target that
     // leaves it is dropped and the unit stays where it is.
     public static void TickIdle(SimState state, Unit unit)

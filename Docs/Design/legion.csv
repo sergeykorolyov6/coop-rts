@@ -1,0 +1,5 @@
+players,start_primary,start_secondary,start_workers,worker_limit,army_limit,income_pct,wave_size_pct,wave_time_pct,rebuild_delay_s,notes
+1,100,20,3,3,12,100,100,100,30,"Соло: волны из waves.csv как есть"
+2,150,30,3,4,20,170,170,90,25,"Ответ 22: от числа игроков растут лимиты и скорость"
+3,200,40,4,5,28,240,240,85,20,
+4,250,50,4,6,36,300,300,80,15,"Доход ×3: база та же, волны втрое больше"

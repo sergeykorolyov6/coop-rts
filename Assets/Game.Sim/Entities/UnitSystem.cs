@@ -58,6 +58,9 @@ internal static class UnitSystem
                 case UnitOrderKind.Repair:
                     Construction.TickRepair(state, unit, events);
                     break;
+                case UnitOrderKind.AttackMove:
+                    Combat.TickAttackMove(state, unit);
+                    break;
                 case UnitOrderKind.CarryTrophy:
                     ManualMining.TickCarryTrophy(state, unit, events);
                     break;

@@ -1,4 +1,9 @@
 {
+  "ai_defense_calm_ticks": 200,
+  "ai_rebuild_safe_radius_mc": 8000,
+  "ai_think_interval_ticks": 20,
+  "ai_wave_repeat_ticks": 2400,
+  "ai_wave_warning_ticks": 400,
   "attack_alarm_cooldown_ticks": 100,
   "bridge_range": 4,
   "construction_start_hp_pct": 10,
