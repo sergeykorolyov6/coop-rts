@@ -49,6 +49,22 @@ internal sealed class StateHasher
         foreach (Building building in state.Buildings)
             WriteBuilding(building);
 
+        // Discovered cells per player as bits; visibility itself follows from positions.
+        for (int p = 0; p < state.Players.Count; p++)
+        {
+            bool[] discovered = state.Fog.DiscoveredByIndex(p);
+            for (int c = 0; c < discovered.Length; c += 8)
+            {
+                byte bits = 0;
+                for (int k = 0; k < 8 && c + k < discovered.Length; k++)
+                {
+                    if (discovered[c + k])
+                        bits |= (byte)(1 << k);
+                }
+                _writer.Write(bits);
+            }
+        }
+
         _writer.Flush();
         return XxHash64.Compute(new ReadOnlySpan<byte>(_buffer.GetBuffer(), 0, (int)_buffer.Length));
     }

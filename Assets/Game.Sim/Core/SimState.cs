@@ -30,7 +30,12 @@ public sealed class SimState
 
         foreach (PlayerStart start in setup.Map.Starts)
             ApplyStart(start);
+
+        Fog = new FogOfWar(_players, Map.Width, Map.Height);
+        Fog.Update(this);
     }
+
+    public FogOfWar Fog { get; }
 
     public GameData Data { get; }
     public GameRules Rules => Data.Rules;

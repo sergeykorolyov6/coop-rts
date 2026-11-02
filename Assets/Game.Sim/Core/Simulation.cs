@@ -63,6 +63,7 @@ public sealed class Simulation
         Movement.Separate(State);
         Movement.PushOutOfBlockedCells(State);
         State.RemoveDead();
+        State.Fog.Update(State);
 
         State.Tick = tick + 1;
         StateHash = _hasher.Compute(State);
