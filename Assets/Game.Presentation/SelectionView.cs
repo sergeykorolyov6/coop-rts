@@ -5,7 +5,8 @@ using Grid = Game.Sim.Grid;
 
 namespace Game.Presentation
 {
-    // Placeholder selection marker until there is art: a flat disc under each selected unit.
+    // Placeholder selection marker until there is art: a flat disc under each selected unit,
+    // a plate one cell wider than the footprint under a selected building.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(SelectionController))]
     public sealed class SelectionView : MonoBehaviour
     {
@@ -20,6 +21,7 @@ namespace Game.Presentation
         private SelectionController? _selection;
         private Material? _material;
         private Transform? _root;
+        private Transform? _plate;
 
         private void Awake()
         {
@@ -52,6 +54,15 @@ namespace Game.Presentation
             }
             for (int i = shown; i < _discs.Count; i++)
                 _discs[i].gameObject.SetActive(false);
+
+            Building? building = simulation?.State.FindBuilding(_selection.SelectedBuildingId);
+            if (building != null)
+            {
+                _plate ??= CreateMarker(PrimitiveType.Cube, "SelectionPlate");
+                _plate.localScale = new Vector3(building.Width + 0.3f, 0.01f, building.Height + 0.3f);
+                _plate.position = new Vector3(building.CellX + building.Width * 0.5f, 0.02f, building.CellY + building.Height * 0.5f);
+            }
+            _plate?.gameObject.SetActive(building != null);
         }
 
         // Discs are pooled: selection changes every few seconds, no objects churn.
@@ -59,14 +70,20 @@ namespace Game.Presentation
         {
             if (index < _discs.Count)
                 return _discs[index];
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            go.name = "SelectionDisc";
+            Transform disc = CreateMarker(PrimitiveType.Cylinder, "SelectionDisc");
+            _discs.Add(disc);
+            return disc;
+        }
+
+        private Transform CreateMarker(PrimitiveType type, string name)
+        {
+            GameObject go = GameObject.CreatePrimitive(type);
+            go.name = name;
             Destroy(go.GetComponent<Collider>());
             MeshRenderer renderer = go.GetComponent<MeshRenderer>();
             _material ??= new Material(renderer.sharedMaterial) { color = _color };
             renderer.sharedMaterial = _material;
             go.transform.SetParent(_root, worldPositionStays: false);
-            _discs.Add(go.transform);
             return go.transform;
         }
 

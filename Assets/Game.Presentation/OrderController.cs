@@ -16,6 +16,8 @@ namespace Game.Presentation
     public sealed class OrderController : MonoBehaviour
     {
         [SerializeField] private RtsCamera? _camera;
+        [SerializeField] private Hud? _hud;
+        [SerializeField] private PlacementController? _placement;
         [Tooltip("How close to the camp centre a click counts as on the trophy, cells.")]
         [SerializeField] private float _trophyPickCells = 0.8f;
 
@@ -43,6 +45,9 @@ namespace Game.Presentation
                 return;
 
             Vector2 pointer = mouse.position.ReadValue();
+            // Right click while placing cancels the placement, not an order.
+            if ((_placement != null && _placement.IsBusy) || (_hud != null && _hud.IsPointerOverUi(pointer)))
+                return;
             if (!_camera.GroundPoint(pointer, out Vector3 ground))
                 return;
 

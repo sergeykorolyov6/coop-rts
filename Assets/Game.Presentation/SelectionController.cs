@@ -9,7 +9,8 @@ using Grid = Game.Sim.Grid;
 namespace Game.Presentation
 {
     // Which of the local player's units are selected. Left click picks one, dragging a box picks
-    // all inside, Shift adds. Groups as in SC2: Ctrl+digit sets, Shift+digit adds, digit recalls,
+    // all inside, Shift adds. A click on an own building with no unit under the cursor selects
+    // the building instead (the factory panel works on it). Groups as in SC2: Ctrl+digit sets, Shift+digit adds, digit recalls,
     // the digit twice centres the camera. Only own units: allies' units are not commandable.
     // Pure Presentation state: the sim never learns what is selected, commands carry the unit ids.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
@@ -18,8 +19,9 @@ namespace Game.Presentation
         private const int GroupCount = 10;
 
         [SerializeField] private RtsCamera? _camera;
-        [Tooltip("HUD document; the selection box is drawn on it.")]
-        [SerializeField] private UIDocument? _hud;
+        [Tooltip("The selection box is drawn on the HUD; clicks on its buttons are not map clicks.")]
+        [SerializeField] private Hud? _hud;
+        [SerializeField] private PlacementController? _placement;
         [Tooltip("A press that moves less than this is a click, not a box.")]
         [SerializeField] private float _dragThresholdPixels = 6f;
         [Tooltip("Extra pick radius around a unit, pixels: small units stay clickable when zoomed out.")]
@@ -42,6 +44,9 @@ namespace Game.Presentation
 
         public IReadOnlyList<int> Selected => _selected;
 
+        // Own building selected by a click, 0 when none; exclusive with the unit selection.
+        public int SelectedBuildingId { get; private set; }
+
         public event Action? Changed;
 
         private void Awake()
@@ -61,7 +66,7 @@ namespace Game.Presentation
 
         private void Start()
         {
-            if (_hud == null)
+            if (_hud?.Root == null)
                 return;
             _box = new VisualElement { name = "SelectionBox", pickingMode = PickingMode.Ignore };
             _box.style.position = Position.Absolute;
@@ -69,7 +74,7 @@ namespace Game.Presentation
             _box.style.borderTopWidth = _box.style.borderBottomWidth = _box.style.borderLeftWidth = _box.style.borderRightWidth = 1f;
             _box.style.borderTopColor = _box.style.borderBottomColor = _box.style.borderLeftColor = _box.style.borderRightColor = new Color(0.4f, 1f, 0.4f, 0.9f);
             _box.style.display = DisplayStyle.None;
-            _hud.rootVisualElement.Add(_box);
+            _hud.Root.Add(_box);
         }
 
         private void Update()
@@ -79,6 +84,12 @@ namespace Game.Presentation
                 return;
 
             DropGone(simulation.State, _selected, notify: true);
+            if (SelectedBuildingId != 0)
+            {
+                Building? building = simulation.State.FindBuilding(SelectedBuildingId);
+                if (building == null || building.IsDead || building.OwnerId != _localPlayer!.PlayerId)
+                    SetBuilding(0);
+            }
             HandleGroups(simulation.State);
             HandleMouse(simulation.State);
         }
@@ -112,7 +123,8 @@ namespace Game.Presentation
                 return;
             Vector2 pointer = mouse.position.ReadValue();
 
-            if (mouse.leftButton.wasPressedThisFrame)
+            // Placing a building owns the mouse; a press on a button is not a map click.
+            if (mouse.leftButton.wasPressedThisFrame && !(_placement != null && _placement.IsBusy) && !(_hud != null && _hud.IsPointerOverUi(pointer)))
             {
                 _pressing = true;
                 _pressAt = pointer;
@@ -147,6 +159,16 @@ namespace Game.Presentation
                 Unit? unit = UnitAt(state, pointer, u => u.OwnerId == playerId);
                 if (unit != null)
                     _scratch.Add(unit.Id);
+                else if (!add && _camera!.GroundPoint(pointer, out Vector3 ground))
+                {
+                    Building? building = OwnBuildingAt(state, playerId, Mathf.FloorToInt(ground.x), Mathf.FloorToInt(ground.z));
+                    if (building != null)
+                    {
+                        _selected.Clear();
+                        SetBuilding(building.Id);
+                        return;
+                    }
+                }
             }
 
             // Shift-click on a selected unit takes it out, as in SC2.
@@ -201,6 +223,7 @@ namespace Game.Presentation
 
         private void Select(List<int> ids, bool add)
         {
+            SelectedBuildingId = 0;
             if (!add)
                 _selected.Clear();
             foreach (int id in ids)
@@ -247,8 +270,25 @@ namespace Game.Presentation
                 Changed?.Invoke();
         }
 
+        private void SetBuilding(int id)
+        {
+            SelectedBuildingId = id;
+            Changed?.Invoke();
+        }
+
+        private static Building? OwnBuildingAt(SimState state, int playerId, int cellX, int cellY)
+        {
+            foreach (Building building in state.Buildings)
+            {
+                if (!building.IsDead && building.OwnerId == playerId && building.OccupiesCell(cellX, cellY))
+                    return building;
+            }
+            return null;
+        }
+
         private void OnPlayerChanged()
         {
+            SelectedBuildingId = 0;
             _selected.Clear();
             foreach (List<int> group in _groups)
                 group.Clear();

@@ -228,7 +228,7 @@ namespace Game.Presentation
             return material;
         }
 
-        private Color OwnerColor(SimState state, int ownerId)
+        public Color OwnerColor(SimState state, int ownerId)
         {
             if (ownerId == state.CreepPlayerId)
                 return _creepColor;
