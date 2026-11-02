@@ -20,6 +20,9 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _buildingsJson;
         [SerializeField] private TextAsset? _creepCampsJson;
         [SerializeField] private TextAsset? _rulesJson;
+        [Tooltip("legion-ai.md: needed when the map has a Black Legion base.")]
+        [SerializeField] private TextAsset? _legionJson;
+        [SerializeField] private TextAsset? _wavesJson;
 
         [Header("Match")]
         [Tooltip("Assets/Data/maps/*.json")]
@@ -29,6 +32,8 @@ namespace Game.Presentation
         [SerializeField, Range(1, 4)] private int _playerCount = 2;
         [Tooltip("Owner of the creep camps (Grey Creatures), hostile to every human player.")]
         [SerializeField] private int _creepPlayerId = 10;
+        [Tooltip("Plays the Black Legion when the map has its base (legion-ai.md), hostile to every human player.")]
+        [SerializeField] private int _legionPlayerId = 9;
 
         [Header("Read-only")]
         [SerializeField] private int _tick;
@@ -56,14 +61,25 @@ namespace Game.Presentation
                 return;
             }
 
-            var data = GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text);
+            var data = _legionJson != null && _wavesJson != null
+                ? GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text, _legionJson.text, _wavesJson.text)
+                : GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text);
 
             var humans = new List<int>();
             for (int id = 1; id <= _playerCount; id++)
                 humans.Add(id);
             MapSetup map = MapLoader.Parse(_mapJson.text, humans);
 
+            bool legion = map.LegionSlots.Count > 0;
+            if (legion && data.Legion.Count == 0)
+            {
+                Debug.LogError("SimRunner: the map has a Black Legion base — assign legion.json and waves.json.", this);
+                enabled = false;
+                return;
+            }
             var playerIds = new List<int>(humans) { _creepPlayerId };
+            if (legion)
+                playerIds.Add(_legionPlayerId);
             var relations = new List<RelationSetup>();
             foreach (int a in humans)
             {
@@ -73,9 +89,12 @@ namespace Game.Presentation
                         relations.Add(new RelationSetup(a, b, Relation.Ally));
                 }
                 relations.Add(new RelationSetup(a, _creepPlayerId, Relation.Enemy));
+                if (legion)
+                    relations.Add(new RelationSetup(a, _legionPlayerId, Relation.Enemy));
             }
 
-            _simulation = new Simulation(new MatchSetup(_seed, data, map, ResourceTypeCount, playerIds, relations, _creepPlayerId));
+            _simulation = new Simulation(new MatchSetup(_seed, data, map, ResourceTypeCount, playerIds, relations,
+                _creepPlayerId, legion ? _legionPlayerId : MatchSetup.NoPlayer));
             ShowState();
         }
 

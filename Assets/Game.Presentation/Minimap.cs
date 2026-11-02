@@ -153,6 +153,13 @@ namespace Game.Presentation
                 return;
             foreach (SimEvent e in events)
             {
+                // legion-ai.md: where the coming wave starts from.
+                if (e is WaveIncoming && simulation.State.Legion != null)
+                {
+                    LegionAi legion = simulation.State.Legion;
+                    _pings.Add(new Ping(legion.RallyX * PixelsPerCell + PixelsPerCell / 2, legion.RallyY * PixelsPerCell + PixelsPerCell / 2, Time.unscaledTime));
+                    continue;
+                }
                 if (e is BuildingAttacked attacked && simulation.State.Relations.IsAlly(_localPlayer.PlayerId, attacked.OwnerId))
                 {
                     Building? building = simulation.State.FindBuilding(attacked.BuildingId);

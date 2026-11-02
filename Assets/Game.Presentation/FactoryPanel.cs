@@ -12,8 +12,8 @@ namespace Game.Presentation
     public sealed class FactoryPanel : MonoBehaviour
     {
         [SerializeField] private Hud? _hud;
-        [Tooltip("M1 units (PLAN.md): worker and infantry. The rest of the factory's list comes in M2.")]
-        [SerializeField] private string[] _units = { "worker", "infantry" };
+        [Tooltip("PLAN.md M2: all six units of the factory.")]
+        [SerializeField] private string[] _units = { "worker", "scout", "infantry", "shooter", "heavy", "siege" };
 
         private readonly List<Button> _buttons = new List<Button>();
 
@@ -58,7 +58,7 @@ namespace Game.Presentation
                     text = $"{DisplayNames.Unit(id)}\n{price} · {DisplayNames.Seconds(stats.BuildTimeTicks)}",
                     userData = stats,
                 };
-                button.style.width = 110;
+                button.style.width = 96;
                 button.style.height = 52;
                 Hud.StyleButton(button);
                 row.Add(button);
@@ -143,7 +143,7 @@ namespace Game.Presentation
         private Building? SelectedFactory(SimState state)
         {
             Building? building = state.FindBuilding(_selection!.SelectedBuildingId);
-            return building != null && !building.IsDead && building.Factory != null ? building : null;
+            return building != null && !building.IsDead && building.Factory != null && building.OwnerId == _localPlayer!.PlayerId ? building : null;
         }
 
         private static string Names(IReadOnlyList<string> queue)

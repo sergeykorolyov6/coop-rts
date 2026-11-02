@@ -563,6 +563,8 @@ GameObject:
   - component: {fileID: 1100000018}
   - component: {fileID: 1100000017}
   - component: {fileID: 1100000021}
+  - component: {fileID: 1100000022}
+  - component: {fileID: 1100000023}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -601,10 +603,13 @@ MonoBehaviour:
   _buildingsJson: {fileID: 4900000, guid: d19a9d55258b4b18a666aef60ff42d4d, type: 3}
   _creepCampsJson: {fileID: 4900000, guid: e0b2bb28265c49acb34faa5e560899cc, type: 3}
   _rulesJson: {fileID: 4900000, guid: 3b6fd5daf1474369ba6db60cc6a9aca8, type: 3}
-  _mapJson: {fileID: 4900000, guid: 81f77b1858424d4883d3ad33ee73b844, type: 3}
+  _legionJson: {fileID: 4900000, guid: 23f0e6e86cf44bccb1efe0f9c1f90b9f, type: 3}
+  _wavesJson: {fileID: 4900000, guid: 9b136e90a7924fbd8fc56c50548942d8, type: 3}
+  _mapJson: {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
   _seed: 1
-  _playerCount: 2
+  _playerCount: 1
   _creepPlayerId: 10
+  _legionPlayerId: 9
   _tick: 0
   _stateHash: 
 --- !u!114 &1100000004
@@ -743,7 +748,11 @@ MonoBehaviour:
   _hud: {fileID: 1637688649}
   _units:
   - worker
+  - scout
   - infantry
+  - shooter
+  - heavy
+  - siege
 --- !u!114 &1100000012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -771,6 +780,8 @@ MonoBehaviour:
     Hotkey: 20
   - BuildingId: headquarters
     Hotkey: 22
+  - BuildingId: turret
+    Hotkey: 34
   _activeColor: {r: 0.25, g: 0.45, b: 0.3, a: 1}
 --- !u!114 &1100000013
 MonoBehaviour:
@@ -1003,6 +1014,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.Hud
   _runner: {fileID: 1100000003}
   _localPlayer: {fileID: 1100000009}
+--- !u!114 &1100000022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4effa92ce01d4b51be81a413cce8a3c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.MissionPanel
+  _hud: {fileID: 1637688649}
+  _victoryColor: {r: 0.55, g: 0.95, b: 0.55, a: 1}
+  _defeatColor: {r: 1, g: 0.45, b: 0.4, a: 1}
+--- !u!114 &1100000023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bc759f9cb2640c0acc5699588224f43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.TurretRangeView
+  _color: {r: 0.95, g: 0.85, b: 0.35, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

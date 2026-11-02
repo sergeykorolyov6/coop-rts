@@ -22,7 +22,7 @@ namespace Game.Presentation
 
         [SerializeField] private Hud? _hud;
         [SerializeField] private LocalPlayer? _localPlayer;
-        [Tooltip("M1 buildings (PLAN.md). The turret comes in M2.")]
+        [Tooltip("Buildings of the player's menu (PLAN.md: M1 + the turret of M2).")]
         [SerializeField] private Entry[] _entries =
         {
             new Entry { BuildingId = BuildingKinds.Drill, Hotkey = Key.D },
@@ -31,6 +31,7 @@ namespace Game.Presentation
             new Entry { BuildingId = BuildingKinds.Storage, Hotkey = Key.S },
             new Entry { BuildingId = BuildingKinds.Factory, Hotkey = Key.F },
             new Entry { BuildingId = BuildingKinds.Headquarters, Hotkey = Key.H },
+            new Entry { BuildingId = "turret", Hotkey = Key.T },
         };
         [SerializeField] private Color _activeColor = new Color(0.25f, 0.45f, 0.30f);
 

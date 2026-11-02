@@ -92,6 +92,8 @@ public class LegionAiTests
     public void GWT2_Solo_WarningAtTwoForty_ForThePlayer()
     {
         var sim = Match();
+        sim.Tick();
+        Assert.That(Ai(sim).NextWaveTick, Is.EqualTo(180 * Second), "the HUD's timer");
         List<WaveIncoming> warnings = RunCollectingUntil<WaveIncoming>(sim, 160 * Second + 1);
         Assert.That(warnings, Has.Count.EqualTo(1));
         Assert.That(warnings[0].Tick, Is.EqualTo(160 * Second));

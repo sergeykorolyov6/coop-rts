@@ -32,6 +32,7 @@ internal static class LegionAiSystem
         WarnAndLaunch(state, ai, events);
         LeadWaves(state, ai);
         Defend(state, ai);
+        ai.NextWaveTick = WaveTick(state, ai, ai.NextWave);
     }
 
     // Wave n (1-based): launch tick for this number of players.

@@ -12,6 +12,9 @@ namespace Game.Presentation
     // A model is a root on the ground with parts as children: scaling the root's Y grows a site.
     public static class PrimitiveModels
     {
+        private const string Turret = "turret";
+        private const string LegionFactory = "legion_factory";
+
         private static readonly Color Metal = new Color(0.32f, 0.33f, 0.36f);
         private static readonly Color Dark = new Color(0.10f, 0.10f, 0.12f);
 
@@ -63,6 +66,8 @@ namespace Game.Presentation
             {
                 case BuildingKinds.Headquarters: return 2.4f;
                 case BuildingKinds.Factory: return 1.7f;
+                case LegionFactory: return 1.7f;
+                case Turret: return 1.3f;
                 case BuildingKinds.Drill: return 1.0f;
                 case BuildingKinds.Storage: return 1.0f;
                 case BuildingKinds.Conveyor: return 0.12f;
@@ -90,6 +95,7 @@ namespace Game.Presentation
                     break;
 
                 case BuildingKinds.Factory:
+                case LegionFactory:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.12f, 0f), new Vector3(w - 0.1f, 0.24f, h - 0.1f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.7f, 0.15f), new Vector3(w - 0.4f, 1.0f, h - 0.7f));
                     Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, 1.25f, 0.15f), new Vector3(w - 0.6f, 0.15f, h - 0.9f));
@@ -124,6 +130,15 @@ namespace Game.Presentation
                         Vector3 scale = alongX ? new Vector3(0.96f, 0.12f, 0.1f) : new Vector3(0.1f, 0.12f, 0.96f);
                         Add(root, part, renderers, PrimitiveType.Cube, owner, offset, scale);
                     }
+                    break;
+
+                case Turret:
+                    // A squat round base on a plinth, a gun housing and a barrel pointing at the camera.
+                    Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.15f, 0f), new Vector3(w - 0.2f, 0.3f, h - 0.2f));
+                    Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 0.55f, 0f), new Vector3(w * 0.6f, 0.25f, h * 0.6f));
+                    Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, 0.95f, 0f), new Vector3(0.7f, 0.4f, 0.7f));
+                    Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0f, 0.95f, -0.65f), new Vector3(0.14f, 0.45f, 0.14f));
+                    root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(90f, 0f, 0f);
                     break;
 
                 case BuildingKinds.ConveyorBridge:

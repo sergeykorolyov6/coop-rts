@@ -36,6 +36,9 @@ public sealed class LegionAi
     public int NextWaveTargetPlayerId { get; internal set; }
     public bool NextWaveWarned { get; internal set; }
 
+    // When the next wave leaves (for the HUD timer); follows from NextWave, so not hashed.
+    public int NextWaveTick { get; internal set; } = int.MaxValue;
+
     // Base building the waiting units defend, 0 when the base is calm.
     public int DefendBuildingId { get; internal set; }
 }

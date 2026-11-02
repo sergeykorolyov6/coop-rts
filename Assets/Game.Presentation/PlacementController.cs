@@ -56,6 +56,10 @@ namespace Game.Presentation
 
         public string? BuildingId => _stats?.Id;
 
+        // Cells the single-building silhouette covers this frame, null when there is none
+        // (turret.md: the range ring is drawn around it).
+        public RectInt? Footprint { get; private set; }
+
         private void Awake()
         {
             _runner = GetComponent<SimRunner>();
@@ -87,6 +91,7 @@ namespace Game.Presentation
                 return;
             _mode = Mode.None;
             _stats = null;
+            Footprint = null;
             _dragging = false;
             _bridgeStart = null;
             _endedFrame = Time.frameCount;
@@ -118,6 +123,7 @@ namespace Game.Presentation
 
             Vector2 pointer = mouse.position.ReadValue();
             _tilesUsed = _arrowsUsed = 0;
+            Footprint = null;
             string? tip = null;
             if (_camera.GroundPoint(pointer, out Vector3 ground))
             {
@@ -143,6 +149,7 @@ namespace Game.Presentation
             // The cursor is the footprint's centre.
             int x = Mathf.FloorToInt(ground.x - (stats.SizeW - 1) * 0.5f);
             int y = Mathf.FloorToInt(ground.z - (stats.SizeH - 1) * 0.5f);
+            Footprint = new RectInt(x, y, stats.SizeW, stats.SizeH);
 
             RejectReason? reason = PlacementPreview.Check(state, playerId, stats.Id, x, y, _rotation);
             bool nearCamp = reason == null && InCampAggro(state, playerId, x, y, stats.SizeW, stats.SizeH);

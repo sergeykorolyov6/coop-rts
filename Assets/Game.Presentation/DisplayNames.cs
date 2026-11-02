@@ -17,6 +17,7 @@ namespace Game.Presentation
                 case BuildingKinds.ConveyorBridge: return "Мост";
                 case BuildingKinds.Storage: return "Склад";
                 case "turret": return "Турель";
+                case "legion_factory": return "Завод Легиона";
                 default: return id;
             }
         }
@@ -31,8 +32,18 @@ namespace Game.Presentation
                 case "shooter": return "Стрелок";
                 case "heavy": return "Тяжёлый";
                 case "siege": return "Осадный";
+                case "legion_worker": return "Рабочий Легиона";
+                case "legion_raider": return "Рейдер Легиона";
+                case "legion_gunner": return "Стрелок Легиона";
+                case "legion_brute": return "Громила Легиона";
                 default: return id;
             }
+        }
+
+        public static string Clock(int ticks)
+        {
+            int seconds = System.Math.Max(0, ticks) / Simulation.TicksPerSecond;
+            return $"{seconds / 60}:{seconds % 60:00}";
         }
 
         // Docs/Design/creep_camps.csv, name_ru.

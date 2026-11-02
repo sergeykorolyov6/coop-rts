@@ -25,6 +25,8 @@ namespace Game.Presentation
         };
         [Tooltip("creep-camp.md: creeps are neutral grey.")]
         [SerializeField] private Color _creepColor = new Color(0.55f, 0.55f, 0.55f);
+        [Tooltip("legion-ai.md: the Black Legion — near black with a violet cast, so it still reads on dark ground.")]
+        [SerializeField] private Color _legionColor = new Color(0.22f, 0.14f, 0.26f);
         [SerializeField] private Color _primaryCargoColor = new Color(0.80f, 0.55f, 0.25f);
         [SerializeField] private Color _secondaryCargoColor = new Color(0.35f, 0.70f, 0.85f);
         [SerializeField] private Color _trophyColor = new Color(0.95f, 0.80f, 0.30f);
@@ -351,6 +353,8 @@ namespace Game.Presentation
         {
             if (ownerId == state.CreepPlayerId)
                 return _creepColor;
+            if (ownerId == state.LegionPlayerId)
+                return _legionColor;
             int index = ownerId - 1;
             return index >= 0 && index < _playerColors.Length ? _playerColors[index] : Color.white;
         }

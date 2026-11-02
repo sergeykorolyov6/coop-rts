@@ -96,8 +96,11 @@ namespace Game.Presentation
                         string whose = attacked.OwnerId == me ? "" : $" союзника {attacked.OwnerId}";
                         Show($"Атакован{whose}: {BuildingName(state, attacked.BuildingId)}", _alarmColor);
                         break;
+                    // mission.md: a lost headquarters can be rebuilt while there is a worker.
                     case EntityDestroyed destroyed when destroyed.IsBuilding && destroyed.OwnerId == me:
-                        Show("Здание разрушено", _alarmColor);
+                        Show(state.Legion != null && state.FindHeadquarters(me) == null
+                            ? "Штаб разрушен — отстройте его рабочими"
+                            : "Здание разрушено", _alarmColor);
                         break;
                     case CampAlerted alerted when Discovered(state, me, alerted.CampIndex):
                         Show("Лагерь крипов встревожен", _warningColor);
@@ -106,6 +109,16 @@ namespace Game.Presentation
                     case CampCleared _:
                         Show("Лагерь крипов зачищен — трофей ждёт рабочих", _infoColor);
                         break;
+                    // legion-ai.md: the whole team hears where the next wave goes.
+                    case WaveIncoming incoming:
+                        string toWhom = incoming.TargetPlayerId == me ? "к вам" : $"к союзнику {incoming.TargetPlayerId}";
+                        Show($"Волна {incoming.Wave} Легиона через {DisplayNames.Clock(incoming.LaunchTick - incoming.Tick)} — идёт {toWhom}", _alarmColor);
+                        break;
+                    case WaveLaunched launched:
+                        string side = launched.TargetPlayerId == me ? "на вас" : $"на союзника {launched.TargetPlayerId}";
+                        Show($"Волна {launched.Wave} вышла {side}: {launched.UnitCount} юн.", _alarmColor);
+                        break;
+
                 }
             }
         }
