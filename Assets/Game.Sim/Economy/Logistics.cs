@@ -2,9 +2,21 @@ using System.Collections.Generic;
 
 namespace Game.Sim;
 
-// Hand-over of single resource units between buildings: drill → neighbour, conveyor → front.
+// Who may hand a resource unit to whom (conveyors.md):
+//  - drills give to own or ally conveyors, bridge inputs, storages and headquarters;
+//  - storages give to own or ally conveyors and bridge inputs only;
+//  - conveyors and bridge outputs give to own conveyors and bridge inputs (never someone
+//    else's, even an ally's: answer 14), and to own or ally storages and headquarters.
+// A conveyor never takes from the building in front of it; a headquarters credits its owner.
 internal static class Logistics
 {
+    public enum Giver
+    {
+        Drill,
+        Storage,
+        Belt,
+    }
+
     // Neighbours sharing an edge with the footprint, in a fixed order (bottom row left to right,
     // right column up, top row right to left, left column down), each building once.
     public static void Neighbours(SimState state, Building b, List<Building> result)
@@ -27,17 +39,47 @@ internal static class Logistics
         }
     }
 
-    // Hands one unit from a drill or storage to a neighbouring receiver if it takes it.
-    // Ally buildings take, enemy and neutral ones never (conveyors.md, "Бур → лента").
-    public static bool TryGiveFromBuilding(SimState state, Building giver, Building receiver, int resourceType)
+    // Hands one unit over if the receiver takes it now. For Belt givers into a conveyor the
+    // caller has already applied the single-input rule; here a conveyor only takes from
+    // buildings (drill, storage, bridge output) with a free slot at its start.
+    public static bool TryGive(SimState state, Building giver, Giver kind, Building receiver, int resourceType)
     {
-        if (!receiver.IsComplete || !state.Relations.IsAlly(giver.OwnerId, receiver.OwnerId))
+        if (receiver.IsDead || !receiver.IsComplete)
             return false;
-        if (receiver.Stats.Id == BuildingKinds.Headquarters)
+        bool own = giver.OwnerId == receiver.OwnerId;
+        bool ally = state.Relations.IsAlly(giver.OwnerId, receiver.OwnerId);
+        if (!ally)
+            return false;
+
+        switch (receiver.Stats.Id)
         {
-            // Only a headquarters credits the wallet, its owner's (answers 2, 15).
-            state.GetPlayer(receiver.OwnerId).Wallet.Add(resourceType, 1);
-            return true;
+            case BuildingKinds.Headquarters:
+                if (kind == Giver.Storage)
+                    return false;
+                // Only a headquarters credits a wallet: its owner's (answers 2, 15).
+                state.GetPlayer(receiver.OwnerId).Wallet.Add(resourceType, 1);
+                return true;
+
+            case BuildingKinds.Storage:
+                if (kind == Giver.Storage || receiver.Storage!.Total >= state.Rules.StorageCapacity)
+                    return false;
+                receiver.Storage.Add(resourceType);
+                return true;
+
+            case BuildingKinds.Conveyor:
+                if (kind == Giver.Belt && !own)
+                    return false;
+                Conveyor c = receiver.Conveyor!;
+                if (c.HasItem || giver.OccupiesCell(receiver.CellX + receiver.Direction.Dx(), receiver.CellY + receiver.Direction.Dy()))
+                    return false;
+                c.ItemType = resourceType;
+                c.ItemPos = 0;
+                return true;
+
+            case BuildingKinds.ConveyorBridge:
+                if (kind == Giver.Belt && !own)
+                    return false;
+                return ConveyorSystem.TryEnterBridge(state, giver, receiver, resourceType);
         }
         return false;
     }

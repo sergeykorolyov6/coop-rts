@@ -116,7 +116,10 @@ public sealed class SimState
         for (int i = 0; i < _buildings.Count; i++)
         {
             if (_buildings[i].IsDead)
+            {
+                BuildingComponents.Detach(this, _buildings[i]);
                 Map.Free(_buildings[i]);
+            }
         }
         _buildings.RemoveAll(b => b.IsDead);
     }

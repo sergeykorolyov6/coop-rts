@@ -69,6 +69,13 @@ public sealed class BuildCommand : ICommand
             return;
         }
 
+        if (stats!.Id == BuildingKinds.ConveyorBridge && _sites.Length == 2
+            && !ConveyorSystem.InBridgeRange(state, _sites[0].CellX, _sites[0].CellY, _sites[1].CellX, _sites[1].CellY))
+        {
+            events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
+            return;
+        }
+
         // Checked against the first site only: later cells of a line are checked when
         // a worker gets to them (conveyors.md, fail cases).
         BuildSite first = _sites[0];

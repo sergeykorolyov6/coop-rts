@@ -133,5 +133,28 @@ internal sealed class StateHasher
             _writer.Write(b.Drill.OutputCursor);
             _writer.Write(b.Drill.IsStopped);
         }
+        if (b.Conveyor != null)
+        {
+            _writer.Write(b.Conveyor.ItemType);
+            _writer.Write(b.Conveyor.ItemPos);
+        }
+        if (b.Bridge != null)
+        {
+            _writer.Write(b.Bridge.LinkedToId);
+            _writer.Write(b.Bridge.LinkedFromId);
+            _writer.Write(b.Bridge.IsOutputEnd);
+            _writer.Write(b.Bridge._items.Count);
+            foreach (BridgeItem item in b.Bridge._items)
+            {
+                _writer.Write(item.Type);
+                _writer.Write(item.Pos);
+            }
+        }
+        if (b.Storage != null)
+        {
+            _writer.Write(b.Storage.Primary);
+            _writer.Write(b.Storage.Secondary);
+            _writer.Write(b.Storage.OutputCursor);
+        }
     }
 }

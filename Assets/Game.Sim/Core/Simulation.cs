@@ -61,6 +61,7 @@ public sealed class Simulation
 
         UnitSystem.Tick(State, _events);
         DrillSystem.Tick(State);
+        ConveyorSystem.Tick(State);
         Movement.Separate(State);
         Movement.PushOutOfBlockedCells(State);
         State.RemoveDead();

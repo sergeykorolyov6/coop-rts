@@ -11,6 +11,23 @@ internal static class BuildingComponents
                 int cells = DrillPreview.Count(state.Map, building.CellX, building.CellY, building.Width, building.Height, out int type);
                 building.Drill = new Drill(type, cells);
                 break;
+            case BuildingKinds.Conveyor:
+                building.Conveyor = new Conveyor();
+                break;
+            case BuildingKinds.ConveyorBridge:
+                building.Bridge = new ConveyorBridge();
+                ConveyorSystem.LinkNewBridgeEnd(state, building);
+                break;
+            case BuildingKinds.Storage:
+                building.Storage = new Storage();
+                break;
         }
+    }
+
+    // Before a destroyed building leaves the state. Resources on it are lost (answer 14).
+    public static void Detach(SimState state, Building building)
+    {
+        if (building.Bridge != null)
+            ConveyorSystem.Unlink(state, building);
     }
 }
