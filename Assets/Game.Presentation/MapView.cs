@@ -1,14 +1,21 @@
+using Game.Sim;
 using UnityEngine;
 
 namespace Game.Presentation
 {
-    // Ground of the map in the Game view: one texel per cell, checkerboard so cells read
-    // without gizmos. Same layout as SimRunner's gizmo grid: cell (x, y) → world XZ [x, x+1) × [y, y+1).
+    // Ground of the map in the Game view: one texel per cell — terrain, rock and ore of both
+    // resources; checkerboard so cells read without gizmos.
+    // Same layout as SimRunner's gizmo grid: cell (x, y) → world XZ [x, x+1) × [y, y+1).
     [RequireComponent(typeof(SimRunner))]
     public sealed class MapView : MonoBehaviour
     {
         [SerializeField] private Color _cellColorA = new Color(0.32f, 0.36f, 0.30f);
         [SerializeField] private Color _cellColorB = new Color(0.28f, 0.32f, 0.26f);
+        [SerializeField] private Color _blockedColor = new Color(0.15f, 0.14f, 0.13f);
+        [SerializeField] private Color _primaryOreColor = new Color(0.80f, 0.55f, 0.25f);
+        [SerializeField] private Color _secondaryOreColor = new Color(0.35f, 0.70f, 0.85f);
+        [Tooltip("Ore cells keep a faint checker so single cells stay countable.")]
+        [SerializeField, Range(0f, 0.2f)] private float _oreCheckerShade = 0.06f;
 
         private Texture2D? _texture;
         private Material? _material;
@@ -20,8 +27,9 @@ namespace Game.Presentation
             if (simulation == null)
                 return;
 
-            int width = simulation.State.Grid.Width;
-            int height = simulation.State.Grid.Height;
+            MapState map = simulation.State.Map;
+            int width = map.Width;
+            int height = map.Height;
 
             _texture = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false)
             {
@@ -32,7 +40,7 @@ namespace Game.Presentation
             var pixels = new Color[width * height];
             for (int y = 0; y < height; y++)
                 for (int x = 0; x < width; x++)
-                    pixels[y * width + x] = (x + y) % 2 == 0 ? _cellColorA : _cellColorB;
+                    pixels[y * width + x] = CellColor(map, x, y);
             _texture.SetPixels(pixels);
             _texture.Apply();
 
@@ -51,6 +59,18 @@ namespace Game.Presentation
             var groundRenderer = ground.GetComponent<MeshRenderer>();
             _material = groundRenderer.material;
             _material.mainTexture = _texture;
+        }
+
+        private Color CellColor(MapState map, int x, int y)
+        {
+            bool even = (x + y) % 2 == 0;
+            if (map.IsBlocked(x, y))
+                return _blockedColor;
+            int ore = map.OreAt(x, y);
+            if (ore == MapSetup.NoOre)
+                return even ? _cellColorA : _cellColorB;
+            Color color = ore == Game.Sim.Resources.Primary ? _primaryOreColor : _secondaryOreColor;
+            return even ? color : Color.Lerp(color, Color.black, _oreCheckerShade);
         }
 
         private void OnDestroy()

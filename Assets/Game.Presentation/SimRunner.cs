@@ -5,18 +5,29 @@ using UnityEngine;
 namespace Game.Presentation
 {
     // Drives a local match at Simulation.TicksPerSecond from Unity's frame loop.
-    // M0: one machine, no network; from M3 ticks come from the Game.Net lockstep instead.
+    // One machine, no network; from M3 ticks come from the Game.Net lockstep instead.
     public sealed class SimRunner : MonoBehaviour
     {
         // Caps catch-up after a long frame (breakpoint, alt-tab) so the editor does not freeze.
         private const int MaxTicksPerFrame = 5;
 
-        [Header("Match (M0 debug setup; real values come from mission data in M1)")]
+        // Primary and secondary ore. Qualified: UnityEngine.Resources would shadow Game.Sim.Resources.
+        private const int ResourceTypeCount = Game.Sim.Resources.Secondary + 1;
+
+        [Header("Balance data (Assets/Data, generated from Docs/Design/*.csv)")]
+        [SerializeField] private TextAsset? _unitsJson;
+        [SerializeField] private TextAsset? _buildingsJson;
+        [SerializeField] private TextAsset? _creepCampsJson;
+        [SerializeField] private TextAsset? _rulesJson;
+
+        [Header("Match")]
+        [Tooltip("Assets/Data/maps/*.json")]
+        [SerializeField] private TextAsset? _mapJson;
         [SerializeField] private int _seed = 1;
-        [SerializeField, Min(1)] private int _mapWidth = 64;
-        [SerializeField, Min(1)] private int _mapHeight = 64;
-        [SerializeField, Min(1)] private int _playerCount = 2;
-        [SerializeField, Min(1)] private int _resourceTypeCount = 2;
+        [Tooltip("Human players, allied to each other; player N takes start slot N of the map.")]
+        [SerializeField, Range(1, 4)] private int _playerCount = 2;
+        [Tooltip("Owner of the creep camps (Grey Creatures), hostile to every human player.")]
+        [SerializeField] private int _creepPlayerId = 10;
 
         [Header("Read-only")]
         [SerializeField] private int _tick;
@@ -29,16 +40,33 @@ namespace Game.Presentation
 
         private void Awake()
         {
-            var playerIds = new List<int>();
-            var relations = new List<RelationSetup>();
-            for (int a = 1; a <= _playerCount; a++)
+            if (_unitsJson == null || _buildingsJson == null || _creepCampsJson == null || _rulesJson == null || _mapJson == null)
             {
-                playerIds.Add(a);
-                for (int b = a + 1; b <= _playerCount; b++)
-                    relations.Add(new RelationSetup(a, b, Relation.Ally));
+                Debug.LogError("SimRunner: assign the balance json files and the map in the Inspector.", this);
+                enabled = false;
+                return;
             }
 
-            _simulation = new Simulation(new MatchSetup(_seed, _mapWidth, _mapHeight, _resourceTypeCount, playerIds, relations));
+            var data = GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text);
+
+            var humans = new List<int>();
+            for (int id = 1; id <= _playerCount; id++)
+                humans.Add(id);
+            MapSetup map = MapLoader.Parse(_mapJson.text, humans);
+
+            var playerIds = new List<int>(humans) { _creepPlayerId };
+            var relations = new List<RelationSetup>();
+            foreach (int a in humans)
+            {
+                foreach (int b in humans)
+                {
+                    if (a < b)
+                        relations.Add(new RelationSetup(a, b, Relation.Ally));
+                }
+                relations.Add(new RelationSetup(a, _creepPlayerId, Relation.Enemy));
+            }
+
+            _simulation = new Simulation(new MatchSetup(_seed, data, map, ResourceTypeCount, playerIds, relations, _creepPlayerId));
             ShowState();
         }
 
@@ -74,8 +102,10 @@ namespace Game.Presentation
         // One Unity unit per cell on the XZ plane, origin at cell (0, 0).
         private void OnDrawGizmos()
         {
-            int width = _simulation?.State.Grid.Width ?? _mapWidth;
-            int height = _simulation?.State.Grid.Height ?? _mapHeight;
+            if (_simulation == null)
+                return;
+            int width = _simulation.State.Grid.Width;
+            int height = _simulation.State.Grid.Height;
 
             Gizmos.color = new Color(1f, 1f, 1f, 0.15f);
             for (int x = 0; x <= width; x++)
