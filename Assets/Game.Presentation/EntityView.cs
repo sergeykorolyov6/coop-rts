@@ -326,12 +326,12 @@ namespace Game.Presentation
 
         private Transform CreatePrimitive(PrimitiveType type, string name, Color color)
         {
-            GameObject go = GameObject.CreatePrimitive(type);
+            GameObject go = Primitives.Create(type);
             go.name = name;
             // Picking goes through sim coordinates, not physics.
             Destroy(go.GetComponent<Collider>());
             MeshRenderer renderer = go.GetComponent<MeshRenderer>();
-            // A primitive gets the active pipeline's default material: no Shader.Find needed.
+            // Primitives.Create gives a URP Lit material that ships with the build.
             _baseMaterial ??= renderer.sharedMaterial;
             renderer.sharedMaterial = MaterialFor(color);
             go.transform.SetParent(_root, worldPositionStays: false);

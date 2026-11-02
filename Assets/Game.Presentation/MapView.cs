@@ -60,9 +60,8 @@ namespace Game.Presentation
             };
             Shade(simulation.State);
 
-            // A primitive gets the active render pipeline's default material, so this works
-            // with URP and Built-in alike without Shader.Find.
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            // URP Lit from Primitives: its main texture is the cell picture.
+            var ground = Primitives.Create(PrimitiveType.Quad);
             ground.name = "Ground";
             Destroy(ground.GetComponent<Collider>());
             ground.transform.SetParent(transform, worldPositionStays: false);

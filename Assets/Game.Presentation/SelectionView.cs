@@ -77,7 +77,7 @@ namespace Game.Presentation
 
         private Transform CreateMarker(PrimitiveType type, string name)
         {
-            GameObject go = GameObject.CreatePrimitive(type);
+            GameObject go = Primitives.Create(type);
             go.name = name;
             Destroy(go.GetComponent<Collider>());
             MeshRenderer renderer = go.GetComponent<MeshRenderer>();

@@ -129,7 +129,7 @@ namespace Game.Presentation
             }
             else
             {
-                GameObject go = GameObject.CreatePrimitive(type);
+                GameObject go = Primitives.Create(type);
                 go.name = type == PrimitiveType.Cube ? "QueueLine" : "QueuePoint";
                 Destroy(go.GetComponent<Collider>());
                 _baseMaterial ??= go.GetComponent<MeshRenderer>().sharedMaterial;

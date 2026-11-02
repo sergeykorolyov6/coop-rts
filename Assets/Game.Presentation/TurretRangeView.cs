@@ -101,7 +101,7 @@ namespace Game.Presentation
 
         private Transform CreateSegment()
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject go = Primitives.Create(PrimitiveType.Cube);
             go.name = "Range";
             Destroy(go.GetComponent<Collider>());
             MeshRenderer renderer = go.GetComponent<MeshRenderer>();

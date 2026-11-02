@@ -163,7 +163,7 @@ namespace Game.Presentation
         {
             for (int i = 0; i < RingSegments; i++)
             {
-                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                GameObject go = Primitives.Create(PrimitiveType.Cube);
                 go.name = "AggroRing";
                 Destroy(go.GetComponent<Collider>());
                 MeshRenderer renderer = go.GetComponent<MeshRenderer>();

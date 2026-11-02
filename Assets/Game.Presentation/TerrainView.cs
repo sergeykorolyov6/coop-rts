@@ -150,7 +150,7 @@ namespace Game.Presentation
 
         private void AddPart(Cell cell, PrimitiveType type, Color color, Vector3 position, Vector3 scale, float yaw, float tilt)
         {
-            GameObject go = GameObject.CreatePrimitive(type);
+            GameObject go = Primitives.Create(type);
             Destroy(go.GetComponent<Collider>());
             MeshRenderer renderer = go.GetComponent<MeshRenderer>();
             _baseMaterial ??= renderer.sharedMaterial;

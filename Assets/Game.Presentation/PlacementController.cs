@@ -416,7 +416,7 @@ namespace Game.Presentation
                 existing.gameObject.SetActive(true);
                 return existing;
             }
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject go = Primitives.Create(PrimitiveType.Cube);
             go.name = name;
             Destroy(go.GetComponent<Collider>());
             _baseMaterial ??= go.GetComponent<MeshRenderer>().sharedMaterial;

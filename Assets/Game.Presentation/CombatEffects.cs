@@ -123,7 +123,7 @@ namespace Game.Presentation
             }
             else
             {
-                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                GameObject go = Primitives.Create(PrimitiveType.Cube);
                 go.name = "Effect";
                 Destroy(go.GetComponent<Collider>());
                 _baseMaterial ??= go.GetComponent<MeshRenderer>().sharedMaterial;
