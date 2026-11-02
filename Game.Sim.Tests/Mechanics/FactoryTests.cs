@@ -131,4 +131,30 @@ public class FactoryTests
         Assert.That(((ProduceCommand)log[0]).UnitTypeId, Is.EqualTo("infantry"));
         Assert.That(((CancelProductionCommand)log[1]).FactoryId, Is.EqualTo(33));
     }
+
+    // PLAN.md M2: the other four units of the factory, the strong ones paid with the second resource too.
+    [TestCase("scout", 15, 0)]
+    [TestCase("shooter", 20, 0)]
+    [TestCase("heavy", 50, 20)]
+    [TestCase("siege", 40, 30)]
+    public void M2_FactoryProducesTheOtherUnits_PaidInBothResources(string unit, int primary, int secondary)
+    {
+        var (sim, factory) = WithFactory();
+        sim.State.GetPlayer(Setups.PlayerA).Wallet.Add(Resources.Secondary, 30);
+        int startPrimary = Wallet(sim, Setups.PlayerA);
+        sim.Order(Produce(sim, Setups.PlayerA, factory, unit));
+        sim.Tick();
+        Assert.That(Wallet(sim, Setups.PlayerA), Is.EqualTo(startPrimary - primary));
+        Assert.That(sim.State.GetPlayer(Setups.PlayerA).Wallet.Get(Resources.Secondary), Is.EqualTo(30 - secondary));
+        sim.RunUntil(s => UnitsOfType(s, Setups.PlayerA, unit) == 1);
+    }
+
+    [Test]
+    public void M2_PlayersFactoryDoesNotMakeLegionUnits()
+    {
+        var (sim, factory) = WithFactory();
+        sim.Order(Produce(sim, Setups.PlayerA, factory, "legion_raider"));
+        sim.Tick();
+        Assert.That(sim.Events.OfType<CommandRejected>().Single().Reason, Is.EqualTo(RejectReason.CannotProduce));
+    }
 }
