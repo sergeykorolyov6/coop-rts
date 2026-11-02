@@ -8,6 +8,8 @@ namespace Game.Presentation
     // Placeholder look of units, buildings and creep camps until there is art: primitives in the
     // owner's colour (creeps neutral grey), shape by type. Only reads the sim state.
     // Others' units and buildings hide in the local player's fog (Visibility).
+    // Conveyors and bridge ends show their direction; a conveyor shows the unit it carries in the
+    // resource's colour, moving with the sim — a unit that stands means the line is clogged (conveyors.md).
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class EntityView : MonoBehaviour
     {
@@ -24,6 +26,7 @@ namespace Game.Presentation
         [SerializeField] private Color _primaryCargoColor = new Color(0.80f, 0.55f, 0.25f);
         [SerializeField] private Color _secondaryCargoColor = new Color(0.35f, 0.70f, 0.85f);
         [SerializeField] private Color _trophyColor = new Color(0.95f, 0.80f, 0.30f);
+        [SerializeField] private Color _arrowColor = new Color(0.92f, 0.94f, 1.00f);
         [Tooltip("Height of a construction site at zero progress, as a share of the finished height.")]
         [SerializeField, Range(0.05f, 1f)] private float _minSiteHeight = 0.15f;
 
@@ -119,7 +122,12 @@ namespace Game.Presentation
                     _buildings.Add(building.Id, visual);
                 }
                 visual.Alive = true;
-                visual.Transform.gameObject.SetActive(Visibility.BuildingShown(state, _localPlayer!.PlayerId, building));
+                bool shown = Visibility.BuildingShown(state, _localPlayer!.PlayerId, building);
+                visual.Transform.gameObject.SetActive(shown);
+                if (visual.Arrow != null)
+                    visual.Arrow.gameObject.SetActive(shown);
+                if (visual.Item != null)
+                    SyncItem(visual.Item, building, shown);
 
                 // A site grows with its progress; the colour stays the owner's (drill.md, conveyors.md).
                 float share = building.IsComplete || building.BuildWork <= 0
@@ -164,7 +172,7 @@ namespace Game.Presentation
             }
             foreach (int id in _gone)
             {
-                Destroy(visuals[id].Transform.gameObject);
+                visuals[id].DestroyObjects();
                 visuals.Remove(id);
             }
         }
@@ -206,8 +214,52 @@ namespace Game.Presentation
             const float inset = 0.08f;
             body.localScale = new Vector3(building.Width - inset, ShapeHeightScale(shape, height), building.Height - inset);
             body.localPosition = new Vector3(building.CellX + building.Width * 0.5f, height * 0.5f, building.CellY + building.Height * 0.5f);
-            return new BuildingVisual(body, shape, height);
+            var visual = new BuildingVisual(body, shape, height);
+
+            if (building.Stats.Id == BuildingKinds.Conveyor || building.Stats.Id == BuildingKinds.ConveyorBridge)
+            {
+                // A bar from the cell centre towards the exit side, as in the placement silhouette.
+                Quaternion rotation = DirectionRotation(building.Direction);
+                Transform arrow = CreatePrimitive(PrimitiveType.Cube, "Arrow", _arrowColor);
+                arrow.localRotation = rotation;
+                arrow.localScale = new Vector3(0.16f, 0.04f, 0.5f);
+                arrow.localPosition = CellCentre(building) + new Vector3(0f, height + 0.02f, 0f) + rotation * new Vector3(0f, 0f, 0.15f);
+                visual.Arrow = arrow;
+            }
+            if (building.Conveyor != null)
+            {
+                Transform item = CreatePrimitive(PrimitiveType.Cube, "Item", _primaryCargoColor);
+                item.localScale = Vector3.one * 0.3f;
+                item.gameObject.SetActive(false);
+                visual.Item = item;
+            }
+            return visual;
         }
+
+        // ItemPos runs 0..CellLength from the back edge to the front edge of the cell.
+        private void SyncItem(Transform item, Building building, bool shown)
+        {
+            Conveyor conveyor = building.Conveyor!;
+            bool carrying = shown && conveyor.HasItem;
+            item.gameObject.SetActive(carrying);
+            if (!carrying)
+                return;
+            float along = conveyor.ItemPos / (float)Conveyor.CellLength - 0.5f;
+            item.localPosition = CellCentre(building) + new Vector3(0f, 0.28f, 0f) + DirectionRotation(building.Direction) * new Vector3(0f, 0f, along);
+            item.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(ResourceColor(conveyor.ItemType));
+        }
+
+        private static Vector3 CellCentre(Building building) =>
+            new Vector3(building.CellX + building.Width * 0.5f, 0f, building.CellY + building.Height * 0.5f);
+
+        // Direction.Up is +Y in cells, which is +Z in the world.
+        private static Quaternion DirectionRotation(Direction direction) => direction switch
+        {
+            Direction.Right => Quaternion.Euler(0f, 90f, 0f),
+            Direction.Up => Quaternion.identity,
+            Direction.Left => Quaternion.Euler(0f, 270f, 0f),
+            _ => Quaternion.Euler(0f, 180f, 0f),
+        };
 
         private Transform CreatePrimitive(PrimitiveType type, string name, Color color)
         {
@@ -292,6 +344,8 @@ namespace Game.Presentation
 
             public Transform Transform { get; }
             public bool Alive { get; set; } = true;
+
+            public virtual void DestroyObjects() => Destroy(Transform.gameObject);
         }
 
         private sealed class UnitVisual : Visual
@@ -313,6 +367,17 @@ namespace Game.Presentation
 
             public PrimitiveType Shape { get; }
             public float FullHeight { get; }
+            public Transform? Arrow { get; set; }
+            public Transform? Item { get; set; }
+
+            public override void DestroyObjects()
+            {
+                base.DestroyObjects();
+                if (Arrow != null)
+                    Destroy(Arrow.gameObject);
+                if (Item != null)
+                    Destroy(Item.gameObject);
+            }
         }
     }
 }

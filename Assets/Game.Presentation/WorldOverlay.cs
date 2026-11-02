@@ -81,7 +81,7 @@ namespace Game.Presentation
                 if (building.IsDead || !Visibility.BuildingShown(state, playerId, building))
                     continue;
                 var top = new Vector3(building.CellX + building.Width * 0.5f, 2.3f, building.CellY + building.Height * 0.5f);
-                float width = 24f + 14f * building.Width;
+                float width = 40f + 16f * building.Width;
                 if (!building.IsComplete)
                 {
                     bool frozen = building.State == BuildState.Frozen;
@@ -178,7 +178,7 @@ namespace Game.Presentation
             var root = new VisualElement { pickingMode = PickingMode.Ignore };
             root.style.position = Position.Absolute;
             var track = new VisualElement { pickingMode = PickingMode.Ignore };
-            track.style.height = 5;
+            track.style.height = 7;
             track.style.backgroundColor = new Color(0f, 0f, 0f, 0.7f);
             track.style.borderTopWidth = track.style.borderBottomWidth = track.style.borderLeftWidth = track.style.borderRightWidth = 1;
             track.style.borderTopColor = track.style.borderBottomColor = track.style.borderLeftColor = track.style.borderRightColor = new Color(0f, 0f, 0f, 0.9f);
@@ -186,9 +186,14 @@ namespace Game.Presentation
             fill.style.height = Length.Percent(100f);
             track.Add(fill);
             var label = new Label { pickingMode = PickingMode.Ignore };
-            label.style.fontSize = 11;
+            label.style.fontSize = 15;
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            // A dark outline keeps white text readable over the bright owner colours.
+            label.style.unityTextOutlineWidth = 0.3f;
+            label.style.unityTextOutlineColor = Color.black;
             label.style.color = Color.white;
             label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.style.whiteSpace = WhiteSpace.NoWrap;
             label.style.paddingTop = label.style.paddingBottom = 0;
             label.style.marginTop = label.style.marginBottom = 0;
             root.Add(track);
