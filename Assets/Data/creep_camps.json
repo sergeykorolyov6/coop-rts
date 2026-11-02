@@ -7,7 +7,7 @@
       "creep_small"
     ],
     "aggro_radius_mc": 5000,
-    "leash_radius_mc": 8000,
+    "leash_radius_mc": 7000,
     "regen_pct_per_s": 5,
     "calm_delay_ticks": 100,
     "trophy_primary": 60,
@@ -22,7 +22,7 @@
       "creep_small"
     ],
     "aggro_radius_mc": 5000,
-    "leash_radius_mc": 8000,
+    "leash_radius_mc": 7000,
     "regen_pct_per_s": 5,
     "calm_delay_ticks": 100,
     "trophy_primary": 30,

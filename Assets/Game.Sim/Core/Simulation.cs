@@ -59,7 +59,9 @@ public sealed class Simulation
                 pending.Command.Execute(State, _events);
         }
 
+        CreepCampSystem.BeginTick(State, _events);
         UnitSystem.Tick(State, _events);
+        CreepCampSystem.EndTick(State);
         Combat.ApplyHits(State, _events);
         FactorySystem.Tick(State, _events);
         DrillSystem.Tick(State);

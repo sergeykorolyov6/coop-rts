@@ -181,6 +181,14 @@ internal static class Movement
                 pushY[i] -= py;
                 pushX[j] += px;
                 pushY[j] += py;
+
+                if (aMoves && bMoves)
+                {
+                    // Two walkers meeting: each also steps to its own right, so units coming head-on
+                    // slide past each other instead of pushing back and forth forever.
+                    KeepRight(a, half, ref pushX[i], ref pushY[i]);
+                    KeepRight(b, half, ref pushX[j], ref pushY[j]);
+                }
             }
         }
 
@@ -195,6 +203,17 @@ internal static class Movement
             if (state.Map.IsPassable(Grid.MilliToCell(u.X), Grid.MilliToCell(ny)))
                 u.Y = ny;
         }
+    }
+
+    private static void KeepRight(Unit u, long amount, ref int pushX, ref int pushY)
+    {
+        long hx = u.StepX, hy = u.StepY;
+        long len = IntMath.Sqrt(hx * hx + hy * hy);
+        if (len == 0)
+            return;
+        // Right of the heading (hx, hy) is (hy, -hx).
+        pushX += (int)(hy * amount / len);
+        pushY += (int)(-hx * amount / len);
     }
 
     // A building finished or spawned on top of a unit: move it to the nearest free cell.

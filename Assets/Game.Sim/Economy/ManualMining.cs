@@ -88,6 +88,42 @@ internal static class ManualMining
             UnitOrders.Give(unit, UnitOrder.Idle);
     }
 
+    // creep-camp.md: trophy runs work like mining trips; the pile is the "ore" and it runs out.
+    public static void TickCarryTrophy(SimState state, Unit unit, List<SimEvent> events)
+    {
+        Worker worker = unit.Worker!;
+        CreepCamp camp = state.CreepCamps[unit.Order.TargetId];
+        if (worker.Phase == WorkerPhase.Carrying)
+        {
+            if (Carry(state, unit, events) == CarryResult.Delivered)
+                worker.Phase = WorkerPhase.GoingToOre;
+            return;
+        }
+
+        if (!InReachOfCell(state, unit, camp.CenterX, camp.CenterY))
+        {
+            Movement.StepToPoint(state, unit, camp.CenterMilliX, camp.CenterMilliY);
+            return;
+        }
+
+        // Taken in one tick; same-tick takers go by worker id (units act in id order).
+        int type = camp.TrophyPrimary > 0 ? Resources.Primary : Resources.Secondary;
+        int left = type == Resources.Primary ? camp.TrophyPrimary : camp.TrophySecondary;
+        int amount = System.Math.Min(camp.Stats.TrophyPerTrip, left);
+        if (amount == 0)
+        {
+            UnitOrders.Give(unit, UnitOrder.Idle);
+            return;
+        }
+        if (type == Resources.Primary)
+            camp.TrophyPrimary -= amount;
+        else
+            camp.TrophySecondary -= amount;
+        worker.CargoType = type;
+        worker.Cargo = amount;
+        worker.Phase = WorkerPhase.Carrying;
+    }
+
     private static void Dig(SimState state, Worker worker, int resourceType)
     {
         worker.MiningAccumulator++;

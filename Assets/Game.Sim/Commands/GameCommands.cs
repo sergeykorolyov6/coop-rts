@@ -21,5 +21,6 @@ public static class GameCommands
         codec.Register(AttackCommand.Id, AttackCommand.Read);
         codec.Register(ProduceCommand.Id, ProduceCommand.Read);
         codec.Register(CancelProductionCommand.Id, CancelProductionCommand.Read);
+        codec.Register(CarryTrophyCommand.Id, CarryTrophyCommand.Read);
     }
 }

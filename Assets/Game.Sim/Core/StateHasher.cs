@@ -48,6 +48,16 @@ internal sealed class StateHasher
         _writer.Write(state.Buildings.Count);
         foreach (Building building in state.Buildings)
             WriteBuilding(building);
+        foreach (CreepCamp camp in state.CreepCamps)
+        {
+            _writer.Write((byte)camp.State);
+            _writer.Write(camp.LastDamageTick);
+            _writer.Write(camp.TrophyPrimary);
+            _writer.Write(camp.TrophySecondary);
+            _writer.Write(camp.Attackers.Count);
+            foreach (int id in camp.Attackers)
+                _writer.Write(id);
+        }
 
         // Discovered cells per player as bits; visibility itself follows from positions.
         for (int p = 0; p < state.Players.Count; p++)
@@ -94,6 +104,7 @@ internal sealed class StateHasher
         _writer.Write(u.CampIndex);
         _writer.Write(u.HomeX);
         _writer.Write(u.HomeY);
+        _writer.Write(u.RegenAccumulator);
 
         Worker? w = u.Worker;
         if (w == null)

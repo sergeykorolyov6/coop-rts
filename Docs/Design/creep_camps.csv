@@ -1,3 +1,3 @@
 id,name_ru,creeps,aggro_radius,leash_radius,regen_pct_per_s,calm_delay_s,trophy_primary,trophy_secondary,trophy_per_trip,reference,notes
-guard_camp,Стражи,creep_big;creep_small,5,8,5,5,60,0,5,"WC3: лагерь крипов, поднимается весь сразу; SC2: поводок","Лагерь M1. 3 пехотинца зачищают без потерь за ≈ 15 с, 2 — с потерей одного (creep-camp.md)"
-small_camp,Малый лагерь,creep_small;creep_small,5,8,5,5,30,0,5,WC3: малый лагерь у старта,"Для карты M2 и ранней зачистки: 1 пехотинец справляется"
+guard_camp,Стражи,creep_big;creep_small,5,7,5,5,60,0,5,"WC3: лагерь крипов, поднимается весь сразу; SC2: поводок","Лагерь M1. 3 пехотинца зачищают без потерь за ≈ 15 с, 2 — с потерей одного (creep-camp.md)"
+small_camp,Малый лагерь,creep_small;creep_small,5,7,5,5,30,0,5,WC3: малый лагерь у старта,"Для карты M2 и ранней зачистки: 1 пехотинец справляется"

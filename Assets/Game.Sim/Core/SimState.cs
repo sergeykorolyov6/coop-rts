@@ -10,6 +10,7 @@ public sealed class SimState
     private readonly List<Player> _players;
     private readonly List<Unit> _units = new List<Unit>();
     private readonly List<Building> _buildings = new List<Building>();
+    private readonly List<CreepCamp> _camps = new List<CreepCamp>();
 
     internal SimState(MatchSetup setup)
     {
@@ -30,6 +31,18 @@ public sealed class SimState
 
         foreach (PlayerStart start in setup.Map.Starts)
             ApplyStart(start);
+
+        // Grey Creatures are enemies of everyone else, whatever the setup says (creep-camp.md, assumption 1).
+        if (CreepPlayerId != MatchSetup.NoPlayer)
+        {
+            foreach (int id in setup.PlayerIds)
+            {
+                if (id != CreepPlayerId)
+                    Relations.Set(CreepPlayerId, id, Relation.Enemy);
+            }
+        }
+        foreach (CreepCampSetup camp in setup.Map.CreepCamps)
+            SpawnCamp(camp);
 
         Fog = new FogOfWar(_players, Map.Width, Map.Height);
         Fog.Update(this);
@@ -52,6 +65,9 @@ public sealed class SimState
 
     // Owner of the creeps, MatchSetup.NoPlayer when the map has none.
     public int CreepPlayerId { get; }
+
+    // In map order; the index is the camp's id in commands.
+    public IReadOnlyList<CreepCamp> CreepCamps => _camps;
 
     // Both sorted by id; dead entities are removed at the end of the tick.
     public IReadOnlyList<Unit> Units => _units;
@@ -174,6 +190,22 @@ public sealed class SimState
     }
 
     private const string StartWorkerUnitId = "worker";
+
+    private void SpawnCamp(CreepCampSetup setup)
+    {
+        CreepCampStats stats = Data.CreepCamp(setup.CampTypeId);
+        var ids = new List<int>(stats.Creeps.Count);
+        for (int i = 0; i < stats.Creeps.Count; i++)
+        {
+            (int x, int y) = setup.CreepCells[i];
+            Unit creep = SpawnUnit(CreepPlayerId, Data.Unit(stats.Creeps[i]), Grid.CellCenter(x), Grid.CellCenter(y));
+            creep.CampIndex = _camps.Count;
+            creep.HomeX = creep.X;
+            creep.HomeY = creep.Y;
+            ids.Add(creep.Id);
+        }
+        _camps.Add(new CreepCamp(_camps.Count, stats, setup.CenterX, setup.CenterY, ids));
+    }
 
     private static T? FindById<T>(List<T> sorted, int id) where T : Entity
     {

@@ -168,7 +168,7 @@ public class GameDataTests
         CreepCampStats guard = data.CreepCamp("guard_camp");
         Assert.That(guard.Creeps, Is.EqualTo(new[] { "creep_big", "creep_small" }));
         Assert.That(guard.AggroRadiusMilli, Is.EqualTo(5000));
-        Assert.That(guard.LeashRadiusMilli, Is.EqualTo(8000));
+        Assert.That(guard.LeashRadiusMilli, Is.EqualTo(7000));
         Assert.That(guard.TrophyPrimary, Is.EqualTo(60));
 
         // drill.md appendix: 1 unit per 160 ticks per ore cell; conveyors.md: 200 milli-cells per tick.

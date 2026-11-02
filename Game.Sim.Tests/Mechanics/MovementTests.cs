@@ -127,6 +127,19 @@ public class MovementTests
     }
 
     [Test]
+    public void TwoUnitsHeadOn_PassEachOther()
+    {
+        var sim = new Simulation(Setups.Coop(new MapSetup(20, 8)));
+        Unit a = sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("infantry"), Center(2), Center(4));
+        Unit b = sim.State.SpawnUnit(Setups.PlayerB, sim.State.Data.Unit("infantry"), Center(16), Center(4));
+        sim.Order(sim.Move(Setups.PlayerA, Center(16), Center(4), a));
+        sim.Order(sim.Move(Setups.PlayerB, Center(2), Center(4), b));
+        sim.RunUntil(s => a.Order.Kind == UnitOrderKind.Idle && b.Order.Kind == UnitOrderKind.Idle, 600);
+        Assert.That(a.CellX, Is.EqualTo(16));
+        Assert.That(b.CellX, Is.EqualTo(2));
+    }
+
+    [Test]
     public void UnitUnderANewBuilding_IsPushedOut()
     {
         var (sim, worker) = OneWorker(new MapSetup(16, 16), 6, 6);

@@ -27,6 +27,11 @@ internal static class UnitSystem
             Unit unit = units[i];
             if (unit.IsDead)
                 continue;
+            if (unit.CampIndex >= 0)
+            {
+                CreepCampSystem.TickCreep(state, unit);
+                continue;
+            }
             switch (unit.Order.Kind)
             {
                 case UnitOrderKind.Idle:
@@ -50,6 +55,9 @@ internal static class UnitSystem
                     break;
                 case UnitOrderKind.Repair:
                     Construction.TickRepair(state, unit, events);
+                    break;
+                case UnitOrderKind.CarryTrophy:
+                    ManualMining.TickCarryTrophy(state, unit, events);
                     break;
             }
         }

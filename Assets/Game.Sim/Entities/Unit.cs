@@ -41,6 +41,9 @@ public sealed class Unit : Entity
     public int HomeX { get; internal set; }
     public int HomeY { get; internal set; }
 
+    // Creeps heal while their camp is calm (creep-camp.md, appendix).
+    internal int RegenAccumulator { get; set; }
+
     public int CellX => Grid.MilliToCell(X);
     public int CellY => Grid.MilliToCell(Y);
 }
