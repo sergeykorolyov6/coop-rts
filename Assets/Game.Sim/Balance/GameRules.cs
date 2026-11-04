@@ -15,7 +15,7 @@ public sealed class GameRules
         "bridge_range", "storage_capacity", "factory_queue", "attack_alarm_cooldown_ticks",
         "ai_think_interval_ticks", "ai_wave_repeat_ticks", "ai_wave_warning_ticks", "ai_defense_calm_ticks",
         "ai_rebuild_safe_radius_mc", "auto_repair_radius_mc", "factory_stock",
-        "capture_time_ticks", "capture_radius_mc", "lighthouse_radius_mc", "demolish_time_pct", "demolish_refund_pct",
+        "capture_time_ticks", "capture_radius_mc", "lighthouse_radius_mc", "demolish_time_pct",
     };
 
     private readonly List<string> _read = new List<string>();
@@ -51,7 +51,6 @@ public sealed class GameRules
         CaptureRadiusMilli = Read(root, "capture_radius_mc");
         LighthouseRadiusMilli = Read(root, "lighthouse_radius_mc");
         DemolishTimePercent = Read(root, "demolish_time_pct");
-        DemolishRefundPercent = Read(root, "demolish_refund_pct");
 
         // An unknown key is a typo or a rule the sim does not implement yet; both should be loud.
         foreach (KeyValuePair<string, JsonNode> field in root.Fields)
@@ -103,7 +102,6 @@ public sealed class GameRules
 
     // demolish.md.
     public int DemolishTimePercent { get; }
-    public int DemolishRefundPercent { get; }
 
     internal static string ZeroJson()
     {

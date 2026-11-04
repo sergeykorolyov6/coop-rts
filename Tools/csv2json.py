@@ -182,6 +182,10 @@ BUILDINGS = {
     "supply": ("supply", string),
     # neutral-buildings.md: points of interest nobody can damage (1) or ordinary buildings (0).
     "invulnerable": ("invulnerable", int_),
+    # Turret ammo: units of primary resource per shot, from its own stock that belts fill (0 — free).
+    "ammo": ("ammo", int_),
+    # behavior "booster": percent faster mining of neighbouring drills.
+    "boost_pct": ("boost_pct", int_),
     # UI only: "line" — placed by dragging a line, like a conveyor.
     "placement": ("placement", string),
     "reference": None,
@@ -246,6 +250,14 @@ FACTIONS = {
     "first_strike_delay_s": ("first_strike_delay_ticks", seconds_to_ticks),
     "on_kill_ability": ("on_kill_ability", string),
     "bounty_pct": ("bounty_pct", int_),
+    # Yellow Star: the hero unit, its return time, experience and the aura around it.
+    "hero": ("hero", string),
+    "hero_respawn_s": ("hero_respawn_ticks", seconds_to_ticks),
+    "hero_xp_pct": ("hero_xp_pct", int_),
+    "hero_xp_radius": ("hero_xp_radius_mc", cells_to_milli),
+    "hero_aura_radius": ("hero_aura_radius_mc", cells_to_milli),
+    "hero_aura_damage_pct": ("hero_aura_damage_pct", int_),
+    "demolish_refund_pct": ("demolish_refund_pct", int_),
     "notes": None,
 }
 
@@ -260,6 +272,18 @@ ABILITIES = {
     "move_speed_pct": ("move_speed_pct", int_),
     "attack_speed_pct": ("attack_speed_pct", int_),
     "hp_cost_pct": ("hp_cost_pct", int_),
+    # nova: damage to every enemy in range; min_level: the hero's level it opens at (1 for everyone else).
+    "damage": ("damage", int_),
+    "min_level": ("min_level", int_),
+    "notes": None,
+}
+
+# factions.md: the hero's levels; numbered 1, 2, … without gaps.
+HERO_LEVELS = {
+    "level": ("level", int_),
+    "xp": ("xp", int_),
+    "hp_pct": ("hp_pct", int_),
+    "damage_pct": ("damage_pct", int_),
     "notes": None,
 }
 
@@ -288,6 +312,7 @@ TABLES = [
     ("missions.csv", "missions.json", MISSIONS, "id"),
     ("factions.csv", "factions.json", FACTIONS, "id"),
     ("abilities.csv", "abilities.json", ABILITIES, "id"),
+    ("hero_levels.csv", "hero_levels.json", HERO_LEVELS, "level"),
 ]
 
 

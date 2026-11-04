@@ -117,7 +117,7 @@ public class StateHashCompletenessTests
         var sim = new Simulation(setup);
         SimState s = sim.State;
         Building factory = s.PlaceBuilding(1, s.Data.Building("factory"), 10, 30, Direction.Right, complete: true);
-        factory.Factory!.Stock!.Add(Resources.Primary, 100);
+        factory.Stock!.Add(Resources.Primary, 100);
         s.PlaceBuilding(1, s.Data.Building("storage"), 14, 30, Direction.Right, complete: true);
         s.PlaceBuilding(1, s.Data.Building("conveyor_bridge"), 17, 30, Direction.Right, complete: true);
         s.PlaceBuilding(1, s.Data.Building("conveyor"), 18, 30, Direction.Right, complete: true);

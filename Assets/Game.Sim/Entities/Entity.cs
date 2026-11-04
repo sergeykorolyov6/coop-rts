@@ -16,7 +16,8 @@ public abstract class Entity
     public int Id { get; }
     // Changes only when a neutral building is captured (neutral-buildings.md).
     public int OwnerId { get; internal set; }
-    public int MaxHp { get; }
+    // Grows with a hero's level (factions.md); fixed for everything else.
+    public int MaxHp { get; internal set; }
     public int Hp { get; internal set; }
     public int Armor { get; }
 

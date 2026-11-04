@@ -13,6 +13,8 @@ public sealed class AbilityStats
         {
             "blink" => AbilityKind.Blink,
             "boost" => AbilityKind.Boost,
+            "nova" => AbilityKind.Nova,
+            "inspire" => AbilityKind.Inspire,
             string other => throw new FormatException($"Unknown ability kind \"{other}\"."),
         };
         CooldownTicks = row.GetInt("cooldown_ticks");
@@ -21,6 +23,8 @@ public sealed class AbilityStats
         MoveSpeedPercent = row.GetInt("move_speed_pct");
         AttackSpeedPercent = row.GetInt("attack_speed_pct");
         HpCostPercent = row.GetInt("hp_cost_pct");
+        Damage = row.GetInt("damage");
+        MinLevel = row.GetInt("min_level");
     }
 
     public string Id { get; }
@@ -38,4 +42,10 @@ public sealed class AbilityStats
 
     // Percent of max HP paid on use.
     public int HpCostPercent { get; }
+
+    // Nova: damage to each enemy in range, before armor.
+    public int Damage { get; }
+
+    // The hero's level the ability opens at (factions.md); 1 for units without levels.
+    public int MinLevel { get; }
 }

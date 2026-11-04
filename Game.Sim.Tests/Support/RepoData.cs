@@ -14,15 +14,19 @@ internal static class RepoData
     public static GameData Load()
     {
         string dir = Path.Combine(RepoRoot(), "Assets", "Data");
-        return GameData.Parse(
-            File.ReadAllText(Path.Combine(dir, "units.json")),
-            File.ReadAllText(Path.Combine(dir, "buildings.json")),
-            File.ReadAllText(Path.Combine(dir, "creep_camps.json")),
-            File.ReadAllText(Path.Combine(dir, "rules.json")),
-            File.ReadAllText(Path.Combine(dir, "legion.json")),
-            File.ReadAllText(Path.Combine(dir, "waves.json")),
-            File.ReadAllText(Path.Combine(dir, "factions.json")),
-            File.ReadAllText(Path.Combine(dir, "abilities.json")));
+        string Read(string name) => File.ReadAllText(Path.Combine(dir, name));
+        return GameData.Parse(new GameDataSources
+        {
+            Units = Read("units.json"),
+            Buildings = Read("buildings.json"),
+            CreepCamps = Read("creep_camps.json"),
+            Rules = Read("rules.json"),
+            Legion = Read("legion.json"),
+            Waves = Read("waves.json"),
+            Factions = Read("factions.json"),
+            Abilities = Read("abilities.json"),
+            HeroLevels = Read("hero_levels.json"),
+        });
     }
 
     public static string RepoRoot()

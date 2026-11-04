@@ -92,8 +92,8 @@ public class NeutralBuildingTests
         sim.Order(new ProduceCommand(Setups.PlayerA, sim.State.Tick, cave.Id, "cave_beast"));
         sim.Tick();
         Assert.That(sim.Events.OfType<CommandRejected>().Single().Reason, Is.EqualTo(RejectReason.FactoryStockLow));
-        cave.Factory!.Stock!.Add(Resources.Primary, 60);
-        cave.Factory.Stock.Add(Resources.Secondary, 30);
+        cave.Stock!.Add(Resources.Primary, 60);
+        cave.Stock.Add(Resources.Secondary, 30);
         sim.Order(new ProduceCommand(Setups.PlayerA, sim.State.Tick, cave.Id, "cave_beast"));
         sim.RunUntil(s => s.State.UnitsOf(Setups.PlayerA).Any(u => u.Stats.Id == "cave_beast"), 31 * Second);
     }

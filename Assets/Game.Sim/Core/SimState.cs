@@ -168,6 +168,17 @@ public sealed class SimState
         return null;
     }
 
+    // factions.md: the player's living hero (at most one), or null.
+    public Unit? FindHero(int playerId)
+    {
+        foreach (Unit u in _units)
+        {
+            if (!u.IsDead && u.OwnerId == playerId && u.IsHero)
+                return u;
+        }
+        return null;
+    }
+
     // mission.md: the living boss of a kill_boss mission, or null.
     public Unit? FindBoss()
     {
@@ -254,6 +265,8 @@ public sealed class SimState
         // builder.md: one builder instead of the M1 workers.
         if (faction.BuilderUnitId.Length > 0)
             BuilderSystem.Spawn(this, start.PlayerId, Data.Unit(faction.BuilderUnitId), hq);
+        if (faction.HeroUnitId.Length > 0)
+            BuilderSystem.Spawn(this, start.PlayerId, Data.Unit(faction.HeroUnitId), hq);
 
         Wallet wallet = GetPlayer(start.PlayerId).Wallet;
         wallet.Add(Resources.Primary, Rules.StartPrimary);

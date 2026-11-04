@@ -77,6 +77,7 @@ public sealed class Unit : Entity
     public bool CanRepair => Worker != null || Stats.HasTag(UnitTags.Repairer);
     public bool IsBuilder => Stats.HasTag(UnitTags.Builder);
     public bool IsRepairer => Stats.HasTag(UnitTags.Repairer);
+    public bool IsHero => Stats.HasTag(UnitTags.Hero);
 
     // Repair: HP accumulator (MaxHp per tick against the target's build work) and cost
     // accumulators per resource (construction.md, "Реализация в Sim"; builder.md for units).

@@ -144,13 +144,14 @@ public class TurretTests
         Assert.That(vision, Is.GreaterThan(at), "turret row with vision 9 cells");
         string broken = buildings.Substring(0, vision) + "\"vision_mc\": 8000" + buildings.Substring(vision + "\"vision_mc\": 9000".Length);
 
-        var ex = Assert.Throws<FormatException>(() => GameData.Parse(
-            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "units.json")),
-            broken,
-            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "creep_camps.json")),
-            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "rules.json")),
-            "[]", "[]", "[]",
-            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "abilities.json"))));
+        var ex = Assert.Throws<FormatException>(() => GameData.Parse(new GameDataSources
+        {
+            Units = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "units.json")),
+            Buildings = broken,
+            CreepCamps = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "creep_camps.json")),
+            Rules = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "rules.json")),
+            Abilities = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "abilities.json")),
+        }));
         Assert.That(ex!.Message, Does.Contain("turret"));
     }
 

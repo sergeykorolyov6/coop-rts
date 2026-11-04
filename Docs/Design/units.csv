@@ -20,3 +20,14 @@ rl_runner,Бегун,red_lightning,70,0,7,7,0.5,0.5,4,7,12,0,8,rl_factory,0.5,me
 rl_striker,Разрядник,red_lightning,90,0,10,10,4.5,0.8,3.2,7,25,0,15,rl_factory,0.6,ranged,rl_blink,SC2 Stalker: блинк,"Стрелок Молний: бьёт дальше стрелка Синих, Рывком уводит раненого и ловит бегущих"
 rl_lancer,Копейщик,red_lightning,240,1,20,20,0.5,1.0,3,6,40,10,22,rl_factory,0.8,melee;armored,rl_overdrive,SC2 Zealot с зарядом; WC3 Grunt,"Передний край Молний: вдвое слабее тяжёлого Синих по прочности, но вдвое быстрее"
 rl_arc,Дуговик,red_lightning,110,0,12,45,7,1.5,2.6,8,35,20,25,rl_factory,0.9,siege;ranged,,SC2 Disruptor/Colossus по роли; Mindustry arc,"Осада Молний: дальше турели Легиона (6), но хрупкий — его надо прикрывать"
+bs_builder,Старьёвщик,brown_scavengers,120,0,4,4,1,1.0,3,7,0,0,15,,0.6,worker;builder;melee,,Mindustry alpha,Строитель Мусорщиков (factions.md)
+bs_scrapper,Лом,brown_scavengers,100,0,9,9,0.5,0.8,2.6,5,12,0,10,bs_factory,0.6,melee,,Mindustry dagger по цене,Дешёвый ближний: 11 урона/с за 12 ед.
+bs_shotgun,Дробовик,brown_scavengers,70,0,16,4,2.5,1.2,2.4,6,14,0,12,bs_factory,0.6,ranged,,SC2 Hellion по роли,"Узкий: 13 урона/с по юнитам, по зданиям почти ничего"
+bs_mortar,Мортира,brown_scavengers,80,0,3,40,8,2.0,2.0,8,22,10,18,bs_factory,0.8,siege;ranged,,Mindustry ripple; SC2 Siege Tank по роли,"Узкий: только здания, издалека, дешевле осадного вдвое"
+bs_repairbot,Жестянщик,brown_scavengers,50,0,0,0,0,0,2.8,6,12,0,8,bs_factory,0.5,repairer,,Mindustry mono/poly,Дешёвый ремонтник (builder.md)
+ys_builder,Подмастерье,yellow_star,160,1,5,5,1,1.0,3,7,0,0,18,,0.6,worker;builder;melee,,WC3 Peasant,Строитель Жёлтой Звезды
+ys_hero,Звёздный рыцарь,yellow_star,600,2,30,30,1,1.0,2.8,9,0,0,40,,1.0,melee;hero,ys_nova;ys_inspire,WC3 Paladin/Mountain King,"Герой (factions.md): один, возвращается через 30 с с уровнем; build_time_s — только для ремонта"
+ys_squire,Оруженосец,yellow_star,180,1,11,11,0.5,0.9,2.2,5,25,0,20,ys_barracks,0.7,melee,,WC3 Footman,Средний ближний; рядом с героем +20 % урона
+ys_archer,Лучник,yellow_star,80,0,9,9,5,1.0,2.2,7,20,0,16,ys_barracks,0.6,ranged,,WC3 Archer,"Стрелок, бьёт дальше стрелка Синих"
+ys_acolyte,Послушник,yellow_star,70,0,0,0,0,0,2.4,6,30,0,18,ys_barracks,0.6,repairer,,WC3 Priest,Лечит юнитов и чинит здания сам (builder.md)
+ys_catapult,Катапульта,yellow_star,150,0,10,50,8,2.5,1.6,8,40,25,30,ys_barracks,1.0,siege;ranged,,WC3 Catapult,Осада

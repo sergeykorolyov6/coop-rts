@@ -25,4 +25,3 @@ capture_time,10,s,Время захвата нейтрального здани�
 capture_radius,2,cells,Радиус захвата от края здания,neutral-buildings.md (решение Claude),
 lighthouse_radius,2,cells,Радиус маяка от края,neutral-buildings.md (решение Claude),
 demolish_time_pct,25,pct,Время сноса от времени постройки,demolish.md (просьба Сергея),"«значительно меньшее, чем постройка»"
-demolish_refund_pct,50,pct,Возврат при сносе,demolish.md (просьба Сергея),"Лента и мост — 0"

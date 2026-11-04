@@ -2,8 +2,9 @@ using System.Collections.Generic;
 
 namespace Game.Sim;
 
-// builder.md: every team player has one builder. A dead one comes back after builder_respawn
-// next to the player's own finished headquarters, else next to the lowest-id ally's.
+// builder.md: every team player has one builder (and a Yellow Star player one hero, factions.md).
+// A dead one comes back after its faction's respawn time next to the player's own finished
+// headquarters, else next to the lowest-id ally's.
 internal static class BuilderSystem
 {
     public static void Tick(SimState state, List<SimEvent> events)
@@ -11,31 +12,65 @@ internal static class BuilderSystem
         foreach (int playerId in state.TeamPlayerIds)
         {
             Player player = state.GetPlayer(playerId);
+            FactionStats? faction = player.Faction;
+            if (faction == null)
+                continue;
             // The faction's builder (factions.csv); a faction without one has nobody to bring back.
-            string builderId = player.Faction?.BuilderUnitId ?? "";
-            if (builderId.Length == 0)
-                continue;
-            UnitStats stats = state.Data.Unit(builderId);
-            if (!player.IsBuilderDead)
+            if (faction.BuilderUnitId.Length > 0)
             {
-                if (state.FindBuilder(playerId) == null)
-                {
-                    player.BuilderRespawnTick = state.Tick + player.Faction!.BuilderRespawnTicks;
-                    events.Add(new BuilderDied(state.Tick, playerId, player.BuilderRespawnTick));
-                }
-                continue;
+                int tick = player.BuilderRespawnTick;
+                Unit? back = Keep(state, playerId, faction.BuilderUnitId, state.FindBuilder(playerId), faction.BuilderRespawnTicks, ref tick, out bool died, out Building? at);
+                player.BuilderRespawnTick = tick;
+                if (died)
+                    events.Add(new BuilderDied(state.Tick, playerId, tick));
+                if (back != null)
+                    events.Add(new BuilderRespawned(state.Tick, playerId, back.Id, at!.Id));
             }
-            if (state.Tick < player.BuilderRespawnTick)
-                continue;
-            Building? hq = RespawnHeadquarters(state, playerId);
-            if (hq == null)
-                continue;
-            Unit? builder = Spawn(state, playerId, stats, hq);
-            if (builder == null)
-                continue;
-            player.BuilderRespawnTick = Entity.NeverTick;
-            events.Add(new BuilderRespawned(state.Tick, playerId, builder.Id, hq.Id));
+            // factions.md: the hero comes back the same way, keeping its level.
+            if (faction.HeroUnitId.Length > 0)
+            {
+                int tick = player.HeroRespawnTick;
+                Unit? back = Keep(state, playerId, faction.HeroUnitId, state.FindHero(playerId), faction.HeroRespawnTicks, ref tick, out bool died, out _);
+                player.HeroRespawnTick = tick;
+                if (died)
+                    events.Add(new HeroDied(state.Tick, playerId, tick));
+                if (back != null)
+                {
+                    HeroSystem.ApplyLevel(state, back, player.HeroLevel);
+                    back.Hp = back.MaxHp;
+                    events.Add(new HeroRespawned(state.Tick, playerId, back.Id));
+                }
+            }
         }
+    }
+
+    // One unique unit: notices its death (respawnTick becomes when it may come back) and brings it
+    // back at a headquarters once the time has come. NeverTick in respawnTick means it lives.
+    private static Unit? Keep(SimState state, int playerId, string unitId, Unit? living, int respawnTicks, ref int respawnTick, out bool died, out Building? at)
+    {
+        died = false;
+        at = null;
+        if (respawnTick == Entity.NeverTick)
+        {
+            if (living == null)
+            {
+                respawnTick = state.Tick + respawnTicks;
+                died = true;
+            }
+            return null;
+        }
+        if (state.Tick < respawnTick)
+            return null;
+        Building? hq = RespawnHeadquarters(state, playerId);
+        if (hq == null)
+            return null;
+        Unit? unit = Spawn(state, playerId, state.Data.Unit(unitId), hq);
+        if (unit != null)
+        {
+            respawnTick = Entity.NeverTick;
+            at = hq;
+        }
+        return unit;
     }
 
     // On a free cell around the headquarters; none free — waits (like a factory, factory.md).

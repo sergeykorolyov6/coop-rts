@@ -30,6 +30,20 @@
     ]
   },
   {
+    "id": "m2_brown",
+    "name_ru": "Чёрный Легион — Коричневые Мусорщики",
+    "map": "m2",
+    "players": 1,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "brown_scavengers"
+    ],
+    "colors": [
+      "brown"
+    ]
+  },
+  {
     "id": "m2_red",
     "name_ru": "Чёрный Легион — Красные Молнии",
     "map": "m2",
@@ -41,6 +55,20 @@
     ],
     "colors": [
       "red"
+    ]
+  },
+  {
+    "id": "m2_yellow",
+    "name_ru": "Чёрный Легион — Жёлтая Звезда",
+    "map": "m2",
+    "players": 1,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "yellow_star"
+    ],
+    "colors": [
+      "yellow"
     ]
   }
 ]

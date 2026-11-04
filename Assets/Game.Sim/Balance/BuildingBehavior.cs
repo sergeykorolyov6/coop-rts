@@ -12,4 +12,7 @@ public enum BuildingBehavior : byte
     Bridge,
     Storage,
     Lighthouse,
+
+    // factions.md (Brown Scavengers): neighbouring drills mine boost_pct faster.
+    Booster,
 }

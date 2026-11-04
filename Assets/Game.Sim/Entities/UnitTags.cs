@@ -12,4 +12,7 @@ public static class UnitTags
 
     // mission.md: killing every unit with this tag wins a kill_boss mission.
     public const string Boss = "boss";
+
+    // factions.md (Yellow Star): one per player, comes back after death, gains levels.
+    public const string Hero = "hero";
 }

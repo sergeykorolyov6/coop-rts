@@ -48,6 +48,10 @@ public sealed class Building : Entity
     public Drill? Drill { get; internal set; }
     public Factory? Factory { get; internal set; }
 
+    // factory.md M2, factions.md: the own stock of a building supplied by conveyor (a factory pays
+    // for units from it, an ammo turret for shots); null for the rest.
+    public Wallet? Stock { get; internal set; }
+
     public Conveyor? Conveyor { get; internal set; }
     public ConveyorBridge? Bridge { get; internal set; }
     public Storage? Storage { get; internal set; }

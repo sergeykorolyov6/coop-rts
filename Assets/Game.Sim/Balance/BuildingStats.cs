@@ -29,6 +29,8 @@ public sealed class BuildingStats
         Supply = row.GetString("supply");
         Invulnerable = row.GetInt("invulnerable") != 0;
         LinePlacement = row.GetString("placement") == "line";
+        Ammo = row.GetInt("ammo");
+        BoostPercent = row.GetInt("boost_pct");
     }
 
     public string Id { get; }
@@ -63,14 +65,20 @@ public sealed class BuildingStats
     // Unit ids this building can produce.
     public IReadOnlyList<string> Produces => _produces;
 
-    // factory.md M2: "conveyor" — production is paid from the building's own stock that belts
-    // fill; empty — from the owner's wallet (the Legion's factory).
+    // factory.md M2: "conveyor" — the building has its own stock that belts fill: production
+    // (factories) and ammo (turrets) are paid from it; empty — from the owner's wallet.
     public string Supply { get; }
     public bool SuppliedByConveyor => Supply == SupplyConveyor;
     public const string SupplyConveyor = "conveyor";
 
     // neutral-buildings.md: points of interest nobody can damage.
     public bool Invulnerable { get; }
+
+    // factions.md: a turret's shot costs this many units of the primary resource from its stock.
+    public int Ammo { get; }
+
+    // behavior booster: how much faster neighbouring drills mine, percent.
+    public int BoostPercent { get; }
 
     // For the UI: placed by dragging a line (conveyors, walls).
     public bool LinePlacement { get; }
@@ -86,6 +94,7 @@ public sealed class BuildingStats
             case "bridge": return BuildingBehavior.Bridge;
             case "storage": return BuildingBehavior.Storage;
             case "lighthouse": return BuildingBehavior.Lighthouse;
+            case "booster": return BuildingBehavior.Booster;
             default: throw new System.FormatException($"Unknown building behavior \"{text}\".");
         }
     }

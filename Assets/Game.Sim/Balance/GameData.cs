@@ -15,10 +15,13 @@ public sealed class GameData
     private readonly List<WaveStats> _waves;
     private readonly List<FactionStats> _factions;
     private readonly List<AbilityStats> _abilities;
+    private readonly List<HeroLevelStats> _heroLevels;
 
     private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps,
-        List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, List<AbilityStats> abilities, GameRules rules)
+        List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, List<AbilityStats> abilities,
+        List<HeroLevelStats> heroLevels, GameRules rules)
     {
+        _heroLevels = heroLevels;
         _abilities = abilities;
         _factions = factions;
         _units = units;
@@ -49,36 +52,35 @@ public sealed class GameData
     // abilities.csv, sorted by id.
     public IReadOnlyList<AbilityStats> Abilities => _abilities;
 
+    // hero_levels.csv: level 1, 2, … in order (factions.md, Yellow Star).
+    public IReadOnlyList<HeroLevelStats> HeroLevels => _heroLevels;
+
     // Without the Legion tables: matches with no enemy AI (the M1 prototype, most tests).
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson) =>
-        Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, "[]", "[]");
+        Parse(new GameDataSources { Units = unitsJson, Buildings = buildingsJson, CreepCamps = creepCampsJson, Rules = rulesJson });
 
-    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
-        string legionJson, string wavesJson) =>
-        Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, legionJson, wavesJson, "[]", "[]");
-
-    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
-        string legionJson, string wavesJson, string factionsJson, string abilitiesJson)
+    public static GameData Parse(GameDataSources sources)
     {
-        List<AbilityStats> abilities = ReadTable("abilities.json", abilitiesJson, row => new AbilityStats(row), a => a.Id);
-        List<FactionStats> factions = ReadTable("factions.json", factionsJson, row => new FactionStats(row), f => f.Id);
-        List<UnitStats> units = ReadTable("units.json", unitsJson, row => new UnitStats(row), u => u.Id);
-        List<BuildingStats> buildings = ReadTable("buildings.json", buildingsJson, row => new BuildingStats(row), b => b.Id);
-        List<CreepCampStats> camps = ReadTable("creep_camps.json", creepCampsJson, row => new CreepCampStats(row), c => c.Id);
-        List<LegionStats> legion = ReadNumbered("legion.json", legionJson, row => new LegionStats(row), l => l.Players);
-        List<WaveStats> waves = ReadNumbered("waves.json", wavesJson, row => new WaveStats(row), w => w.Wave);
+        List<UnitStats> units = ReadTable("units.json", sources.Units, row => new UnitStats(row), u => u.Id);
+        List<BuildingStats> buildings = ReadTable("buildings.json", sources.Buildings, row => new BuildingStats(row), b => b.Id);
+        List<CreepCampStats> camps = ReadTable("creep_camps.json", sources.CreepCamps, row => new CreepCampStats(row), c => c.Id);
+        List<LegionStats> legion = ReadNumbered("legion.json", sources.Legion, row => new LegionStats(row), l => l.Players);
+        List<WaveStats> waves = ReadNumbered("waves.json", sources.Waves, row => new WaveStats(row), w => w.Wave);
+        List<FactionStats> factions = ReadTable("factions.json", sources.Factions, row => new FactionStats(row), f => f.Id);
+        List<AbilityStats> abilities = ReadTable("abilities.json", sources.Abilities, row => new AbilityStats(row), a => a.Id);
+        List<HeroLevelStats> heroLevels = ReadNumbered("hero_levels.json", sources.HeroLevels, row => new HeroLevelStats(row), l => l.Level);
 
         GameRules rules;
         try
         {
-            rules = new GameRules(JsonParser.Parse(rulesJson));
+            rules = new GameRules(JsonParser.Parse(sources.Rules));
         }
         catch (FormatException e) when (!e.Message.StartsWith("rules.json", StringComparison.Ordinal))
         {
             throw new FormatException($"rules.json: {e.Message}", e);
         }
 
-        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, rules);
+        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, heroLevels, rules);
         data.Validate();
         return data;
     }
@@ -248,6 +250,8 @@ public sealed class GameData
                 throw new FormatException($"buildings.json: \"{b.Id}\" has size {b.SizeW}x{b.SizeH}, must be positive.");
             if (b.MaxBuilders <= 0)
                 throw new FormatException($"buildings.json: \"{b.Id}\" has max_builders {b.MaxBuilders}, must be positive.");
+            if (b.Ammo > 0 && !b.SuppliedByConveyor)
+                throw new FormatException($"buildings.json: \"{b.Id}\" uses ammo but has no stock (supply conveyor).");
             // turret.md: a building that shoots sees everything it can reach from any corner,
             // with a cell to spare for the target's size.
             if (b.Damage > 0)
@@ -269,6 +273,10 @@ public sealed class GameData
                 throw new FormatException($"factions.json: \"{f.Id}\" has builder \"{f.BuilderUnitId}\" that is not a unit tagged builder.");
             if (f.HeadquartersId.Length > 0 && (!TryGetBuilding(f.HeadquartersId, out BuildingStats? hq) || hq!.Behavior != BuildingBehavior.Headquarters))
                 throw new FormatException($"factions.json: \"{f.Id}\" has headquarters \"{f.HeadquartersId}\" that is not a headquarters building.");
+            if (f.HeroUnitId.Length > 0 && (!TryGetUnit(f.HeroUnitId, out UnitStats? hero) || !hero!.HasTag(UnitTags.Hero)))
+                throw new FormatException($"factions.json: \"{f.Id}\" has hero \"{f.HeroUnitId}\" that is not a unit tagged hero.");
+            if (f.HeroUnitId.Length > 0 && _heroLevels.Count == 0)
+                throw new FormatException($"factions.json: \"{f.Id}\" has a hero but hero_levels.json is empty.");
             if (f.OnKillAbilityId.Length > 0 && (!TryGetAbility(f.OnKillAbilityId, out AbilityStats? onKill) || onKill!.Kind != AbilityKind.Boost))
                 throw new FormatException($"factions.json: \"{f.Id}\" has on-kill ability \"{f.OnKillAbilityId}\" that is not a boost.");
             foreach (string b in f.Buildings)

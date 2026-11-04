@@ -19,7 +19,7 @@ internal static class DrillSystem
             Drill? drill = b.Drill;
             if (drill != null)
             {
-                Mine(state, drill);
+                Mine(state, drill, Boost(state, b));
                 if (drill.Buffer > 0)
                     Output(state, b, drill);
                 drill.IsStopped = drill.Buffer >= state.Rules.DrillBuffer;
@@ -52,16 +52,34 @@ internal static class DrillSystem
         }
     }
 
-    private static void Mine(SimState state, Drill drill)
+    // The accumulator counts in hundredths of an ore cell, so a +50 % booster stays exact
+    // (drill.md appendix: each ore cell adds 1 per tick against the threshold).
+    private static void Mine(SimState state, Drill drill, int boostPercent)
     {
         if (drill.Buffer >= state.Rules.DrillBuffer || drill.OreCells == 0)
             return;
-        drill.Accumulator += drill.OreCells;
-        if (drill.Accumulator >= state.Rules.DrillTicksPerUnitPerOreCell)
+        int threshold = state.Rules.DrillTicksPerUnitPerOreCell * 100;
+        drill.Accumulator += drill.OreCells * (100 + boostPercent);
+        if (drill.Accumulator >= threshold)
         {
-            drill.Accumulator -= state.Rules.DrillTicksPerUnitPerOreCell;
+            drill.Accumulator -= threshold;
             drill.Buffer++;
         }
+    }
+
+    // factions.md (Brown Scavengers): the strongest finished own or ally booster next to the drill;
+    // boosters do not add up.
+    private static int Boost(SimState state, Building drill)
+    {
+        Logistics.Neighbours(state, drill, Neighbours);
+        int best = 0;
+        foreach (Building n in Neighbours)
+        {
+            if (n.Stats.Behavior == BuildingBehavior.Booster && n.IsComplete && n.Stats.BoostPercent > best
+                && state.Relations.IsAlly(drill.OwnerId, n.OwnerId))
+                best = n.Stats.BoostPercent;
+        }
+        return best;
     }
 
     // One unit per tick to the next neighbour (round-robin) that takes it.

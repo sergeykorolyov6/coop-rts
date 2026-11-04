@@ -22,7 +22,14 @@
     "first_strike_pct": 100,
     "first_strike_delay_ticks": 0,
     "on_kill_ability": "legion_frenzy",
-    "bounty_pct": 25
+    "bounty_pct": 25,
+    "hero": "",
+    "hero_respawn_ticks": 0,
+    "hero_xp_pct": 0,
+    "hero_xp_radius_mc": 0,
+    "hero_aura_radius_mc": 0,
+    "hero_aura_damage_pct": 0,
+    "demolish_refund_pct": 50
   },
   {
     "id": "blue_walls",
@@ -48,7 +55,48 @@
     "first_strike_pct": 100,
     "first_strike_delay_ticks": 0,
     "on_kill_ability": "",
-    "bounty_pct": 0
+    "bounty_pct": 0,
+    "hero": "",
+    "hero_respawn_ticks": 0,
+    "hero_xp_pct": 0,
+    "hero_xp_radius_mc": 0,
+    "hero_aura_radius_mc": 0,
+    "hero_aura_damage_pct": 0,
+    "demolish_refund_pct": 50
+  },
+  {
+    "id": "brown_scavengers",
+    "name_ru": "Коричневые Мусорщики",
+    "role": "player",
+    "builder": "bs_builder",
+    "headquarters": "bs_hq",
+    "buildings": [
+      "bs_drill_small",
+      "drill",
+      "bs_pump",
+      "conveyor",
+      "conveyor_bridge",
+      "storage",
+      "bs_factory",
+      "bs_hq",
+      "bs_scrap_gun"
+    ],
+    "single_headquarters": 1,
+    "builder_respawn_ticks": 300,
+    "unit_regen_pct_per_s": 0,
+    "building_regen_pct_per_s": 0,
+    "regen_delay_ticks": 0,
+    "first_strike_pct": 100,
+    "first_strike_delay_ticks": 0,
+    "on_kill_ability": "",
+    "bounty_pct": 0,
+    "hero": "",
+    "hero_respawn_ticks": 0,
+    "hero_xp_pct": 0,
+    "hero_xp_radius_mc": 0,
+    "hero_aura_radius_mc": 0,
+    "hero_aura_damage_pct": 0,
+    "demolish_refund_pct": 100
   },
   {
     "id": "grey_creatures",
@@ -65,7 +113,14 @@
     "first_strike_pct": 100,
     "first_strike_delay_ticks": 0,
     "on_kill_ability": "",
-    "bounty_pct": 0
+    "bounty_pct": 0,
+    "hero": "",
+    "hero_respawn_ticks": 0,
+    "hero_xp_pct": 0,
+    "hero_xp_radius_mc": 0,
+    "hero_aura_radius_mc": 0,
+    "hero_aura_damage_pct": 0,
+    "demolish_refund_pct": 50
   },
   {
     "id": "neutral",
@@ -82,7 +137,14 @@
     "first_strike_pct": 100,
     "first_strike_delay_ticks": 0,
     "on_kill_ability": "",
-    "bounty_pct": 0
+    "bounty_pct": 0,
+    "hero": "",
+    "hero_respawn_ticks": 0,
+    "hero_xp_pct": 0,
+    "hero_xp_radius_mc": 0,
+    "hero_aura_radius_mc": 0,
+    "hero_aura_damage_pct": 0,
+    "demolish_refund_pct": 50
   },
   {
     "id": "red_lightning",
@@ -107,6 +169,45 @@
     "first_strike_pct": 200,
     "first_strike_delay_ticks": 60,
     "on_kill_ability": "",
-    "bounty_pct": 0
+    "bounty_pct": 0,
+    "hero": "",
+    "hero_respawn_ticks": 0,
+    "hero_xp_pct": 0,
+    "hero_xp_radius_mc": 0,
+    "hero_aura_radius_mc": 0,
+    "hero_aura_damage_pct": 0,
+    "demolish_refund_pct": 50
+  },
+  {
+    "id": "yellow_star",
+    "name_ru": "Жёлтая Звезда",
+    "role": "player",
+    "builder": "ys_builder",
+    "headquarters": "ys_hq",
+    "buildings": [
+      "drill",
+      "conveyor",
+      "conveyor_bridge",
+      "storage",
+      "ys_barracks",
+      "ys_hq",
+      "ys_tower"
+    ],
+    "single_headquarters": 1,
+    "builder_respawn_ticks": 300,
+    "unit_regen_pct_per_s": 0,
+    "building_regen_pct_per_s": 0,
+    "regen_delay_ticks": 0,
+    "first_strike_pct": 100,
+    "first_strike_delay_ticks": 0,
+    "on_kill_ability": "",
+    "bounty_pct": 0,
+    "hero": "ys_hero",
+    "hero_respawn_ticks": 600,
+    "hero_xp_pct": 20,
+    "hero_xp_radius_mc": 10000,
+    "hero_aura_radius_mc": 6000,
+    "hero_aura_damage_pct": 20,
+    "demolish_refund_pct": 50
   }
 ]

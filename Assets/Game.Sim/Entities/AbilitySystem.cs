@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace Game.Sim;
 
-// factions.md: active abilities — Blink (to a point within range) and Boost (a timed buff
-// paid with HP) — and the timers they leave on units.
+// factions.md: active abilities — Blink (to a point within range), Boost (a timed buff paid
+// with HP), Nova (damage around) and Inspire (a boost to own units around) — and their timers.
 internal static class AbilitySystem
 {
     public static void TickTimers(Unit unit)
@@ -25,9 +25,15 @@ internal static class AbilitySystem
     public static bool TryUse(SimState state, Unit unit, AbilityStats ability, int x, int y)
     {
         int index = IndexOf(unit.Stats, ability.Id);
-        if (index < 0 || unit._abilityCooldowns[index] > 0)
+        if (index < 0 || unit._abilityCooldowns[index] > 0 || HeroSystem.LevelOf(state, unit) < ability.MinLevel)
             return false;
-        bool used = ability.Kind == AbilityKind.Blink ? Blink(state, unit, ability, x, y) : PayAndBoost(unit, ability);
+        bool used = ability.Kind switch
+        {
+            AbilityKind.Blink => Blink(state, unit, ability, x, y),
+            AbilityKind.Nova => Nova(state, unit, ability),
+            AbilityKind.Inspire => Inspire(state, unit, ability),
+            _ => PayAndBoost(unit, ability),
+        };
         if (used)
             unit._abilityCooldowns[index] = ability.CooldownTicks;
         return used;
@@ -41,6 +47,29 @@ internal static class AbilitySystem
         unit.BoostTicksLeft = ability.DurationTicks;
         unit.BoostMovePercent = ability.MoveSpeedPercent;
         unit.BoostAttackPercent = ability.AttackSpeedPercent;
+    }
+
+    // Every enemy unit within range takes the damage (minus armor) with this tick's blows.
+    private static bool Nova(SimState state, Unit user, AbilityStats ability)
+    {
+        foreach (Unit u in state.Units)
+        {
+            if (!u.IsDead && state.Relations.IsEnemy(user.OwnerId, u.OwnerId)
+                && Movement.Distance(user.X, user.Y, u.X, u.Y) - u.Radius <= ability.RangeMilli)
+                state.PendingHits.Add(new PendingHit(user.Id, u.Id, DamageRules.Damage(ability.Damage, u.Armor)));
+        }
+        return true;
+    }
+
+    // Every own unit within range, the user too, gets the boost.
+    private static bool Inspire(SimState state, Unit user, AbilityStats ability)
+    {
+        foreach (Unit u in state.Units)
+        {
+            if (!u.IsDead && u.OwnerId == user.OwnerId && Movement.Distance(user.X, user.Y, u.X, u.Y) <= ability.RangeMilli)
+                ApplyBoost(u, ability);
+        }
+        return true;
     }
 
     private static bool PayAndBoost(Unit unit, AbilityStats ability)

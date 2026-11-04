@@ -33,7 +33,7 @@ public class RallyAndStockTests
         return drill;
     }
 
-    private static int Stock(Building f, int type = Resources.Primary) => f.Factory!.Stock!.Get(type);
+    private static int Stock(Building f, int type = Resources.Primary) => f.Stock!.Get(type);
 
     private static int Wallet(Simulation sim, int player) => sim.State.GetPlayer(player).Wallet.Get(Resources.Primary);
 
@@ -41,7 +41,7 @@ public class RallyAndStockTests
     public void R1_RallyPoint_FinishedUnitWalksThere()
     {
         var (sim, factory) = Match();
-        factory.Factory!.Stock!.Add(Resources.Primary, 30);
+        factory.Stock!.Add(Resources.Primary, 30);
         sim.Order(new SetRallyCommand(Setups.PlayerA, sim.State.Tick, factory.Id, true, Center(20), Center(10)));
         sim.Order(new ProduceCommand(Setups.PlayerA, sim.State.Tick, factory.Id, "infantry"));
         sim.RunUntil(s => s.State.UnitsOf(Setups.PlayerA).Any(u => u.Stats.Id == "infantry"));
@@ -55,7 +55,7 @@ public class RallyAndStockTests
     public void R2_RallyCleared_NextUnitStaysByTheFactory()
     {
         var (sim, factory) = Match();
-        factory.Factory!.Stock!.Add(Resources.Primary, 30);
+        factory.Stock!.Add(Resources.Primary, 30);
         sim.Order(new SetRallyCommand(Setups.PlayerA, sim.State.Tick, factory.Id, true, Center(20), Center(10)));
         sim.Tick();
         sim.Order(new SetRallyCommand(Setups.PlayerA, sim.State.Tick, factory.Id, false, 0, 0));
@@ -104,7 +104,7 @@ public class RallyAndStockTests
     public void S3_PaidFromTheStock_WalletUntouched()
     {
         var (sim, factory) = Match();
-        factory.Factory!.Stock!.Add(Resources.Primary, 40);
+        factory.Stock!.Add(Resources.Primary, 40);
         int wallet = Wallet(sim, Setups.PlayerA);
         sim.Order(new ProduceCommand(Setups.PlayerA, sim.State.Tick, factory.Id, "infantry"));
         sim.Tick();
@@ -116,7 +116,7 @@ public class RallyAndStockTests
     public void S4_FullStock_TheBeltStops()
     {
         var (sim, factory) = Match();
-        factory.Factory!.Stock!.Add(Resources.Primary, 150);
+        factory.Stock!.Add(Resources.Primary, 150);
         Building drill = DrillLine(sim, Setups.PlayerA);
         drill.Drill!.Buffer = 10;
         sim.Run(10 * Second);
@@ -150,6 +150,6 @@ public class RallyAndStockTests
     {
         var (sim, _) = Match();
         Building legion = Place(sim, Setups.EnemyAi, "legion_factory", 20, 10);
-        Assert.That(legion.Factory!.Stock, Is.Null);
+        Assert.That(legion.Stock, Is.Null);
     }
 }

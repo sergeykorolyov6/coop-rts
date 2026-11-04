@@ -39,6 +39,10 @@ internal static class Combat
                 FactionStats? faction = state.GetPlayer(unit.OwnerId).Faction;
                 if (faction != null && faction.FirstStrikePercent != 100 && state.Tick - unit.LastAttackTick >= faction.FirstStrikeDelayTicks)
                     raw = raw * faction.FirstStrikePercent / 100;
+                // factions.md (Yellow Star): the hero's level, or its aura around own units.
+                int bonus = HeroSystem.DamageBonusPercent(state, unit);
+                if (bonus > 0)
+                    raw = raw * (100 + bonus) / 100;
                 unit.LastAttackTick = state.Tick;
                 state.PendingHits.Add(new PendingHit(unit.Id, target.Id, DamageRules.Damage(raw, target.Armor)));
                 unit.AttackCooldown = unit.AttackCooldownTicks;
@@ -184,6 +188,8 @@ internal static class Combat
                 target.Hp = 0;
                 target.IsDead = true;
                 FactionTraits.OnKill(state, hit.AttackerId, target);
+                if (target is Unit victim)
+                    HeroSystem.OnUnitDied(state, victim, events);
                 events.Add(new EntityDestroyed(state.Tick, target.OwnerId, target.Id, target is Building, typeId: target is Building tb ? tb.Stats.Id : ((Unit)target).Stats.Id));
             }
         }

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 namespace Game.Sim;
 
 // demolish.md: a building being demolished goes after demolish_time_pct of its build time and
-// gives demolish_refund_pct of its price back (nothing for belts); destroyed first — no refund.
+// gives its owner faction's demolish_refund_pct of its price back (nothing for belts); destroyed
+// first — no refund.
 public static class DemolishSystem
 {
     // Rounded up, at least one tick: a conveyor's 10 ticks give 3.
@@ -13,12 +14,12 @@ public static class DemolishSystem
         return ticks < 1 ? 1 : ticks;
     }
 
-    // Rounded down per resource; belts (conveyors, bridge ends) give nothing back.
-    public static (int Primary, int Secondary) Refund(GameRules rules, BuildingStats stats)
+    // The owner faction's percent, rounded down per resource; belts (conveyors, bridge ends) give nothing back.
+    public static (int Primary, int Secondary) Refund(FactionStats? owner, BuildingStats stats)
     {
-        if (stats.IsBelt)
+        if (stats.IsBelt || owner == null)
             return (0, 0);
-        int pct = rules.DemolishRefundPercent;
+        int pct = owner.DemolishRefundPercent;
         return (stats.CostPrimary * pct / 100, stats.CostSecondary * pct / 100);
     }
 
@@ -34,7 +35,7 @@ public static class DemolishSystem
 
             b.IsDead = true;
             var e = new EntityDestroyed(state.Tick, b.OwnerId, b.Id, isBuilding: true, demolished: true, typeId: b.Stats.Id);
-            (int primary, int secondary) = Refund(state.Rules, b.Stats);
+            (int primary, int secondary) = Refund(state.GetPlayer(b.OwnerId).Faction, b.Stats);
             Wallet wallet = state.GetPlayer(b.OwnerId).Wallet;
             e.RefundPrimary = primary;
             e.RefundSecondary = wallet.ResourceTypeCount > Resources.Secondary ? secondary : 0;

@@ -12,7 +12,6 @@
   "construction_start_hp_pct": 10,
   "conveyor_item_spacing_mc": 1000,
   "conveyor_item_speed_mc_per_tick": 200,
-  "demolish_refund_pct": 50,
   "demolish_time_pct": 25,
   "drill_buffer": 10,
   "drill_rate_per_ore_cell_ticks_per_unit": 160,

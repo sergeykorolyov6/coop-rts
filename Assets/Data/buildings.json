@@ -1,5 +1,130 @@
 [
   {
+    "id": "bs_drill_small",
+    "name_ru": "Малый бур",
+    "faction": "brown_scavengers",
+    "hp": 120,
+    "armor": 0,
+    "size_w": 1,
+    "size_h": 1,
+    "cost_primary": 8,
+    "cost_secondary": 0,
+    "build_time_ticks": 80,
+    "max_builders": 1,
+    "vision_mc": 3000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "drill",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
+    "placement": ""
+  },
+  {
+    "id": "bs_factory",
+    "name_ru": "Мастерская",
+    "faction": "brown_scavengers",
+    "hp": 700,
+    "armor": 0,
+    "size_w": 3,
+    "size_h": 3,
+    "cost_primary": 35,
+    "cost_secondary": 0,
+    "build_time_ticks": 400,
+    "max_builders": 4,
+    "vision_mc": 7000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "",
+    "produces": [
+      "bs_scrapper",
+      "bs_shotgun",
+      "bs_mortar",
+      "bs_repairbot"
+    ],
+    "supply": "conveyor",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
+    "placement": ""
+  },
+  {
+    "id": "bs_hq",
+    "name_ru": "Свалка",
+    "faction": "brown_scavengers",
+    "hp": 1500,
+    "armor": 1,
+    "size_w": 4,
+    "size_h": 4,
+    "cost_primary": 70,
+    "cost_secondary": 0,
+    "build_time_ticks": 900,
+    "max_builders": 6,
+    "vision_mc": 10000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "headquarters",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
+    "placement": ""
+  },
+  {
+    "id": "bs_pump",
+    "name_ru": "Смазчик",
+    "faction": "brown_scavengers",
+    "hp": 150,
+    "armor": 0,
+    "size_w": 1,
+    "size_h": 1,
+    "cost_primary": 15,
+    "cost_secondary": 0,
+    "build_time_ticks": 120,
+    "max_builders": 1,
+    "vision_mc": 2000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "booster",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 50,
+    "placement": ""
+  },
+  {
+    "id": "bs_scrap_gun",
+    "name_ru": "Ломомёт",
+    "faction": "brown_scavengers",
+    "hp": 250,
+    "armor": 0,
+    "size_w": 2,
+    "size_h": 2,
+    "cost_primary": 15,
+    "cost_secondary": 0,
+    "build_time_ticks": 160,
+    "max_builders": 3,
+    "vision_mc": 9000,
+    "damage": 18,
+    "attack_range_mc": 6000,
+    "attack_cooldown_ticks": 20,
+    "behavior": "",
+    "produces": [],
+    "supply": "conveyor",
+    "invulnerable": 0,
+    "ammo": 1,
+    "boost_pct": 0,
+    "placement": ""
+  },
+  {
     "id": "cave",
     "name_ru": "Пещера",
     "faction": "neutral",
@@ -22,6 +147,8 @@
     ],
     "supply": "conveyor",
     "invulnerable": 1,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -44,6 +171,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": "line"
   },
   {
@@ -66,6 +195,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -88,6 +219,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -117,6 +250,8 @@
     ],
     "supply": "conveyor",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -139,6 +274,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -166,6 +303,8 @@
     ],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -188,6 +327,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -210,6 +351,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -232,6 +375,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 1,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -259,6 +404,8 @@
     ],
     "supply": "conveyor",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -281,6 +428,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -303,6 +452,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -325,6 +476,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -347,6 +500,8 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": ""
   },
   {
@@ -369,6 +524,85 @@
     "produces": [],
     "supply": "",
     "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
     "placement": "line"
+  },
+  {
+    "id": "ys_barracks",
+    "name_ru": "Казарма",
+    "faction": "yellow_star",
+    "hp": 1000,
+    "armor": 1,
+    "size_w": 3,
+    "size_h": 3,
+    "cost_primary": 45,
+    "cost_secondary": 0,
+    "build_time_ticks": 600,
+    "max_builders": 4,
+    "vision_mc": 7000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "",
+    "produces": [
+      "ys_squire",
+      "ys_archer",
+      "ys_acolyte",
+      "ys_catapult"
+    ],
+    "supply": "conveyor",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
+    "placement": ""
+  },
+  {
+    "id": "ys_hq",
+    "name_ru": "Святилище",
+    "faction": "yellow_star",
+    "hp": 1800,
+    "armor": 1,
+    "size_w": 4,
+    "size_h": 4,
+    "cost_primary": 100,
+    "cost_secondary": 0,
+    "build_time_ticks": 1100,
+    "max_builders": 6,
+    "vision_mc": 10000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "headquarters",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
+    "placement": ""
+  },
+  {
+    "id": "ys_tower",
+    "name_ru": "Сторожевая башня",
+    "faction": "yellow_star",
+    "hp": 350,
+    "armor": 1,
+    "size_w": 2,
+    "size_h": 2,
+    "cost_primary": 35,
+    "cost_secondary": 5,
+    "build_time_ticks": 360,
+    "max_builders": 3,
+    "vision_mc": 9000,
+    "damage": 11,
+    "attack_range_mc": 6000,
+    "attack_cooldown_ticks": 20,
+    "behavior": "",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "ammo": 0,
+    "boost_pct": 0,
+    "placement": ""
   }
 ]

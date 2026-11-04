@@ -25,6 +25,13 @@ public sealed class FactionStats
         FirstStrikeDelayTicks = row.GetInt("first_strike_delay_ticks");
         OnKillAbilityId = row.GetString("on_kill_ability");
         BountyPercent = row.GetInt("bounty_pct");
+        HeroUnitId = row.GetString("hero");
+        HeroRespawnTicks = row.GetInt("hero_respawn_ticks");
+        HeroXpPercent = row.GetInt("hero_xp_pct");
+        HeroXpRadiusMilli = row.GetInt("hero_xp_radius_mc");
+        HeroAuraRadiusMilli = row.GetInt("hero_aura_radius_mc");
+        HeroAuraDamagePercent = row.GetInt("hero_aura_damage_pct");
+        DemolishRefundPercent = row.GetInt("demolish_refund_pct");
     }
 
     public string Id { get; }
@@ -62,6 +69,19 @@ public sealed class FactionStats
 
     // factions.md: percent of a destroyed enemy building's price the faction's player gets.
     public int BountyPercent { get; }
+
+    // factions.md (Yellow Star): the hero — one, back after HeroRespawnTicks with its level; it
+    // gains HeroXpPercent of the HP of every enemy unit that dies within HeroXpRadius, and own units
+    // within HeroAuraRadius of it deal HeroAuraDamagePercent more. Empty id — no hero.
+    public string HeroUnitId { get; }
+    public int HeroRespawnTicks { get; }
+    public int HeroXpPercent { get; }
+    public int HeroXpRadiusMilli { get; }
+    public int HeroAuraRadiusMilli { get; }
+    public int HeroAuraDamagePercent { get; }
+
+    // demolish.md: percent of the price back for demolishing (Brown Scavengers get it all).
+    public int DemolishRefundPercent { get; }
 
     public bool CanBuild(string buildingId) => _buildings.Contains(buildingId);
 

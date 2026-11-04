@@ -30,11 +30,16 @@ public class FactionTests
             ["buildings"] = new JsonArray("red_drill", "conveyor"), ["single_headquarters"] = 1,
             ["builder_respawn_ticks"] = 200, ["unit_regen_pct_per_s"] = 0, ["building_regen_pct_per_s"] = 0,
             ["regen_delay_ticks"] = 0, ["first_strike_pct"] = 100, ["first_strike_delay_ticks"] = 0,
-            ["on_kill_ability"] = "", ["bounty_pct"] = 0,
+            ["on_kill_ability"] = "", ["bounty_pct"] = 0, ["hero"] = "", ["hero_respawn_ticks"] = 0, ["hero_xp_pct"] = 0,
+            ["hero_xp_radius_mc"] = 0, ["hero_aura_radius_mc"] = 0, ["hero_aura_damage_pct"] = 0, ["demolish_refund_pct"] = 50,
         });
         editFactions?.Invoke(factions);
-        return GameData.Parse(units.ToJsonString(), buildings.ToJsonString(), Json("creep_camps.json"), Json("rules.json"),
-            Json("legion.json"), Json("waves.json"), factions.ToJsonString(), Json("abilities.json"));
+        return GameData.Parse(new GameDataSources
+        {
+            Units = units.ToJsonString(), Buildings = buildings.ToJsonString(), CreepCamps = Json("creep_camps.json"),
+            Rules = Json("rules.json"), Legion = Json("legion.json"), Waves = Json("waves.json"),
+            Factions = factions.ToJsonString(), Abilities = Json("abilities.json"), HeroLevels = Json("hero_levels.json"),
+        });
     }
 
     private static JsonArray Copy(string json, string id, string newId)
@@ -112,7 +117,7 @@ public class FactionTests
     [Test]
     public void UnknownFactionInTheSetup_IsAnError()
     {
-        Assert.Throws<ArgumentException>(() => Setup(RepoData.Get(), new PlayerFaction(Setups.PlayerB, "yellow_star")));
+        Assert.Throws<ArgumentException>(() => Setup(RepoData.Get(), new PlayerFaction(Setups.PlayerB, "purple_moon")));
     }
 
     [Test]

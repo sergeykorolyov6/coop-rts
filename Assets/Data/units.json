@@ -1,5 +1,118 @@
 [
   {
+    "id": "bs_builder",
+    "name_ru": "Старьёвщик",
+    "faction": "brown_scavengers",
+    "hp": 120,
+    "armor": 0,
+    "damage": 4,
+    "damage_vs_buildings": 4,
+    "attack_range_mc": 1000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 150,
+    "vision_mc": 7000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 300,
+    "produced_at": "",
+    "size_mc": 600,
+    "tags": [
+      "worker",
+      "builder",
+      "melee"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "bs_mortar",
+    "name_ru": "Мортира",
+    "faction": "brown_scavengers",
+    "hp": 80,
+    "armor": 0,
+    "damage": 3,
+    "damage_vs_buildings": 40,
+    "attack_range_mc": 8000,
+    "attack_cooldown_ticks": 40,
+    "move_speed_mc_per_tick": 100,
+    "vision_mc": 8000,
+    "cost_primary": 22,
+    "cost_secondary": 10,
+    "build_time_ticks": 360,
+    "produced_at": "bs_factory",
+    "size_mc": 800,
+    "tags": [
+      "siege",
+      "ranged"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "bs_repairbot",
+    "name_ru": "Жестянщик",
+    "faction": "brown_scavengers",
+    "hp": 50,
+    "armor": 0,
+    "damage": 0,
+    "damage_vs_buildings": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "move_speed_mc_per_tick": 140,
+    "vision_mc": 6000,
+    "cost_primary": 12,
+    "cost_secondary": 0,
+    "build_time_ticks": 160,
+    "produced_at": "bs_factory",
+    "size_mc": 500,
+    "tags": [
+      "repairer"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "bs_scrapper",
+    "name_ru": "Лом",
+    "faction": "brown_scavengers",
+    "hp": 100,
+    "armor": 0,
+    "damage": 9,
+    "damage_vs_buildings": 9,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 16,
+    "move_speed_mc_per_tick": 130,
+    "vision_mc": 5000,
+    "cost_primary": 12,
+    "cost_secondary": 0,
+    "build_time_ticks": 200,
+    "produced_at": "bs_factory",
+    "size_mc": 600,
+    "tags": [
+      "melee"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "bs_shotgun",
+    "name_ru": "Дробовик",
+    "faction": "brown_scavengers",
+    "hp": 70,
+    "armor": 0,
+    "damage": 16,
+    "damage_vs_buildings": 4,
+    "attack_range_mc": 2500,
+    "attack_cooldown_ticks": 24,
+    "move_speed_mc_per_tick": 120,
+    "vision_mc": 6000,
+    "cost_primary": 14,
+    "cost_secondary": 0,
+    "build_time_ticks": 240,
+    "produced_at": "bs_factory",
+    "size_mc": 600,
+    "tags": [
+      "ranged"
+    ],
+    "abilities": []
+  },
+  {
     "id": "builder",
     "name_ru": "Строитель",
     "faction": "blue_walls",
@@ -482,6 +595,145 @@
     "tags": [
       "siege",
       "ranged"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "ys_acolyte",
+    "name_ru": "Послушник",
+    "faction": "yellow_star",
+    "hp": 70,
+    "armor": 0,
+    "damage": 0,
+    "damage_vs_buildings": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "move_speed_mc_per_tick": 120,
+    "vision_mc": 6000,
+    "cost_primary": 30,
+    "cost_secondary": 0,
+    "build_time_ticks": 360,
+    "produced_at": "ys_barracks",
+    "size_mc": 600,
+    "tags": [
+      "repairer"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "ys_archer",
+    "name_ru": "Лучник",
+    "faction": "yellow_star",
+    "hp": 80,
+    "armor": 0,
+    "damage": 9,
+    "damage_vs_buildings": 9,
+    "attack_range_mc": 5000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 110,
+    "vision_mc": 7000,
+    "cost_primary": 20,
+    "cost_secondary": 0,
+    "build_time_ticks": 320,
+    "produced_at": "ys_barracks",
+    "size_mc": 600,
+    "tags": [
+      "ranged"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "ys_builder",
+    "name_ru": "Подмастерье",
+    "faction": "yellow_star",
+    "hp": 160,
+    "armor": 1,
+    "damage": 5,
+    "damage_vs_buildings": 5,
+    "attack_range_mc": 1000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 150,
+    "vision_mc": 7000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 360,
+    "produced_at": "",
+    "size_mc": 600,
+    "tags": [
+      "worker",
+      "builder",
+      "melee"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "ys_catapult",
+    "name_ru": "Катапульта",
+    "faction": "yellow_star",
+    "hp": 150,
+    "armor": 0,
+    "damage": 10,
+    "damage_vs_buildings": 50,
+    "attack_range_mc": 8000,
+    "attack_cooldown_ticks": 50,
+    "move_speed_mc_per_tick": 80,
+    "vision_mc": 8000,
+    "cost_primary": 40,
+    "cost_secondary": 25,
+    "build_time_ticks": 600,
+    "produced_at": "ys_barracks",
+    "size_mc": 1000,
+    "tags": [
+      "siege",
+      "ranged"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "ys_hero",
+    "name_ru": "Звёздный рыцарь",
+    "faction": "yellow_star",
+    "hp": 600,
+    "armor": 2,
+    "damage": 30,
+    "damage_vs_buildings": 30,
+    "attack_range_mc": 1000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 140,
+    "vision_mc": 9000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 800,
+    "produced_at": "",
+    "size_mc": 1000,
+    "tags": [
+      "melee",
+      "hero"
+    ],
+    "abilities": [
+      "ys_nova",
+      "ys_inspire"
+    ]
+  },
+  {
+    "id": "ys_squire",
+    "name_ru": "Оруженосец",
+    "faction": "yellow_star",
+    "hp": 180,
+    "armor": 1,
+    "damage": 11,
+    "damage_vs_buildings": 11,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 18,
+    "move_speed_mc_per_tick": 110,
+    "vision_mc": 5000,
+    "cost_primary": 25,
+    "cost_secondary": 0,
+    "build_time_ticks": 400,
+    "produced_at": "ys_barracks",
+    "size_mc": 700,
+    "tags": [
+      "melee"
     ],
     "abilities": []
   }

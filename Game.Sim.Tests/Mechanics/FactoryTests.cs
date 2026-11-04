@@ -12,11 +12,11 @@ public class FactoryTests
         var sim = Match();
         Building factory = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("factory"), 10, 6, Direction.Right, complete);
         // factory.md M2: production is paid from the factory's own stock that belts fill.
-        factory.Factory!.Stock!.Add(Resources.Primary, 100);
+        factory.Stock!.Add(Resources.Primary, 100);
         return (sim, factory);
     }
 
-    internal static int Stock(Building factory, int type = Resources.Primary) => factory.Factory!.Stock!.Get(type);
+    internal static int Stock(Building factory, int type = Resources.Primary) => factory.Stock!.Get(type);
 
     private static ProduceCommand Produce(Simulation sim, int player, Building factory, string unit) =>
         new ProduceCommand(player, sim.State.Tick, factory.Id, unit);
@@ -59,7 +59,7 @@ public class FactoryTests
     public void GWT3_NotEnoughResources_Rejected_NothingSpent()
     {
         var (sim, factory) = WithFactory();
-        var wallet = factory.Factory!.Stock!;
+        var wallet = factory.Stock!;
         wallet.TrySpend(Resources.Primary, wallet.Get(Resources.Primary) - 20);
         sim.Order(Produce(sim, Setups.PlayerA, factory, "infantry"));
         sim.Tick();
@@ -71,7 +71,7 @@ public class FactoryTests
     public void Edge_QueueOfFive_SixthRejected()
     {
         var (sim, factory) = WithFactory();
-        factory.Factory!.Stock!.Add(Resources.Primary, 500);
+        factory.Stock!.Add(Resources.Primary, 500);
         for (int i = 0; i < 6; i++)
             sim.Order(Produce(sim, Setups.PlayerA, factory, "repairer"));
         sim.Tick();
@@ -143,7 +143,7 @@ public class FactoryTests
     public void M2_FactoryProducesTheOtherUnits_PaidInBothResources(string unit, int primary, int secondary)
     {
         var (sim, factory) = WithFactory();
-        factory.Factory!.Stock!.Add(Resources.Secondary, 30);
+        factory.Stock!.Add(Resources.Secondary, 30);
         int startPrimary = Stock(factory);
         sim.Order(Produce(sim, Setups.PlayerA, factory, unit));
         sim.Tick();

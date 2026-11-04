@@ -32,6 +32,9 @@ internal sealed class StateHasher
         {
             _writer.Write(player.Id);
             _writer.Write(player.BuilderRespawnTick);
+            _writer.Write(player.HeroRespawnTick);
+            _writer.Write(player.HeroXp);
+            _writer.Write(player.HeroLevel);
             for (int type = 0; type < player.Wallet.ResourceTypeCount; type++)
             {
                 _writer.Write(player.Wallet.Get(type));
@@ -115,6 +118,7 @@ internal sealed class StateHasher
         _writer.Write(e.Id);
         _writer.Write(e.OwnerId);
         _writer.Write(e.Hp);
+        _writer.Write(e.MaxHp);
         _writer.Write(e.IsDead);
         _writer.Write(e.LastDamagedTick);
         _writer.Write(e.LastAttackerId);
@@ -223,17 +227,18 @@ internal sealed class StateHasher
         _writer.Write(b.GuardCampIndex);
         _writer.Write(b.LitForPlayerId);
         _writer.Write(b.RegenAccumulator);
+        if (b.Stock != null)
+        {
+            for (int type = 0; type < b.Stock.ResourceTypeCount; type++)
+                _writer.Write(b.Stock.Get(type));
+        }
         if (b.Factory != null)
         {
             _writer.Write(b.Factory.Progress);
             _writer.Write(b.Factory.HasRally);
             _writer.Write(b.Factory.RallyX);
             _writer.Write(b.Factory.RallyY);
-            if (b.Factory.Stock != null)
-            {
-                for (int type = 0; type < b.Factory.Stock.ResourceTypeCount; type++)
-                    _writer.Write(b.Factory.Stock.Get(type));
-            }
+
             _writer.Write(b.Factory.Queue.Count);
             foreach (string unit in b.Factory.Queue)
                 _writer.Write(unit);

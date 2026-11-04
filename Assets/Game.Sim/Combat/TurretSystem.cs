@@ -30,6 +30,9 @@ internal static class TurretSystem
             turret.TargetId = target?.Id ?? 0;
             if (target == null || turret.Cooldown > 0)
                 continue;
+            // factions.md: an ammo turret fires only while its stock pays for the shot.
+            if (b.Stats.Ammo > 0 && (b.Stock == null || !b.Stock.TryPay(b.Stats.Ammo, 0)))
+                continue;
 
             state.PendingHits.Add(new PendingHit(b.Id, target.Id, DamageRules.Damage(b.Stats.Damage, target.Armor)));
             turret.Cooldown = b.Stats.AttackCooldownTicks;

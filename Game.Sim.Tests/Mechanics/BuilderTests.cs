@@ -126,7 +126,7 @@ public class BuilderTests
     {
         var sim = Match();
         Building factory = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("factory"), 10, 6, Direction.Right, complete: true);
-        factory.Factory!.Stock!.Add(Resources.Primary, 100);
+        factory.Stock!.Add(Resources.Primary, 100);
         sim.Order(new ProduceCommand(Setups.PlayerA, sim.State.Tick, factory.Id, "builder"));
         sim.Tick();
         Assert.That(sim.Events.OfType<CommandRejected>().Single().Reason, Is.EqualTo(RejectReason.CannotProduce));

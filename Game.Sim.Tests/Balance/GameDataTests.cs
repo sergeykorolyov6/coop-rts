@@ -21,7 +21,7 @@ public class GameDataTests
       {""id"": ""factory"", ""name_ru"": ""Завод"", ""faction"": ""blue_walls"", ""hp"": 1200, ""armor"": 1,
        ""size_w"": 3, ""size_h"": 3, ""cost_primary"": 50, ""cost_secondary"": 0, ""build_time_ticks"": 700,
        ""max_builders"": 4, ""vision_mc"": 7000, ""damage"": 0, ""attack_range_mc"": 0,
-       ""attack_cooldown_ticks"": 0, ""behavior"": """", ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0, ""placement"": """"}
+       ""attack_cooldown_ticks"": 0, ""behavior"": """", ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0, ""placement"": """", ""ammo"": 0, ""boost_pct"": 0}
     ]";
 
     private const string Camps = @"[
@@ -40,7 +40,7 @@ public class GameDataTests
       ""ai_defense_calm_ticks"": 200, ""ai_rebuild_safe_radius_mc"": 8000,
       ""auto_repair_radius_mc"": 8000, ""factory_stock"": 150,
       ""capture_time_ticks"": 200, ""capture_radius_mc"": 2000, ""lighthouse_radius_mc"": 2000,
-      ""demolish_time_pct"": 25, ""demolish_refund_pct"": 50
+      ""demolish_time_pct"": 25
     }";
 
     [Test]
@@ -49,7 +49,7 @@ public class GameDataTests
         GameRules rules = GameData.Parse(Units, Buildings, Camps, Rules).Rules;
         Assert.That(rules.DrillTicksPerUnitPerOreCell, Is.EqualTo(160));
         Assert.That(rules.ConveyorItemSpeedMilliPerTick, Is.EqualTo(200));
-        Assert.That(rules.DemolishRefundPercent, Is.EqualTo(50));
+        Assert.That(rules.DemolishTimePercent, Is.EqualTo(25));
     }
 
     [Test]

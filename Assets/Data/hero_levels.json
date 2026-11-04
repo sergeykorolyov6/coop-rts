@@ -1,0 +1,32 @@
+[
+  {
+    "level": 1,
+    "xp": 0,
+    "hp_pct": 0,
+    "damage_pct": 0
+  },
+  {
+    "level": 2,
+    "xp": 100,
+    "hp_pct": 15,
+    "damage_pct": 15
+  },
+  {
+    "level": 3,
+    "xp": 250,
+    "hp_pct": 30,
+    "damage_pct": 30
+  },
+  {
+    "level": 4,
+    "xp": 450,
+    "hp_pct": 45,
+    "damage_pct": 45
+  },
+  {
+    "level": 5,
+    "xp": 700,
+    "hp_pct": 60,
+    "damage_pct": 60
+  }
+]

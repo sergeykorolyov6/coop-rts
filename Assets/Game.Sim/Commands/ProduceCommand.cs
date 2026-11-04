@@ -57,13 +57,13 @@ public sealed class ProduceCommand : ICommand
             return RejectReason.CannotProduce;
 
         Wallet wallet = Payer(state, factory);
-        RejectReason low = factory.Factory.Stock != null ? RejectReason.FactoryStockLow : RejectReason.NotEnoughResources;
+        RejectReason low = factory.Stock != null ? RejectReason.FactoryStockLow : RejectReason.NotEnoughResources;
         return wallet.CanPay(stats!.CostPrimary, stats.CostSecondary) ? null : low;
     }
 
     // factory.md M2: the factory's own stock, or the owner's wallet when it has none.
     internal static Wallet Payer(SimState state, Building factory) =>
-        factory.Factory!.Stock ?? state.GetPlayer(factory.OwnerId).Wallet;
+        factory.Stock ?? state.GetPlayer(factory.OwnerId).Wallet;
 
     private static bool Contains(IReadOnlyList<string> list, string value)
     {
