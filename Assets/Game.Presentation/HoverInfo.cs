@@ -111,7 +111,7 @@ namespace Game.Presentation
                 switch (poi.Stats.Id)
                 {
                     case BuildingKinds.Lighthouse:
-                        return $"Маяк: подведите юнита — откроет обзор на {poi.Stats.VisionMilli / Grid.MilliPerCell} клеток"
+                        return $"Маяк: подведите юнита — откроет обзор на {DisplayNames.Cells(poi.Stats.VisionMilli / Grid.MilliPerCell)}"
                             + (poi.LitForPlayerId != 0 ? $"\nСветит игроку {poi.LitForPlayerId}" : "");
                     case BuildingKinds.Cave:
                         return guarded
@@ -135,7 +135,7 @@ namespace Game.Presentation
                         free++;
                 }
                 string resource = deposit.ResourceType == Game.Sim.Resources.Primary ? "основной ресурс" : "второй ресурс";
-                return $"Месторождение ({resource}): {deposit.Cells.Count} клеток, свободно {free}";
+                return $"Месторождение ({resource}): {DisplayNames.Cells(deposit.Cells.Count)}, свободно {free}";
             }
             return null;
         }

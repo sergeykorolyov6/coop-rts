@@ -92,5 +92,13 @@ namespace Game.Presentation
 
         public static string Seconds(int ticks) =>
             (ticks / (double)Simulation.TicksPerSecond).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " с";
+
+        // "24 клетки", "5 клеток", "1 клетка".
+        public static string Cells(int n)
+        {
+            int last2 = n % 100, last = n % 10;
+            string word = last2 >= 11 && last2 <= 14 ? "клеток" : last == 1 ? "клетка" : last >= 2 && last <= 4 ? "клетки" : "клеток";
+            return $"{n} {word}";
+        }
     }
 }
