@@ -133,6 +133,17 @@ public class CoopMissionTests
         Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.InProgress));
     }
 
+    // factions.md: the Legion's mission is a real threat for every faction — doing nothing loses.
+    [TestCase("m2_red")]
+    [TestCase("m2_brown")]
+    [TestCase("m2_yellow")]
+    public void LegionMission_PassivePlayerOfAnyFaction_Loses(string missionId)
+    {
+        Simulation sim = Launch(missionId);
+        sim.RunUntil(s => s.State.Outcome != MissionOutcome.InProgress, 20 * Minute);
+        Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.Defeat));
+    }
+
     [Test]
     public void Determinism_FiveMinutes_SameHashEveryTick()
     {

@@ -18,8 +18,8 @@ legion_turret,Шип Легиона,black_legion,450,1,2,2,40,10,20,3,9,14,6,1.2
 bs_hq,Свалка,brown_scavengers,1500,1,4,4,70,0,45,6,10,0,0,0,headquarters,,,0,0,0,,Mindustry core shard,Штаб Мусорщиков: дешевле штаба Синих
 bs_factory,Мастерская,brown_scavengers,700,0,3,3,35,0,20,4,7,0,0,0,,bs_scrapper;bs_shotgun;bs_mortar;bs_repairbot,conveyor,0,0,0,,Mindustry ground factory,"Завод Мусорщиков, склад — с лент (factory.md M2)"
 bs_drill_small,Малый бур,brown_scavengers,120,0,1,1,8,0,4,1,3,0,0,0,drill,,,0,0,0,,Mindustry mechanical drill 2×2 → 1×1,"factions.md: на отдельную клетку руды; 0,125 ед./с"
-bs_pump,Смазчик,brown_scavengers,150,0,1,1,15,0,6,1,2,0,0,0,booster,,,0,50,0,,Mindustry: вода ускоряет бур,"factions.md: соседние буры +50 %, не складывается"
-bs_scrap_gun,Ломомёт,brown_scavengers,250,0,2,2,15,0,8,3,9,18,6,1.0,,,conveyor,1,0,0,,Mindustry duo: стреляет боеприпасами с ленты,"factions.md: 18 урона/с, 1 ед. основного на выстрел со своего склада"
+bs_pump,Смазчик,brown_scavengers,150,0,1,1,10,0,6,1,2,0,0,0,booster,,,0,100,0,,Mindustry: вода ускоряет бур,"factions.md: соседние буры вдвое быстрее, не складывается; один Смазчик на 2–4 бура — главный козырь экономики"
+bs_scrap_gun,Ломомёт,brown_scavengers,200,0,2,2,20,0,8,3,9,15,6,1.0,,,conveyor,1,0,0,,Mindustry duo: стреляет боеприпасами с ленты,"factions.md: 15 урона/с, 1 ед. основного на выстрел со своего склада — дешёвая, но кормить её надо лентой"
 ys_hq,Святилище,yellow_star,1800,1,4,4,100,0,55,6,10,0,0,0,headquarters,,,0,0,0,,WC3 Town Hall,Штаб Жёлтой Звезды; у него возвращаются строитель и герой
 ys_barracks,Казарма,yellow_star,1000,1,3,3,45,0,30,4,7,0,0,0,,ys_squire;ys_archer;ys_acolyte;ys_catapult,conveyor,0,0,0,,WC3 Barracks,Завод Жёлтой Звезды
 ys_tower,Сторожевая башня,yellow_star,350,1,2,2,35,5,18,3,9,11,6,1.0,,,,0,0,0,,WC3 Guard Tower,Турель Жёлтой Звезды: чуть слабее и дешевле турели Синих

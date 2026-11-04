@@ -47,7 +47,7 @@ public class ScavengerAndHeroTests
     }
 
     [Test]
-    public void GWT12_DrillNextToALubricator_MinesHalfAgainAsFast()
+    public void GWT12_DrillNextToALubricator_MinesTwiceAsFast()
     {
         var sim = Match();
         Building plain = Place(sim, Brown, "bs_drill_small", 30, 2);
@@ -55,7 +55,7 @@ public class ScavengerAndHeroTests
         Place(sim, Brown, "bs_pump", 35, 2);
         sim.Run(32 * Second);
         Assert.That(plain.Drill!.Buffer, Is.EqualTo(4));
-        Assert.That(boosted.Drill!.Buffer, Is.EqualTo(6));
+        Assert.That(boosted.Drill!.Buffer, Is.EqualTo(8));
     }
 
     [Test]
@@ -119,8 +119,8 @@ public class ScavengerAndHeroTests
         GainXp(sim, hero, 100, events);
         Assert.That(sim.State.GetPlayer(Yellow).HeroLevel, Is.EqualTo(2));
         Assert.That(events.OfType<HeroLevelUp>().Single().Level, Is.EqualTo(2));
-        Assert.That(hero.MaxHp, Is.EqualTo(690));
-        Assert.That(hero.Hp, Is.EqualTo(690), "a full hero stays full");
+        Assert.That(hero.MaxHp, Is.EqualTo(483));
+        Assert.That(hero.Hp, Is.EqualTo(483), "a full hero stays full");
         Assert.That(HeroSystem.DamageBonusPercent(sim.State, hero), Is.EqualTo(15));
         Assert.That(TryNova(sim, hero), Is.True);
     }
@@ -136,7 +136,7 @@ public class ScavengerAndHeroTests
         sim.RunUntil(s => s.State.FindHero(Yellow) != null, 31 * Second);
         Unit back = Hero(sim);
         Assert.That(sim.State.GetPlayer(Yellow).HeroLevel, Is.EqualTo(2));
-        Assert.That((back.Hp, back.MaxHp), Is.EqualTo((690, 690)));
+        Assert.That((back.Hp, back.MaxHp), Is.EqualTo((483, 483)));
     }
 
     [Test]
@@ -174,14 +174,14 @@ public class ScavengerAndHeroTests
     }
 
     [Test]
-    public void Edge_TwoLubricators_StillHalfAgain()
+    public void Edge_TwoLubricators_StillTwice()
     {
         var sim = Match();
         Building drill = Place(sim, Brown, "bs_drill_small", 34, 2);
         Place(sim, Brown, "bs_pump", 35, 2);
         Place(sim, Brown, "bs_pump", 33, 2);
         sim.Run(32 * Second);
-        Assert.That(drill.Drill!.Buffer, Is.EqualTo(6));
+        Assert.That(drill.Drill!.Buffer, Is.EqualTo(8));
     }
 
     [Test]
