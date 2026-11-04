@@ -60,7 +60,15 @@
 | месторождение, клетка руды | `Deposit`, `OreCell` |
 | бур | `Drill` |
 | буфер бура | `Drill.Buffer` |
-| рабочий, ручная добыча | `Worker`, `ManualMining` |
+| рабочий, ручная добыча | `Worker`, `ManualMining` (у игрока рабочего делает строитель; `Worker` — компонент «строит и копает») |
+| строитель игрока, возрождение | id `builder` (тег `builder`), `Player.BuilderRespawnTick`, события `BuilderDied`, `BuilderRespawned` |
+| ремонтник, авторемонт | id `repairer` (тег `repairer`), `AutoRepair` |
+| точка сбора завода, склад завода | `Factory.HasRally`, `SetRallyCommand`; `Factory.Stock`, колонка `supply` |
+| нейтральное здание, захват, пещера, маяк | `NeutralPlayerId`, `Capture`, `CaptureProgress`, `BuildingCaptured`; `cave`; `lighthouse`, `LighthouseLit` |
+| самоуничтожение (снос) | `DemolishCommand`, `Building.DemolishTicksLeft`, `DemolishSystem` |
+| юнит атакован | `UnitAttacked` |
+| миссия (данные), цель, босс | `MissionStats`, `MissionCatalog`, `MissionLauncher`, `MissionGoal` (`DestroyLegion`, `KillBoss`), тег `boss` |
+| сохранение | `SaveGame`, `Simulation.CommandLog` |
 | стройка, совместная стройка, предел строителей | `Construction`, builders, `MaxBuilders` |
 | превью размещения (силуэт до клика) | `PlacementPreview`, `DrillPreview` |
 | очередь приказов (Shift) | `Unit.OrderQueue`, `QueuedOrder`, `Queued` у команд |
@@ -72,6 +80,7 @@
 | завод, очередь производства | `Factory`, `Factory.Queue` |
 | бой, удар, урон, тревога «здание атаковано» | `Combat`, `PendingHit` (событие удара — `HitLanded`), `DamageRules`, `BuildingAttacked` |
 | юниты MVP: разведчик, пехотинец, стрелок, тяжёлый, осадный | id в `units.csv`: `scout`, `infantry`, `shooter`, `heavy`, `siege` |
+| пещерные юниты: зверь, плевун; босс | `cave_beast`, `cave_spitter`; `creep_boss` |
 | юниты Легиона: рабочий, рейдер, стрелок, громила; крипы: малый, большой | `legion_worker`, `legion_raider`, `legion_gunner`, `legion_brute`; `creep_small`, `creep_big` |
 | склад | `Storage` |
 | ИИ Легиона, слот базы, точка сбора, волна, предупреждение о волне, атаковать с движением | `LegionAi`, `BaseSlot`, `Rally`, `Wave`, `WaveIncoming`, `UnitOrderKind.AttackMove` |
