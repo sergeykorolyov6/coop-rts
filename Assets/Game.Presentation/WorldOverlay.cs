@@ -11,7 +11,9 @@ namespace Game.Presentation
     // - build bar over unfinished buildings: progress, how many build, "frozen" (drill.md);
     // - buffer of own and ally drills, and "nowhere to give" when it is full and the drill stands (drill.md);
     // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md);
-    // - a red "!" over an alerted creep camp (creep-camp.md).
+    // - a red "!" over an alerted creep camp (creep-camp.md);
+    // - capture progress over a neutral building, "guarded" while its camp lives (neutral-buildings.md);
+    // - demolition countdown (demolish.md), a factory's stock (factory.md M2).
     // Only what the local player sees through the fog.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
     public sealed class WorldOverlay : MonoBehaviour
@@ -26,6 +28,8 @@ namespace Game.Presentation
         [SerializeField] private Color _frozenColor = new Color(0.55f, 0.75f, 0.95f);
         [SerializeField] private Color _bufferColor = new Color(0.45f, 0.70f, 0.95f);
         [SerializeField] private Color _stoppedColor = new Color(1.00f, 0.55f, 0.25f);
+        [SerializeField] private Color _captureColor = new Color(0.95f, 0.95f, 0.90f);
+        [SerializeField] private Color _demolishColor = new Color(0.95f, 0.35f, 0.30f);
 
         private readonly List<Bar> _bars = new List<Bar>();
         private readonly List<Floater> _floaters = new List<Floater>();
@@ -94,6 +98,29 @@ namespace Game.Presentation
                 else if (building.Hp < building.MaxHp)
                 {
                     ShowBar(top, width, building.Hp / (float)building.MaxHp, HpColor(building), null);
+                }
+
+                if (building.OwnerId == state.NeutralPlayerId && building.Stats.Id != BuildingKinds.Lighthouse)
+                {
+                    bool guarded = building.GuardCampIndex >= 0 && state.CreepCamps[building.GuardCampIndex].State != CreepCampState.Cleared;
+                    if (guarded)
+                        ShowBar(top, width, 0f, _captureColor, "охраняется крипами");
+                    else if (building.CaptureProgress > 0 && state.Rules.CaptureTimeTicks > 0)
+                        ShowBar(top, width, building.CaptureProgress / (float)state.Rules.CaptureTimeTicks, _captureColor, $"захват: игрок {building.CapturePlayerId}");
+                    continue;
+                }
+                if (building.DemolishTicksLeft > 0 && state.Relations.IsAlly(playerId, building.OwnerId))
+                {
+                    int total = System.Math.Max(1, (building.Stats.BuildTimeTicks * state.Rules.DemolishTimePercent + 99) / 100);
+                    ShowBar(top + Vector3.up * 0.5f, width, building.DemolishTicksLeft / (float)total, _demolishColor, $"снос: {DisplayNames.Seconds(building.DemolishTicksLeft)}");
+                }
+                Wallet? stock = building.Factory?.Stock;
+                if (stock != null && building.IsComplete && building.OwnerId == playerId)
+                {
+                    int cap = System.Math.Max(1, state.Rules.FactoryStock);
+                    int secondary = stock.ResourceTypeCount > Game.Sim.Resources.Secondary ? stock.Get(Game.Sim.Resources.Secondary) : 0;
+                    ShowBar(top + Vector3.down * 0.9f, width, stock.Get(Game.Sim.Resources.Primary) / (float)cap, _bufferColor,
+                        $"склад {stock.Get(Game.Sim.Resources.Primary)} · {secondary}");
                 }
 
                 Drill? drill = building.Drill;

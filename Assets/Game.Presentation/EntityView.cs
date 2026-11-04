@@ -27,10 +27,15 @@ namespace Game.Presentation
         [SerializeField] private Color _creepColor = new Color(0.55f, 0.55f, 0.55f);
         [Tooltip("legion-ai.md: the Black Legion — near black with a violet cast, so it still reads on dark ground.")]
         [SerializeField] private Color _legionColor = new Color(0.22f, 0.14f, 0.26f);
+        [Tooltip("neutral-buildings.md: neutral drills, the cave and lighthouses until captured.")]
+        [SerializeField] private Color _neutralColor = new Color(0.86f, 0.86f, 0.82f);
         [SerializeField] private Color _primaryCargoColor = new Color(0.80f, 0.55f, 0.25f);
         [SerializeField] private Color _secondaryCargoColor = new Color(0.35f, 0.70f, 0.85f);
         [SerializeField] private Color _trophyColor = new Color(0.95f, 0.80f, 0.30f);
         [SerializeField] private Color _arrowColor = new Color(0.92f, 0.94f, 1.00f);
+        [SerializeField] private Color _fireColor = new Color(1.00f, 0.78f, 0.30f);
+        [Tooltip("demolish.md: a building being demolished is drawn darker.")]
+        [SerializeField, Range(0f, 1f)] private float _demolishDarken = 0.5f;
         [SerializeField] private Color _flashColor = Color.white;
         [SerializeField] private float _flashSeconds = 0.08f;
         [Tooltip("Degrees per second of a working drill's rotor.")]
@@ -129,6 +134,9 @@ namespace Game.Presentation
                     continue;
                 visual.FlashUntil = 0f;
                 visual.RestoreMaterials();
+                // A demolishing building gets darkened again on the next sync.
+                if (visual is BuildingVisual b)
+                    b.Demolishing = false;
                 _flashing.RemoveAt(i);
             }
 
@@ -173,7 +181,14 @@ namespace Game.Presentation
         {
             foreach (Building building in state.Buildings)
             {
-                if (!_buildings.TryGetValue(building.Id, out BuildingVisual? visual))
+                // neutral-buildings.md: a captured building takes its new owner's colour.
+                if (_buildings.TryGetValue(building.Id, out BuildingVisual? visual) && visual.OwnerId != building.OwnerId)
+                {
+                    visual.DestroyObjects();
+                    _buildings.Remove(building.Id);
+                    visual = null;
+                }
+                if (visual == null)
                 {
                     visual = CreateBuilding(state, building);
                     _buildings.Add(building.Id, visual);
@@ -183,8 +198,24 @@ namespace Game.Presentation
                 visual.Transform.gameObject.SetActive(shown);
                 if (visual.Arrow != null)
                     visual.Arrow.gameObject.SetActive(shown);
-                if (visual.Item != null)
+                if (visual.Item != null && building.Conveyor != null)
                     SyncItem(visual.Item, building, shown);
+                else if (visual.Item != null)
+                    visual.Item.gameObject.SetActive(shown && building.LitForPlayerId != 0);
+                // demolish.md: dark while it goes, back to its colours when the demolition is cancelled.
+                bool demolishing = building.DemolishTicksLeft > 0;
+                if (demolishing != visual.Demolishing && visual.FlashUntil <= 0f)
+                {
+                    visual.Demolishing = demolishing;
+                    if (demolishing)
+                    {
+                        Material dark = MaterialFor(Color.Lerp(visual.Color, Color.black, _demolishDarken));
+                        foreach (MeshRenderer renderer in visual.Renderers)
+                            renderer.sharedMaterial = dark;
+                    }
+                    else
+                        visual.RestoreMaterials();
+                }
                 if (visual.Rotor != null)
                 {
                     visual.Rotor.gameObject.SetActive(shown && building.IsComplete);
@@ -258,7 +289,16 @@ namespace Game.Presentation
             root.name = $"{building.Stats.Id} #{building.Id}";
             root.SetParent(_root, worldPositionStays: false);
             root.localPosition = CellCentre(building);
-            var visual = new BuildingVisual(root, renderers, color, Mathf.Max(building.Width, building.Height), height * 0.5f);
+            var visual = new BuildingVisual(root, renderers, color, Mathf.Max(building.Width, building.Height), height * 0.5f) { OwnerId = building.OwnerId };
+            if (building.Stats.Id == BuildingKinds.Lighthouse)
+            {
+                // The fire on top burns while the lighthouse shines for someone.
+                Transform fire = CreatePrimitive(PrimitiveType.Sphere, "Fire", _fireColor);
+                fire.localScale = Vector3.one * 0.6f;
+                fire.localPosition = CellCentre(building) + new Vector3(0f, height + 0.1f, 0f);
+                fire.gameObject.SetActive(false);
+                visual.Item = fire;
+            }
 
             if (building.Stats.Id == BuildingKinds.Conveyor || building.Stats.Id == BuildingKinds.ConveyorBridge)
             {
@@ -355,6 +395,8 @@ namespace Game.Presentation
                 return _creepColor;
             if (ownerId == state.LegionPlayerId)
                 return _legionColor;
+            if (ownerId == state.NeutralPlayerId)
+                return _neutralColor;
             int index = ownerId - 1;
             return index >= 0 && index < _playerColors.Length ? _playerColors[index] : Color.white;
         }
@@ -429,6 +471,8 @@ namespace Game.Presentation
             public Transform? Item { get; set; }
             public Transform? Rotor { get; set; }
             public bool Spinning { get; set; }
+            public int OwnerId { get; set; }
+            public bool Demolishing { get; set; }
 
             public override void DestroyObjects()
             {

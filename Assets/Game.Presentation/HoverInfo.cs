@@ -87,7 +87,7 @@ namespace Game.Presentation
                 if (camp.State == CreepCampState.Cleared)
                 {
                     if (trophy > 0 && distance2 <= _trophyPickCells * _trophyPickCells)
-                        return $"Трофей: осталось {trophy}\nРабочие + ПКМ — унести в штаб по {camp.Stats.TrophyPerTrip}";
+                        return $"Трофей: осталось {trophy}\nСтроитель + ПКМ — унести в штаб по {camp.Stats.TrophyPerTrip}";
                     continue;
                 }
                 if (distance2 <= _campPickCells * _campPickCells)
@@ -102,6 +102,25 @@ namespace Game.Presentation
             MapState map = state.Map;
             if (!map.InBounds(cellX, cellY) || !state.Fog.IsDiscovered(playerId, cellX, cellY))
                 return null;
+            // neutral-buildings.md: what a neutral building gives and how to take it.
+            Building? poi = state.FindBuilding(map.BuildingAt(cellX, cellY));
+            if (poi != null && !poi.IsDead && (poi.OwnerId == state.NeutralPlayerId || poi.Stats.Id == BuildingKinds.Lighthouse))
+            {
+                int seconds = state.Rules.CaptureTimeTicks / Simulation.TicksPerSecond;
+                bool guarded = poi.GuardCampIndex >= 0 && state.CreepCamps[poi.GuardCampIndex].State != CreepCampState.Cleared;
+                switch (poi.Stats.Id)
+                {
+                    case BuildingKinds.Lighthouse:
+                        return $"Маяк: подведите юнита — откроет обзор на {poi.Stats.VisionMilli / Grid.MilliPerCell} клеток"
+                            + (poi.LitForPlayerId != 0 ? $"\nСветит игроку {poi.LitForPlayerId}" : "");
+                    case BuildingKinds.Cave:
+                        return guarded
+                            ? "Пещера Серых Существ: сначала победите её стражей"
+                            : $"Пещера: подведите юнита на {seconds} с — станет вашей и будет нанимать особых юнитов\nПлатит со своего склада: подведите ленту от бура или склада";
+                    default:
+                        return $"Нейтральный {DisplayNames.Building(poi.Stats.Id).ToLowerInvariant()}: подведите юнита на {seconds} с — станет вашим";
+                }
+            }
             int depositId = map.DepositAt(cellX, cellY);
             if (depositId == 0)
                 return null;

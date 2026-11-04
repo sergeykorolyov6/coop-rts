@@ -18,6 +18,8 @@ namespace Game.Presentation
                 case BuildingKinds.Storage: return "Склад";
                 case "turret": return "Турель";
                 case "legion_factory": return "Завод Легиона";
+                case BuildingKinds.Cave: return "Пещера";
+                case BuildingKinds.Lighthouse: return "Маяк";
                 default: return id;
             }
         }
@@ -26,7 +28,13 @@ namespace Game.Presentation
         {
             switch (id)
             {
-                case "worker": return "Рабочий";
+                case "builder": return "Строитель";
+                case "repairer": return "Ремонтник";
+                case "cave_beast": return "Пещерный зверь";
+                case "cave_spitter": return "Плевун";
+                case "creep_small": return "Малый крип";
+                case "creep_big": return "Большой крип";
+                case "creep_boss": return "Вожак Серых Существ";
                 case "scout": return "Разведчик";
                 case "infantry": return "Пехотинец";
                 case "shooter": return "Стрелок";
@@ -53,6 +61,9 @@ namespace Game.Presentation
             {
                 case "guard_camp": return "Стражи";
                 case "small_camp": return "Малый лагерь";
+                case "cave_guard": return "Стражи пещеры";
+                case "big_camp": return "Большой лагерь";
+                case "boss_lair": return "Логово вожака";
                 default: return id;
             }
         }
@@ -69,6 +80,7 @@ namespace Game.Presentation
                 case RejectReason.OneHeadquartersOnly: return "Штаб уже есть";
                 case RejectReason.NothingToRepair: return "Чинить нечего";
                 case RejectReason.CannotProduce: return "Нельзя произвести";
+                case RejectReason.FactoryStockLow: return "На складе здания не хватает ресурсов — подведите ленту от бура или склада";
                 default: return buildingId == BuildingKinds.Drill ? "Под буром нет руды" : "Сюда нельзя";
             }
         }

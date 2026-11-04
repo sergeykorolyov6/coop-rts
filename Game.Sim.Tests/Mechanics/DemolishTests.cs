@@ -40,6 +40,7 @@ public class DemolishTests
         sim.Order(Demolish(sim, turret));
         var destroyed = sim.RunCollecting<EntityDestroyed>(5 * Simulation.TicksPerSecond);
         Assert.That(destroyed.Single().Demolished, Is.True);
+        Assert.That(destroyed.Single().TypeId, Is.EqualTo("turret"));
         Assert.That(Wallet(sim), Is.EqualTo(primary + 20));
         Assert.That(Wallet(sim, Resources.Secondary), Is.EqualTo(secondary + 5));
     }

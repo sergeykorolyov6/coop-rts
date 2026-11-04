@@ -79,7 +79,7 @@ namespace Game.Presentation
                         Show(DisplayNames.Reject(rejected.Reason), _warningColor);
                         break;
                     case MiningStopped stopped when stopped.PlayerId == me:
-                        Show("Клетку руды заняли — рабочий остановился", _warningColor);
+                        Show("Клетку руды заняли — строитель остановился", _warningColor);
                         break;
                     case ConstructionFrozen frozen when frozen.OwnerId == me:
                         Show($"Стройка заморожена: {BuildingName(state, frozen.BuildingId)}", _warningColor);
@@ -96,18 +96,51 @@ namespace Game.Presentation
                         string whose = attacked.OwnerId == me ? "" : $" союзника {attacked.OwnerId}";
                         Show($"Атакован{whose}: {BuildingName(state, attacked.BuildingId)}", _alarmColor);
                         break;
-                    // mission.md: a lost headquarters can be rebuilt while there is a worker.
+                    // demolish.md: the owner took it down — not an alarm.
+                    case EntityDestroyed demolished when demolished.Demolished && demolished.OwnerId == me:
+                        string refund = demolished.RefundPrimary + demolished.RefundSecondary > 0
+                            ? $" (+{demolished.RefundPrimary}{(demolished.RefundSecondary > 0 ? $" + {demolished.RefundSecondary}" : "")})"
+                            : "";
+                        Show($"Снесено: {DisplayNames.Building(demolished.TypeId).ToLowerInvariant()}{refund}", _infoColor);
+                        break;
+                    // mission.md: a lost headquarters can be rebuilt while the builder lives.
                     case EntityDestroyed destroyed when destroyed.IsBuilding && destroyed.OwnerId == me:
-                        Show(state.Legion != null && state.FindHeadquarters(me) == null
-                            ? "Штаб разрушен — отстройте его рабочими"
-                            : "Здание разрушено", _alarmColor);
+                        Show(destroyed.TypeId == BuildingKinds.Headquarters && state.FindHeadquarters(me) == null
+                            ? "Штаб разрушен — отстройте его строителем"
+                            : $"Разрушено: {DisplayNames.Building(destroyed.TypeId).ToLowerInvariant()}", _alarmColor);
+                        break;
+                    // alerts.md: own losses by name (the builder has its own message below).
+                    case EntityDestroyed lost when !lost.IsBuilding && lost.OwnerId == me && lost.TypeId != "builder":
+                        Show($"Погиб: {DisplayNames.Unit(lost.TypeId).ToLowerInvariant()}", _warningColor);
+                        break;
+                    // alerts.md: one line per kind and player at most every few seconds.
+                    case UnitAttacked hit when state.Relations.IsAlly(me, hit.OwnerId):
+                        ShowUnitAttacked(state, me, hit);
+                        break;
+                    case BuilderDied died when state.Relations.IsAlly(me, died.PlayerId):
+                        Show(died.PlayerId == me
+                            ? $"Строитель погиб — вернётся через {DisplayNames.Clock(died.RespawnTick - died.Tick)} у штаба"
+                            : $"Строитель союзника {died.PlayerId} погиб", _alarmColor);
+                        break;
+                    case BuilderRespawned back when back.PlayerId == me:
+                        Show("Строитель вернулся (Tab — выделить)", _infoColor);
+                        break;
+                    case BuildingCaptured captured when state.Relations.IsAlly(me, captured.PlayerId):
+                        string who = captured.PlayerId == me ? "" : $" союзником {captured.PlayerId}";
+                        Show($"Захвачено{who}: {BuildingName(state, captured.BuildingId)}", _infoColor);
+                        break;
+                    case LighthouseLit lit when state.Relations.IsAlly(me, lit.PlayerId):
+                        Show("Маяк светит: открыт обзор вокруг", _infoColor);
                         break;
                     case CampAlerted alerted when Discovered(state, me, alerted.CampIndex):
                         Show("Лагерь крипов встревожен", _warningColor);
                         break;
                     // creep-camp.md: every player hears it.
-                    case CampCleared _:
-                        Show("Лагерь крипов зачищен — трофей ждёт рабочих", _infoColor);
+                    case CampCleared cleared:
+                        CreepCamp camp = state.CreepCamps[cleared.CampIndex];
+                        Show(camp.Stats.TrophyPrimary + camp.Stats.TrophySecondary > 0
+                            ? "Лагерь крипов зачищен — трофей ждёт строителя"
+                            : $"Зачищено: {DisplayNames.Camp(camp.Stats.Id)}" + (GuardsACave(state, cleared.CampIndex) ? " — пещеру можно захватить" : ""), _infoColor);
                         break;
                     // legion-ai.md: the whole team hears where the next wave goes.
                     case WaveIncoming incoming:
@@ -121,6 +154,40 @@ namespace Game.Presentation
 
                 }
             }
+        }
+
+        // Last time each kind of unit alarm was shown: builder, repairer, army; mine and allies' apart.
+        private readonly float[] _unitAlarmShown = { -100f, -100f, -100f, -100f, -100f, -100f };
+        [SerializeField] private float _unitAlarmSeconds = 5f;
+
+        private void ShowUnitAttacked(SimState state, int me, UnitAttacked hit)
+        {
+            Unit? unit = state.FindUnit(hit.UnitId);
+            if (unit == null)
+                return;
+            int kind = unit.IsBuilder ? 0 : unit.IsRepairer ? 1 : 2;
+            int slot = kind + (hit.OwnerId == me ? 0 : 3);
+            if (Time.unscaledTime - _unitAlarmShown[slot] < _unitAlarmSeconds)
+                return;
+            _unitAlarmShown[slot] = Time.unscaledTime;
+            string whose = hit.OwnerId == me ? "" : $" союзника {hit.OwnerId}";
+            string text = kind switch
+            {
+                0 => $"Строитель{whose} атакован!",
+                1 => $"Ремонтник{whose} атакован",
+                _ => hit.OwnerId == me ? "Ваши войска атакованы" : $"Войска союзника {hit.OwnerId} атакованы",
+            };
+            Show(text, _alarmColor);
+        }
+
+        private static bool GuardsACave(SimState state, int campIndex)
+        {
+            foreach (Building b in state.Buildings)
+            {
+                if (b.GuardCampIndex == campIndex && b.OwnerId == state.NeutralPlayerId)
+                    return true;
+            }
+            return false;
         }
 
         private void Show(string text, Color color)

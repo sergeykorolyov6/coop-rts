@@ -5,17 +5,19 @@ using UnityEngine.UIElements;
 
 namespace Game.Presentation
 {
-    // factory.md UI: for a selected own factory — unit buttons with price and time (grey when the
-    // wallet cannot pay or the queue is full), the queue with the first unit's progress, and
-    // a cancel button that drops the last unit (full refund, in the sim).
+    // factory.md UI: for a selected own factory (or captured cave) — unit buttons from its "produces"
+    // with price and time (grey when its stock cannot pay or the queue is full), the stock that belts
+    // fill (M2), the queue with the first unit's progress, a cancel button that drops the last unit
+    // (full refund, in the sim), and a hint about the rally point.
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class FactoryPanel : MonoBehaviour
     {
         [SerializeField] private Hud? _hud;
-        [Tooltip("PLAN.md M2: all six units of the factory.")]
-        [SerializeField] private string[] _units = { "worker", "scout", "infantry", "shooter", "heavy", "siege" };
-
         private readonly List<Button> _buttons = new List<Button>();
+        private VisualElement? _row;
+        private string _shownType = "";
+        private Label? _stock;
+        private string _shownStock = "";
 
         private SimRunner? _runner;
         private SelectionController? _selection;
@@ -45,31 +47,16 @@ namespace Game.Presentation
             _title = new Label("Завод");
             _panel.Add(_title);
 
-            var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Row;
-            foreach (string unitId in _units)
-            {
-                if (!simulation.State.Data.TryGetUnit(unitId, out UnitStats? stats))
-                    continue;
-                string id = unitId;
-                string price = stats!.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
-                var button = new Button(() => Produce(id))
-                {
-                    text = $"{DisplayNames.Unit(id)}\n{price} · {DisplayNames.Seconds(stats.BuildTimeTicks)}",
-                    userData = stats,
-                };
-                button.style.width = 96;
-                button.style.height = 52;
-                Hud.StyleButton(button);
-                row.Add(button);
-                _buttons.Add(button);
-            }
+            _stock = new Label();
+            _panel.Add(_stock);
+            _row = new VisualElement();
+            _row.style.flexDirection = FlexDirection.Row;
             _cancel = new Button(Cancel) { text = "Отменить\nпоследний" };
             _cancel.style.width = 92;
             _cancel.style.height = 52;
             Hud.StyleButton(_cancel);
-            row.Add(_cancel);
-            _panel.Add(row);
+            _row.Add(_cancel);
+            _panel.Add(_row);
 
             _queue = new Label();
             _panel.Add(_queue);
@@ -97,9 +84,23 @@ namespace Game.Presentation
                 return;
 
             SimState state = simulation.State;
+            if (factory.Stats.Id != _shownType)
+                RebuildButtons(state, factory.Stats);
             IReadOnlyList<string> queue = factory.Factory!.Queue;
             bool queueFull = queue.Count >= state.Rules.FactoryQueue;
-            Wallet wallet = state.GetPlayer(_localPlayer!.PlayerId).Wallet;
+            Wallet wallet = factory.Factory.Stock ?? state.GetPlayer(_localPlayer!.PlayerId).Wallet;
+            string stockText = factory.Factory.Stock == null
+                ? ""
+                : $"Склад: {wallet.Get(Game.Sim.Resources.Primary)} / {state.Rules.FactoryStock} основного · "
+                  + $"{(wallet.ResourceTypeCount > Game.Sim.Resources.Secondary ? wallet.Get(Game.Sim.Resources.Secondary) : 0)} / {state.Rules.FactoryStock} второго"
+                  + "\nПополняют ленты от бура или склада. ПКМ по земле — точка сбора"
+                  + (factory.Factory.HasRally ? " (стоит; ПКМ по зданию — убрать)" : "");
+            if (stockText != _shownStock)
+            {
+                _shownStock = stockText;
+                _stock!.text = stockText;
+                _stock.style.display = stockText.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
             foreach (Button button in _buttons)
             {
                 var stats = (UnitStats)button.userData;
@@ -119,7 +120,35 @@ namespace Game.Presentation
                 ? Mathf.Clamp01(factory.Factory.Progress / (float)first.BuildTimeTicks)
                 : 0f;
             _progressFill!.style.width = Length.Percent(share * 100f);
-            _title!.text = factory.IsComplete ? "Завод" : "Завод (строится)";
+            string name = DisplayNames.Building(factory.Stats.Id);
+            _title!.text = factory.IsComplete ? name : $"{name} (строится)";
+        }
+
+        // The buttons follow the selected building's "produces": the factory and the cave differ.
+        private void RebuildButtons(SimState state, BuildingStats building)
+        {
+            _shownType = building.Id;
+            foreach (Button old in _buttons)
+                old.RemoveFromHierarchy();
+            _buttons.Clear();
+            int at = 0;
+            foreach (string unitId in building.Produces)
+            {
+                if (!state.Data.TryGetUnit(unitId, out UnitStats? stats))
+                    continue;
+                string id = unitId;
+                string price = stats!.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
+                var button = new Button(() => Produce(id))
+                {
+                    text = $"{DisplayNames.Unit(id)}\n{price} · {DisplayNames.Seconds(stats.BuildTimeTicks)}",
+                    userData = stats,
+                };
+                button.style.width = 104;
+                button.style.height = 52;
+                Hud.StyleButton(button);
+                _row!.Insert(at++, button);
+                _buttons.Add(button);
+            }
         }
 
         // A click with a full queue or an empty wallet still goes to the sim: it answers with

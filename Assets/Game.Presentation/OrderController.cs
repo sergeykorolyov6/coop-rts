@@ -10,7 +10,10 @@ namespace Game.Presentation
     // enemy → attack (combat.md); own or ally headquarters while a worker carries cargo → deliver
     // there (manual-mining.md); unfinished or damaged own/ally building → build/repair
     // (construction.md); trophy → carry (creep-camp.md); ore → mine (manual-mining.md);
-    // anything else → move. Worker-only orders go to the workers; the rest of the selection walks there.
+    // anything else → move. Worker-only orders go to the builders (repair also to repairers, and on a
+    // damaged own/ally unit too — builder.md); the rest of the selection walks there.
+    // With an own factory selected instead of units, right click sets its rally point, on the
+    // factory itself clears it (factory.md M2).
     // With Shift every order joins the units' queues (order-queue.md); delivering cargo is a setting, not queued.
     // The sim validates every command itself; rejections come back as CommandRejected events.
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
@@ -36,7 +39,7 @@ namespace Game.Presentation
             _localPlayer = GetComponent<LocalPlayer>();
         }
 
-        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine }
+        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally }
 
         private bool _showingTip;
 
@@ -51,9 +54,14 @@ namespace Game.Presentation
             Mouse? mouse = Mouse.current;
             Simulation? simulation = _runner!.Simulation;
             CurrentIntent = Intent.None;
-            if (mouse == null || simulation == null || _camera == null || _selection!.Selected.Count == 0)
+            if (mouse == null || simulation == null || _camera == null)
             {
                 HideTip();
+                return;
+            }
+            if (_selection!.Selected.Count == 0)
+            {
+                UpdateRally(simulation, mouse);
                 return;
             }
 
@@ -104,6 +112,16 @@ namespace Game.Presentation
             if (_workers.Count == 0)
                 return Intent.None;
 
+            Unit? patient = _selection.UnitAt(state, pointer,
+                u => state.Relations.IsAlly(playerId, u.OwnerId) && u.Hp < u.MaxHp && u.Stats.BuildTimeTicks > 0);
+            if (patient != null)
+            {
+                targetId = patient.Id;
+                return Intent.Repair;
+            }
+
+            if (building != null && building.Stats.Invulnerable)
+                return Intent.None;
             if (building != null && state.Relations.IsAlly(playerId, building.OwnerId))
             {
                 targetId = building.Id;
@@ -163,9 +181,9 @@ namespace Game.Presentation
             {
                 Intent.Attack => "ПКМ — атаковать",
                 Intent.Deliver => "ПКМ — сдать груз в этот штаб",
-                Intent.Repair => state.FindBuilding(targetId) is { IsComplete: false } ? "ПКМ — помочь достроить" : "ПКМ — чинить",
+                Intent.Repair => state.FindBuilding(targetId) is { IsComplete: false } ? "ПКМ — помочь достроить (строитель)" : "ПКМ — чинить",
                 Intent.Carry => $"ПКМ — нести трофей (осталось {Trophy(state, targetId)})",
-                Intent.Mine => $"ПКМ — копать: {state.Rules.ManualCargo} ед. за {DisplayNames.Seconds(state.Rules.ManualCargo * state.Rules.ManualMiningTicksPerUnit)}, рабочий сам носит в штаб",
+                Intent.Mine => $"ПКМ — копать: {state.Rules.ManualCargo} ед. за {DisplayNames.Seconds(state.Rules.ManualCargo * state.Rules.ManualMiningTicksPerUnit)}, строитель сам носит в штаб",
                 _ => null,
             };
             if (text == null)
@@ -200,7 +218,7 @@ namespace Game.Presentation
                 Unit? unit = state.FindUnit(id);
                 if (unit == null)
                     continue;
-                (unit.Worker != null ? _workers : _others).Add(id);
+                (unit.CanRepair ? _workers : _others).Add(id);
             }
         }
 
@@ -232,6 +250,31 @@ namespace Game.Presentation
             }
             campIndex = -1;
             return false;
+        }
+
+        // factory.md M2: a selected own factory (or cave) takes its rally point from a right click.
+        private void UpdateRally(Simulation simulation, Mouse mouse)
+        {
+            SimState state = simulation.State;
+            int playerId = _localPlayer!.PlayerId;
+            Building? factory = state.FindBuilding(_selection!.SelectedBuildingId);
+            Vector2 pointer = mouse.position.ReadValue();
+            if (factory == null || factory.IsDead || factory.Factory == null || factory.OwnerId != playerId
+                || (_placement != null && _placement.IsBusy)
+                || (_hud != null && _hud.IsPointerOverUi(pointer)) || !_camera!.GroundPoint(pointer, out Vector3 ground))
+            {
+                HideTip();
+                return;
+            }
+            int cellX = Mathf.FloorToInt(ground.x), cellY = Mathf.FloorToInt(ground.z);
+            bool onFactory = factory.OccupiesCell(cellX, cellY);
+            CurrentIntent = Intent.Rally;
+            _hud?.ShowTip(onFactory ? "ПКМ — убрать точку сбора" : "ПКМ — точка сбора", pointer);
+            _showingTip = true;
+            if (!mouse.rightButton.wasPressedThisFrame)
+                return;
+            int milliX = Mathf.RoundToInt(ground.x * Grid.MilliPerCell), milliY = Mathf.RoundToInt(ground.z * Grid.MilliPerCell);
+            simulation.Enqueue(new SetRallyCommand(playerId, state.Tick, factory.Id, !onFactory, milliX, milliY));
         }
 
         private static Building? BuildingAt(SimState state, int cellX, int cellY)

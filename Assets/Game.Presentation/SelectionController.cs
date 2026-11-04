@@ -18,6 +18,9 @@ namespace Game.Presentation
     {
         private const int GroupCount = 10;
 
+        // The "group" number of the builder hotkey, for the double tap.
+        private const int BuilderKey = -2;
+
         [SerializeField] private RtsCamera? _camera;
         [Tooltip("The selection box is drawn on the HUD; clicks on its buttons are not map clicks.")]
         [SerializeField] private Hud? _hud;
@@ -188,6 +191,28 @@ namespace Game.Presentation
                 return;
             bool ctrl = keyboard.ctrlKey.isPressed || keyboard.leftCommandKey.isPressed || keyboard.rightCommandKey.isPressed;
             bool shift = keyboard.shiftKey.isPressed;
+
+            // builder.md: Tab selects the player's builder; Tab again right away brings the camera to it.
+            if (keyboard.tabKey.wasPressedThisFrame)
+            {
+                Unit? builder = null;
+                foreach (Unit u in state.Units)
+                {
+                    if (!u.IsDead && u.IsBuilder && u.OwnerId == _localPlayer!.PlayerId)
+                        builder = u;
+                }
+                if (builder != null)
+                {
+                    bool again = _lastGroup == BuilderKey && Time.unscaledTime - _lastGroupTime <= _doubleTapSeconds;
+                    _scratch.Clear();
+                    _scratch.Add(builder.Id);
+                    Select(_scratch, add: false);
+                    if (again)
+                        CentreCamera();
+                    _lastGroup = BuilderKey;
+                    _lastGroupTime = Time.unscaledTime;
+                }
+            }
 
             for (int group = 0; group < GroupCount; group++)
             {

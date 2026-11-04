@@ -7,7 +7,7 @@ namespace Game.Presentation
 {
     // mission.md / legion-ai.md UI: the objective and the next wave's timer in the top right
     // corner, and the victory or defeat screen when the sim says the mission ended.
-    // Only on maps with a Black Legion; the M1 prototype stays a free game.
+    // For missions with a goal (missions.csv); free play shows nothing.
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class MissionPanel : MonoBehaviour
     {
@@ -34,7 +34,7 @@ namespace Game.Presentation
 
         private void Start()
         {
-            if (_hud?.Root == null || _runner!.Simulation?.State.Legion == null)
+            if (_hud?.Root == null || _runner!.Simulation == null || _runner.Simulation.State.Goal == MissionGoal.None)
                 return;
 
             _objective = new Label { name = "Objective", pickingMode = PickingMode.Ignore };
@@ -63,10 +63,10 @@ namespace Game.Presentation
         private void Update()
         {
             Simulation? simulation = _runner!.Simulation;
-            LegionAi? legion = simulation?.State.Legion;
-            if (_objective == null || simulation == null || legion == null)
+            if (_objective == null || simulation == null)
                 return;
             SimState state = simulation.State;
+            LegionAi? legion = state.Legion;
 
             // Only what the team has seen: the base hides in the fog until scouted.
             int seen = 0;
@@ -78,18 +78,33 @@ namespace Game.Presentation
                     seen++;
             }
 
-            string text = "Цель: уничтожьте штаб и заводы Чёрного Легиона";
+            string text = state.Goal == MissionGoal.KillBoss
+                ? "Цель: победите вожака Серых Существ (логово на северо-востоке)"
+                : "Цель: уничтожьте штаб и заводы Чёрного Легиона";
             if (seen > 0)
                 text += $"\nНайдено и ещё стоит: {seen}";
-            if (state.Outcome == MissionOutcome.InProgress && legion.NextWaveTick != int.MaxValue)
+            if (state.Goal == MissionGoal.KillBoss && FindBoss(state) is Unit boss && state.Fog.IsVisible(me, boss.CellX, boss.CellY))
+                text += $"\nВожак: {boss.Hp} / {boss.MaxHp}";
+            if (state.Outcome == MissionOutcome.InProgress && legion != null && legion.NextWaveTick != int.MaxValue)
                 text += $"\nВолна {legion.NextWave} через {DisplayNames.Clock(legion.NextWaveTick - state.Tick)}";
             // The clock stops when the mission ends; the sim keeps ticking behind the banner.
             text += $"\nВремя миссии: {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
+            text += state.TeamPlayerIds.Count > 1 ? "\nTab — строитель · F1–F4 — игрок · Esc — меню" : "\nTab — строитель · Esc — меню";
             if (text != _shown)
             {
                 _shown = text;
                 _objective.text = text;
             }
+        }
+
+        private static Unit? FindBoss(SimState state)
+        {
+            foreach (Unit u in state.Units)
+            {
+                if (!u.IsDead && u.Stats.HasTag(UnitTags.Boss))
+                    return u;
+            }
+            return null;
         }
 
         private void OnTickEvents(IReadOnlyList<SimEvent> events)
@@ -102,9 +117,11 @@ namespace Game.Presentation
                 if (_end == null)
                     continue;
                 bool won = ended.Outcome == MissionOutcome.Victory;
+                SimState? state = _runner!.Simulation?.State;
+                string goal = state != null && state.Goal == MissionGoal.KillBoss ? "Вожак Серых Существ повержен" : "База Чёрного Легиона уничтожена";
                 _end.text = won
-                    ? $"Победа!\nБаза Чёрного Легиона уничтожена за {DisplayNames.Clock(ended.Tick)}"
-                    : $"Поражение\nУ команды не осталось ни штаба, ни рабочих ({DisplayNames.Clock(ended.Tick)})";
+                    ? $"Победа!\n{goal} за {DisplayNames.Clock(ended.Tick)}\nEsc — меню"
+                    : $"Поражение\nУ команды не осталось ни штаба, ни строителя ({DisplayNames.Clock(ended.Tick)})\nEsc — меню";
                 _end.style.color = won ? _victoryColor : _defeatColor;
                 _end.style.display = DisplayStyle.Flex;
             }

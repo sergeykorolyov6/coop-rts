@@ -25,7 +25,7 @@ internal static class DemolishSystem
                 continue;
 
             b.IsDead = true;
-            var e = new EntityDestroyed(state.Tick, b.OwnerId, b.Id, isBuilding: true, demolished: true);
+            var e = new EntityDestroyed(state.Tick, b.OwnerId, b.Id, isBuilding: true, demolished: true, typeId: b.Stats.Id);
             if (Refunds(b.Stats))
             {
                 int pct = state.Rules.DemolishRefundPercent;

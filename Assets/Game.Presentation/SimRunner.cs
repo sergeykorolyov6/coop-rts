@@ -7,13 +7,12 @@ namespace Game.Presentation
 {
     // Drives a local match at Simulation.TicksPerSecond from Unity's frame loop.
     // One machine, no network; from M3 ticks come from the Game.Net lockstep instead.
+    // The match is the mission GameSession names (mission.md): humans 1..N allied, the Legion 9,
+    // creeps 10, neutral buildings 11 (MissionLauncher). Without one the main menu shows (GameMenu).
     public sealed class SimRunner : MonoBehaviour
     {
         // Caps catch-up after a long frame (breakpoint, alt-tab) so the editor does not freeze.
         private const int MaxTicksPerFrame = 5;
-
-        // Primary and secondary ore. Qualified: UnityEngine.Resources would shadow Game.Sim.Resources.
-        private const int ResourceTypeCount = Game.Sim.Resources.Secondary + 1;
 
         [Header("Balance data (Assets/Data, generated from Docs/Design/*.csv)")]
         [SerializeField] private TextAsset? _unitsJson;
@@ -24,25 +23,32 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _legionJson;
         [SerializeField] private TextAsset? _wavesJson;
 
-        [Header("Match")]
-        [Tooltip("Assets/Data/maps/*.json")]
-        [SerializeField] private TextAsset? _mapJson;
+        [Header("Missions (mission.md, save-load.md)")]
+        [Tooltip("Assets/Data/missions.json")]
+        [SerializeField] private TextAsset? _missionsJson;
+        [Tooltip("Assets/Data/maps/*.json; a mission finds its map by the asset name.")]
+        [SerializeField] private TextAsset[] _maps = System.Array.Empty<TextAsset>();
+        [Tooltip("Seed of a new mission; a save keeps its own.")]
         [SerializeField] private int _seed = 1;
-        [Tooltip("Human players, allied to each other; player N takes start slot N of the map.")]
-        [SerializeField, Range(1, 4)] private int _playerCount = 2;
-        [Tooltip("Owner of the creep camps (Grey Creatures), hostile to every human player.")]
-        [SerializeField] private int _creepPlayerId = 10;
-        [Tooltip("Plays the Black Legion when the map has its base (legion-ai.md), hostile to every human player.")]
-        [SerializeField] private int _legionPlayerId = 9;
 
         [Header("Read-only")]
+        [SerializeField] private string _missionId = "";
         [SerializeField] private int _tick;
         [SerializeField] private string _stateHash = "";
 
         private Simulation? _simulation;
         private float _accumulatedSeconds;
 
+        // Null while the main menu is shown (GameSession has no mission).
         public Simulation? Simulation => _simulation;
+
+        public GameData? Data { get; private set; }
+        public MissionCatalog? Catalog { get; private set; }
+        public MissionStats? Mission { get; private set; }
+        public int Seed { get; private set; }
+
+        // The pause menu stops the clock (one machine; with the network the game cannot pause alone).
+        public bool Paused { get; set; }
 
         // The sim clears its events every tick and a frame may run several ticks: views that show
         // events (notifications, minimap pings, "+5") hear them here, tick by tick, none lost.
@@ -52,55 +58,77 @@ namespace Game.Presentation
         // movement with it so units do not step at 20 Hz.
         public float InterpolationAlpha => Mathf.Clamp01(_accumulatedSeconds * Simulation.TicksPerSecond);
 
+        public static readonly CommandCodec Codec = GameCommands.CreateCodec();
+
         private void Awake()
         {
-            if (_unitsJson == null || _buildingsJson == null || _creepCampsJson == null || _rulesJson == null || _mapJson == null)
+            if (_unitsJson == null || _buildingsJson == null || _creepCampsJson == null || _rulesJson == null || _missionsJson == null)
             {
-                Debug.LogError("SimRunner: assign the balance json files and the map in the Inspector.", this);
+                Debug.LogError("SimRunner: assign the balance json files and missions.json in the Inspector.", this);
                 enabled = false;
                 return;
             }
 
-            var data = _legionJson != null && _wavesJson != null
+            Data = _legionJson != null && _wavesJson != null
                 ? GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text, _legionJson.text, _wavesJson.text)
                 : GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text);
+            Catalog = MissionCatalog.Parse(_missionsJson.text);
 
-            var humans = new List<int>();
-            for (int id = 1; id <= _playerCount; id++)
-                humans.Add(id);
-            MapSetup map = MapLoader.Parse(_mapJson.text, humans);
-
-            bool legion = map.LegionSlots.Count > 0;
-            if (legion && data.Legion.Count == 0)
+            if (GameSession.MissionId == null)
+                return;
+            MissionStats? mission = Catalog.Find(GameSession.MissionId);
+            TextAsset? map = mission != null ? FindMap(mission.Map) : null;
+            if (mission == null || map == null)
             {
-                Debug.LogError("SimRunner: the map has a Black Legion base — assign legion.json and waves.json.", this);
-                enabled = false;
+                FailToMenu($"Миссия «{GameSession.MissionId}» или её карта не найдены");
                 return;
             }
-            var playerIds = new List<int>(humans) { _creepPlayerId };
-            if (legion)
-                playerIds.Add(_legionPlayerId);
-            var relations = new List<RelationSetup>();
-            foreach (int a in humans)
-            {
-                foreach (int b in humans)
-                {
-                    if (a < b)
-                        relations.Add(new RelationSetup(a, b, Relation.Ally));
-                }
-                relations.Add(new RelationSetup(a, _creepPlayerId, Relation.Enemy));
-                if (legion)
-                    relations.Add(new RelationSetup(a, _legionPlayerId, Relation.Enemy));
-            }
 
-            _simulation = new Simulation(new MatchSetup(_seed, data, map, ResourceTypeCount, playerIds, relations,
-                _creepPlayerId, legion ? _legionPlayerId : MatchSetup.NoPlayer));
+            MatchSetup setup = MissionLauncher.CreateSetup(Data, mission, map.text, GameSession.Seed);
+            SaveGame? save = GameSession.PendingSave;
+            try
+            {
+                _simulation = save != null ? save.Restore(setup, Codec) : new Simulation(setup);
+            }
+            catch (Exception e) when (e is System.IO.InvalidDataException || e is System.IO.EndOfStreamException || e is ArgumentException)
+            {
+                Debug.LogWarning($"SimRunner: the save did not load: {e.Message}", this);
+                FailToMenu("Не удалось загрузить сохранение: оно от другой версии игры или повреждено");
+                return;
+            }
+            GameSession.SaveConsumed();
+            Mission = mission;
+            Seed = GameSession.Seed;
+            _missionId = mission.Id;
             ShowState();
+        }
+
+        // Starts the scene over with the given session (GameMenu): every view rebuilds for the new match.
+        public static void Reload() =>
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+
+        public byte[]? WriteSave() =>
+            _simulation == null || Mission == null ? null : SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write();
+
+        private void FailToMenu(string message)
+        {
+            GameSession.ToMenu();
+            GameSession.Error = message;
+        }
+
+        private TextAsset? FindMap(string name)
+        {
+            foreach (TextAsset asset in _maps)
+            {
+                if (asset != null && asset.name == name)
+                    return asset;
+            }
+            return null;
         }
 
         private void Update()
         {
-            if (_simulation == null)
+            if (_simulation == null || Paused)
                 return;
 
             const float secondsPerTick = 1f / Simulation.TicksPerSecond;

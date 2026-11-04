@@ -178,7 +178,7 @@ internal static class Combat
             {
                 target.Hp = 0;
                 target.IsDead = true;
-                events.Add(new EntityDestroyed(state.Tick, target.OwnerId, target.Id, target is Building));
+                events.Add(new EntityDestroyed(state.Tick, target.OwnerId, target.Id, target is Building, typeId: target is Building tb ? tb.Stats.Id : ((Unit)target).Stats.Id));
             }
         }
         state.PendingHits.Clear();

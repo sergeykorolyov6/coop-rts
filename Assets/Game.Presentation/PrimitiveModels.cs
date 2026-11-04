@@ -14,6 +14,8 @@ namespace Game.Presentation
     {
         private const string Turret = "turret";
         private const string LegionFactory = "legion_factory";
+        private const string CaveBeast = "cave_beast";
+        private const string CaveSpitter = "cave_spitter";
 
         // Tags of units.csv that only pick a silhouette; the sim does not react to them.
         private const string SiegeTag = "siege";
@@ -36,6 +38,17 @@ namespace Game.Presentation
             Color light = Color.Lerp(owner, Color.white, 0.45f);
             cargo = null;
 
+            if (stats.HasTag(UnitTags.Boss))
+            {
+                // The Grey Creatures' leader: a big blob with a crest of spikes and glowing eyes.
+                Add(root, part, renderers, PrimitiveType.Sphere, owner, new Vector3(0f, s * 0.5f, 0f), new Vector3(s, s * 0.9f, s));
+                for (int i = -1; i <= 1; i++)
+                    Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(i * s * 0.25f, s * 0.95f, s * 0.1f), new Vector3(s * 0.12f, s * 0.35f, s * 0.12f));
+                for (int side = -1; side <= 1; side += 2)
+                    Add(root, part, renderers, PrimitiveType.Cube, new Color(0.95f, 0.3f, 0.25f), new Vector3(side * s * 0.18f, s * 0.6f, -s * 0.42f), new Vector3(s * 0.12f, s * 0.12f, s * 0.08f));
+                return root;
+            }
+
             if (stats.HasTag(UnitTags.Creep))
             {
                 // A grey blob with two dark eyes looking at the camera.
@@ -45,8 +58,23 @@ namespace Game.Presentation
                 return root;
             }
 
+            if (stats.HasTag(UnitTags.Repairer))
+            {
+                // Repairer (builder.md): a round body with a light cross on top.
+                Add(root, part, renderers, PrimitiveType.Sphere, owner, new Vector3(0f, s * 0.4f, 0f), new Vector3(s * 0.8f, s * 0.7f, s * 0.8f));
+                Add(root, part, renderers, PrimitiveType.Cube, Color.white, new Vector3(0f, s * 0.85f, 0f), new Vector3(s * 0.55f, s * 0.14f, s * 0.16f));
+                Add(root, part, renderers, PrimitiveType.Cube, Color.white, new Vector3(0f, s * 0.85f, 0f), new Vector3(s * 0.16f, s * 0.14f, s * 0.55f));
+                return root;
+            }
+
             if (stats.HasTag(UnitTags.Worker))
             {
+                // builder.md: the player's builder is bigger, with an antenna, so it stands out of the army.
+                if (stats.HasTag(UnitTags.Builder))
+                {
+                    Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(-s * 0.25f, s * 1.15f, 0f), new Vector3(s * 0.06f, s * 0.3f, s * 0.06f));
+                    Add(root, part, renderers, PrimitiveType.Sphere, light, new Vector3(-s * 0.25f, s * 1.5f, 0f), Vector3.one * s * 0.16f);
+                }
                 // Stocky body, light head, a backpack frame that holds the cargo.
                 Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, s * 0.35f, 0f), new Vector3(s * 0.75f, s * 0.7f, s * 0.6f));
                 Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, s * 0.85f, 0f), new Vector3(s * 0.42f, s * 0.32f, s * 0.42f));
@@ -75,6 +103,22 @@ namespace Game.Presentation
                 Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, s * 0.2f, 0f), new Vector3(s * 0.85f, s * 0.4f, s * 0.9f));
                 Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, s * 0.5f, 0f), new Vector3(s * 0.5f, s * 0.22f, s * 0.5f));
                 Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0f, s * 0.5f, -s * 0.4f), new Vector3(s * 0.16f, s * 0.25f, s * 0.16f));
+                root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(90f, 0f, 0f);
+                return root;
+            }
+
+            if (stats.Id == CaveBeast)
+            {
+                // A tamed creature in its owner's colour: a creep blob with horns.
+                Add(root, part, renderers, PrimitiveType.Sphere, owner, new Vector3(0f, s * 0.5f, 0f), new Vector3(s, s * 0.85f, s * 1.1f));
+                for (int side = -1; side <= 1; side += 2)
+                    Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(side * s * 0.3f, s * 0.95f, -s * 0.2f), new Vector3(s * 0.1f, s * 0.35f, s * 0.1f));
+                return root;
+            }
+            if (stats.Id == CaveSpitter)
+            {
+                Add(root, part, renderers, PrimitiveType.Sphere, owner, new Vector3(0f, s * 0.45f, 0f), new Vector3(s * 0.8f, s * 0.9f, s * 0.8f));
+                Add(root, part, renderers, PrimitiveType.Cylinder, light, new Vector3(0f, s * 0.6f, -s * 0.45f), new Vector3(s * 0.25f, s * 0.2f, s * 0.25f));
                 root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(90f, 0f, 0f);
                 return root;
             }
@@ -130,6 +174,8 @@ namespace Game.Presentation
                 case BuildingKinds.Drill: return 1.0f;
                 case BuildingKinds.Storage: return 1.0f;
                 case BuildingKinds.Conveyor: return 0.12f;
+                case BuildingKinds.Cave: return 1.6f;
+                case BuildingKinds.Lighthouse: return 3.0f;
                 case BuildingKinds.ConveyorBridge: return 0.45f;
                 default: return 1.2f;
             }
@@ -203,6 +249,20 @@ namespace Game.Presentation
                 case BuildingKinds.ConveyorBridge:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.18f, 0f), new Vector3(0.8f, 0.36f, 0.8f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.4f, 0f), new Vector3(0.9f, 0.1f, 0.9f));
+                    break;
+
+                case BuildingKinds.Cave:
+                    // A rocky mound with a dark mouth facing the camera; the owner's colour on the rim.
+                    Add(root, part, renderers, PrimitiveType.Sphere, new Color(0.42f, 0.40f, 0.37f), new Vector3(0f, 0.5f, 0.1f), new Vector3(w - 0.1f, 1.6f, h - 0.2f));
+                    Add(root, part, renderers, PrimitiveType.Sphere, Dark, new Vector3(0f, 0.45f, -h * 0.38f), new Vector3(1.2f, 0.9f, 0.4f));
+                    Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.08f, -h * 0.45f), new Vector3(1.6f, 0.16f, 0.25f));
+                    break;
+
+                case BuildingKinds.Lighthouse:
+                    // A tall tower on a plinth; the fire on top is the view's (EntityView).
+                    Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.15f, 0f), new Vector3(w - 0.2f, 0.3f, h - 0.2f));
+                    Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 1.5f, 0f), new Vector3(0.8f, 1.3f, 0.8f));
+                    Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0f, 2.9f, 0f), new Vector3(1.0f, 0.1f, 1.0f));
                     break;
 
                 default:

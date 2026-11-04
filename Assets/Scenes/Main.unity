@@ -565,6 +565,9 @@ GameObject:
   - component: {fileID: 1100000021}
   - component: {fileID: 1100000022}
   - component: {fileID: 1100000023}
+  - component: {fileID: 1100000024}
+  - component: {fileID: 1100000025}
+  - component: {fileID: 1100000026}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -605,11 +608,13 @@ MonoBehaviour:
   _rulesJson: {fileID: 4900000, guid: 3b6fd5daf1474369ba6db60cc6a9aca8, type: 3}
   _legionJson: {fileID: 4900000, guid: 23f0e6e86cf44bccb1efe0f9c1f90b9f, type: 3}
   _wavesJson: {fileID: 4900000, guid: 9b136e90a7924fbd8fc56c50548942d8, type: 3}
-  _mapJson: {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
+  _missionsJson: {fileID: 4900000, guid: 0c7c18b83f79408d9d1772a089393ffa, type: 3}
+  _maps:
+  - {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
+  - {fileID: 4900000, guid: d54005f718bd48c38cab064acbb11375, type: 3}
+  - {fileID: 4900000, guid: 81f77b1858424d4883d3ad33ee73b844, type: 3}
   _seed: 1
-  _playerCount: 1
-  _creepPlayerId: 10
-  _legionPlayerId: 9
+  _missionId: 
   _tick: 0
   _stateHash: 
 --- !u!114 &1100000004
@@ -746,13 +751,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.FactoryPanel
   _hud: {fileID: 1637688649}
-  _units:
-  - worker
-  - scout
-  - infantry
-  - shooter
-  - heavy
-  - siege
 --- !u!114 &1100000012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1042,6 +1040,47 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.TurretRangeView
   _color: {r: 0.95, g: 0.85, b: 0.35, a: 1}
+--- !u!114 &1100000024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4ee9738344146b0a69459796c90590c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.GameMenu
+  _hud: {fileID: 1637688649}
+  _placement: {fileID: 1100000013}
+  _maxSavesListed: 10
+--- !u!114 &1100000025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47dc486b287046a5bbe3ed50cf5a626f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.BuildingPanel
+  _hud: {fileID: 1637688649}
+--- !u!114 &1100000026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6bd7a9337264124b21d92d0851aad2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.RallyView
+  _color: {r: 0.55, g: 0.95, b: 0.55, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
