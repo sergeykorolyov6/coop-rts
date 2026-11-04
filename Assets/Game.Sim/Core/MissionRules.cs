@@ -10,7 +10,7 @@ internal static class MissionRules
         if (state.Outcome != MissionOutcome.InProgress || state.Goal == MissionGoal.None)
             return;
 
-        bool goalDone = state.Goal == MissionGoal.DestroyLegion ? !LegionStands(state) : !BossLives(state);
+        bool goalDone = state.Goal == MissionGoal.DestroyLegion ? !LegionStands(state) : state.FindBoss() == null;
         if (goalDone)
             state.Outcome = MissionOutcome.Victory;
         else if (!TeamStands(state))
@@ -25,16 +25,6 @@ internal static class MissionRules
         foreach (Building b in state.Buildings)
         {
             if (!b.IsDead && b.OwnerId == state.LegionPlayerId && (b.Stats.Id == BuildingKinds.Headquarters || b.Factory != null))
-                return true;
-        }
-        return false;
-    }
-
-    private static bool BossLives(SimState state)
-    {
-        foreach (Unit u in state.Units)
-        {
-            if (!u.IsDead && u.Stats.HasTag(UnitTags.Boss))
                 return true;
         }
         return false;

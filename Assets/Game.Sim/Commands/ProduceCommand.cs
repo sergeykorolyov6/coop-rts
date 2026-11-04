@@ -41,9 +41,7 @@ public sealed class ProduceCommand : ICommand
             return;
         }
         Wallet wallet = Payer(state, factory!);
-        wallet.TrySpend(Resources.Primary, stats!.CostPrimary);
-        if (stats.CostSecondary > 0)
-            wallet.TrySpend(Resources.Secondary, stats.CostSecondary);
+        wallet.TryPay(stats!.CostPrimary, stats.CostSecondary);
         factory!.Factory!._queue.Add(stats.Id);
     }
 
@@ -60,11 +58,7 @@ public sealed class ProduceCommand : ICommand
 
         Wallet wallet = Payer(state, factory);
         RejectReason low = factory.Factory.Stock != null ? RejectReason.FactoryStockLow : RejectReason.NotEnoughResources;
-        if (wallet.Get(Resources.Primary) < stats!.CostPrimary)
-            return low;
-        if (stats.CostSecondary > 0 && (wallet.ResourceTypeCount <= Resources.Secondary || wallet.Get(Resources.Secondary) < stats.CostSecondary))
-            return low;
-        return null;
+        return wallet.CanPay(stats!.CostPrimary, stats.CostSecondary) ? null : low;
     }
 
     // factory.md M2: the factory's own stock, or the owner's wallet when it has none.

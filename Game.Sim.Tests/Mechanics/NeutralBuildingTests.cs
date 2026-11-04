@@ -26,9 +26,6 @@ public class NeutralBuildingTests
 
     private static Building At(Simulation sim, string type) => sim.State.Buildings.Single(b => b.Stats.Id == type);
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
-
     private static void ClearCamp(Simulation sim)
     {
         foreach (int id in sim.State.CreepCamps[0].CreepIds)

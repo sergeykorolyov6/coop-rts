@@ -17,13 +17,13 @@ public class TurretTests
     private static Building Turret(Simulation sim, int owner = Setups.PlayerA, bool complete = true, int x = TX, int y = TY) =>
         sim.State.PlaceBuilding(owner, sim.State.Data.Building("turret"), x, y, Direction.Right, complete);
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int x, int y) =>
+    private static Unit SpawnAt(Simulation sim, int owner, string type, int x, int y) =>
         sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), x, y);
 
     // A unit whose edge is `cells` from the turret's right edge, on the turret's lower row.
     private static Unit AtRange(Simulation sim, int owner, string type, int milli)
     {
-        Unit u = Spawn(sim, owner, type, 0, Center(TY));
+        Unit u = SpawnAt(sim, owner, type, 0, Center(TY));
         u.X = RightEdge + milli + u.Radius;
         return u;
     }
@@ -99,8 +99,8 @@ public class TurretTests
         var sim = Empty();
         Building turret = Turret(sim);
         // Mirror images around the turret's middle row (y = 6 cells).
-        Unit a = Spawn(sim, Setups.EnemyAi, "legion_worker", RightEdge + Cells(3), Cells(6) + Cells(2));
-        Unit b = Spawn(sim, Setups.EnemyAi, "legion_worker", RightEdge + Cells(3), Cells(6) - Cells(2));
+        Unit a = SpawnAt(sim, Setups.EnemyAi, "legion_worker", RightEdge + Cells(3), Cells(6) + Cells(2));
+        Unit b = SpawnAt(sim, Setups.EnemyAi, "legion_worker", RightEdge + Cells(3), Cells(6) - Cells(2));
         sim.Run(2);
         Assert.That(a.Id, Is.LessThan(b.Id));
         Assert.That(turret.Turret!.TargetId, Is.EqualTo(a.Id));
@@ -127,7 +127,7 @@ public class TurretTests
         var sim = Empty();
         Building turret = Turret(sim);
         Building storageB = sim.State.PlaceBuilding(Setups.PlayerB, sim.State.Data.Building("storage"), 13, 8, Direction.Right, complete: true);
-        Unit raider = Spawn(sim, Setups.EnemyAi, "legion_raider", Center(20), Center(9));
+        Unit raider = SpawnAt(sim, Setups.EnemyAi, "legion_raider", Center(20), Center(9));
         sim.Order(new AttackCommand(Setups.EnemyAi, 0, new[] { raider.Id }, storageB.Id));
         sim.RunUntil(s => raider.IsDead);
         Assert.That(storageB.IsDead, Is.False);

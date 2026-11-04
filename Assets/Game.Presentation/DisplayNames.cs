@@ -2,51 +2,17 @@ using Game.Sim;
 
 namespace Game.Presentation
 {
-    // Russian names for the UI. The balance json carries ids only; names follow name_ru in
-    // Docs/Design/*.csv and change with them.
+    // Russian texts for the UI. Unit, building and camp names are name_ru of Docs/Design/*.csv,
+    // read from the loaded balance data (SimRunner sets Data); an unknown id shows as is.
     public static class DisplayNames
     {
-        public static string Building(string id)
-        {
-            switch (id)
-            {
-                case BuildingKinds.Headquarters: return "Штаб";
-                case BuildingKinds.Factory: return "Завод";
-                case BuildingKinds.Drill: return "Бур";
-                case BuildingKinds.Conveyor: return "Лента";
-                case BuildingKinds.ConveyorBridge: return "Мост";
-                case BuildingKinds.Storage: return "Склад";
-                case "turret": return "Турель";
-                case "legion_factory": return "Завод Легиона";
-                case BuildingKinds.Cave: return "Пещера";
-                case BuildingKinds.Lighthouse: return "Маяк";
-                default: return id;
-            }
-        }
+        public static GameData? Data { get; set; }
 
-        public static string Unit(string id)
-        {
-            switch (id)
-            {
-                case "builder": return "Строитель";
-                case "repairer": return "Ремонтник";
-                case "cave_beast": return "Пещерный зверь";
-                case "cave_spitter": return "Плевун";
-                case "creep_small": return "Малый крип";
-                case "creep_big": return "Большой крип";
-                case "creep_boss": return "Вожак Серых Существ";
-                case "scout": return "Разведчик";
-                case "infantry": return "Пехотинец";
-                case "shooter": return "Стрелок";
-                case "heavy": return "Тяжёлый";
-                case "siege": return "Осадный";
-                case "legion_worker": return "Рабочий Легиона";
-                case "legion_raider": return "Рейдер Легиона";
-                case "legion_gunner": return "Стрелок Легиона";
-                case "legion_brute": return "Громила Легиона";
-                default: return id;
-            }
-        }
+        public static string Building(string id) =>
+            Data != null && Data.TryGetBuilding(id, out BuildingStats? stats) ? stats!.NameRu : id;
+
+        public static string Unit(string id) =>
+            Data != null && Data.TryGetUnit(id, out UnitStats? stats) ? stats!.NameRu : id;
 
         public static string Clock(int ticks)
         {
@@ -54,19 +20,8 @@ namespace Game.Presentation
             return $"{seconds / 60}:{seconds % 60:00}";
         }
 
-        // Docs/Design/creep_camps.csv, name_ru.
-        public static string Camp(string id)
-        {
-            switch (id)
-            {
-                case "guard_camp": return "Стражи";
-                case "small_camp": return "Малый лагерь";
-                case "cave_guard": return "Стражи пещеры";
-                case "big_camp": return "Большой лагерь";
-                case "boss_lair": return "Логово вожака";
-                default: return id;
-            }
-        }
+        public static string Camp(string id) =>
+            Data != null && Data.TryGetCreepCamp(id, out CreepCampStats? stats) ? stats!.NameRu : id;
 
         public static string Reject(RejectReason reason, string? buildingId = null)
         {

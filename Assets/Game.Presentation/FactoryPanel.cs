@@ -92,7 +92,7 @@ namespace Game.Presentation
             string stockText = factory.Factory.Stock == null
                 ? ""
                 : $"Склад: {wallet.Get(Game.Sim.Resources.Primary)} / {state.Rules.FactoryStock} основного · "
-                  + $"{(wallet.ResourceTypeCount > Game.Sim.Resources.Secondary ? wallet.Get(Game.Sim.Resources.Secondary) : 0)} / {state.Rules.FactoryStock} второго"
+                  + $"{wallet.Secondary} / {state.Rules.FactoryStock} второго"
                   + "\nПополняют ленты от бура или склада. ПКМ по земле — точка сбора"
                   + (factory.Factory.HasRally ? " (стоит; ПКМ по зданию — убрать)" : "");
             if (stockText != _shownStock)
@@ -104,8 +104,7 @@ namespace Game.Presentation
             foreach (Button button in _buttons)
             {
                 var stats = (UnitStats)button.userData;
-                bool affordable = wallet.Get(Game.Sim.Resources.Primary) >= stats.CostPrimary
-                    && (stats.CostSecondary == 0 || (wallet.ResourceTypeCount > Game.Sim.Resources.Secondary && wallet.Get(Game.Sim.Resources.Secondary) >= stats.CostSecondary));
+                bool affordable = wallet.CanPay(stats.CostPrimary, stats.CostSecondary);
                 button.style.opacity = affordable && !queueFull ? 1f : 0.45f;
             }
             _cancel!.SetEnabled(queue.Count > 0);

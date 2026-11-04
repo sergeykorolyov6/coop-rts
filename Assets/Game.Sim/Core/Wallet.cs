@@ -52,6 +52,25 @@ public sealed class Wallet
         _earned[resourceType] = checked(_earned[resourceType] + amount);
     }
 
+    // A price in both resources; a second resource this match does not have cannot be paid.
+    public bool CanPay(int primary, int secondary) =>
+        Get(Resources.Primary) >= primary
+        && (secondary <= 0 || (ResourceTypeCount > Resources.Secondary && Get(Resources.Secondary) >= secondary));
+
+    // What it holds of the second resource, 0 in a match without one.
+    public int Secondary => ResourceTypeCount > Resources.Secondary ? _amounts[Resources.Secondary] : 0;
+
+    // All-or-nothing over both resources: on false the wallet is unchanged.
+    internal bool TryPay(int primary, int secondary)
+    {
+        if (!CanPay(primary, secondary))
+            return false;
+        _amounts[Resources.Primary] -= primary;
+        if (secondary > 0)
+            _amounts[Resources.Secondary] -= secondary;
+        return true;
+    }
+
     // All-or-nothing: on false the wallet is unchanged.
     internal bool TrySpend(int resourceType, int amount)
     {

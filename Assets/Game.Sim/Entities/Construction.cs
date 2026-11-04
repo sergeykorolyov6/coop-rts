@@ -45,12 +45,7 @@ internal static class Construction
 
     public static RejectReason? CheckCanPay(SimState state, int playerId, BuildingStats stats)
     {
-        Wallet wallet = state.GetPlayer(playerId).Wallet;
-        if (wallet.Get(Resources.Primary) < stats.CostPrimary)
-            return RejectReason.NotEnoughResources;
-        if (stats.CostSecondary > 0 && (wallet.ResourceTypeCount <= Resources.Secondary || wallet.Get(Resources.Secondary) < stats.CostSecondary))
-            return RejectReason.NotEnoughResources;
-        return null;
+        return state.GetPlayer(playerId).Wallet.CanPay(stats.CostPrimary, stats.CostSecondary) ? null : RejectReason.NotEnoughResources;
     }
 
     // Start of tick: who is already on which plan (sticky), so new choices respect MaxBuilders
@@ -144,9 +139,7 @@ internal static class Construction
                 }
 
                 Wallet wallet = state.GetPlayer(unit.OwnerId).Wallet;
-                wallet.TrySpend(Resources.Primary, stats.CostPrimary);
-                if (stats.CostSecondary > 0)
-                    wallet.TrySpend(Resources.Secondary, stats.CostSecondary);
+                wallet.TryPay(stats.CostPrimary, stats.CostSecondary);
                 site = state.PlaceBuilding(unit.OwnerId, stats, plan.CellX, plan.CellY, plan.Direction, complete: false);
                 plan.ExistingSiteId = site.Id;
             }
@@ -248,9 +241,7 @@ internal static class Construction
             return true;
         (int primary, int secondary) = Cost(target);
         Wallet wallet = state.GetPlayer(unit.OwnerId).Wallet;
-        if (primary > 0 && wallet.Get(Resources.Primary) == 0)
-            return false;
-        return secondary == 0 || (wallet.ResourceTypeCount > Resources.Secondary && wallet.Get(Resources.Secondary) > 0);
+        return wallet.CanPay(primary > 0 ? 1 : 0, secondary > 0 ? 1 : 0);
     }
 
     // Each HP adds the build price to the repairer's counter; every MaxHp × 100 / pct of it
@@ -269,16 +260,8 @@ internal static class Construction
         int secondary = unit.RepairCostAccumulatorSecondary + costSecondary;
         int duePrimary = primary / threshold, dueSecondary = secondary / threshold;
 
-        Wallet wallet = state.GetPlayer(unit.OwnerId).Wallet;
-        if (wallet.Get(Resources.Primary) < duePrimary)
+        if (!state.GetPlayer(unit.OwnerId).Wallet.TryPay(duePrimary, dueSecondary))
             return false;
-        if (dueSecondary > 0 && (wallet.ResourceTypeCount <= Resources.Secondary || wallet.Get(Resources.Secondary) < dueSecondary))
-            return false;
-
-        if (duePrimary > 0)
-            wallet.TrySpend(Resources.Primary, duePrimary);
-        if (dueSecondary > 0)
-            wallet.TrySpend(Resources.Secondary, dueSecondary);
         unit.RepairCostAccumulator = primary - duePrimary * threshold;
         unit.RepairCostAccumulatorSecondary = secondary - dueSecondary * threshold;
         return true;

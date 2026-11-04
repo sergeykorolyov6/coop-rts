@@ -17,7 +17,7 @@ internal static class BuilderSystem
             Player player = state.GetPlayer(playerId);
             if (!player.IsBuilderDead)
             {
-                if (FindBuilder(state, playerId) == null)
+                if (state.FindBuilder(playerId) == null)
                 {
                     player.BuilderRespawnTick = state.Tick + state.Rules.BuilderRespawnTicks;
                     events.Add(new BuilderDied(state.Tick, playerId, player.BuilderRespawnTick));
@@ -35,16 +35,6 @@ internal static class BuilderSystem
             player.BuilderRespawnTick = Entity.NeverTick;
             events.Add(new BuilderRespawned(state.Tick, playerId, builder.Id, hq.Id));
         }
-    }
-
-    public static Unit? FindBuilder(SimState state, int playerId)
-    {
-        foreach (Unit u in state.Units)
-        {
-            if (!u.IsDead && u.OwnerId == playerId && u.IsBuilder)
-                return u;
-        }
-        return null;
     }
 
     // On a free cell around the headquarters; none free — waits (like a factory, factory.md).

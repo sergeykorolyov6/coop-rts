@@ -44,7 +44,7 @@
   },
   {
     "id": "conveyor_bridge",
-    "name_ru": "Мост (один конец)",
+    "name_ru": "Мост",
     "faction": "blue_walls",
     "hp": 100,
     "armor": 0,

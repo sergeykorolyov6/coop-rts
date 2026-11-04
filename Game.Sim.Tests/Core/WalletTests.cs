@@ -14,6 +14,30 @@ public class WalletTests
     }
 
     [Test]
+    public void TryPay_BothResourcesOrNothing()
+    {
+        var wallet = new Wallet(2);
+        wallet.Add(Setups.Primary, 50);
+        wallet.Add(Setups.Secondary, 10);
+
+        Assert.That(wallet.CanPay(50, 11), Is.False);
+        Assert.That(wallet.TryPay(50, 11), Is.False);
+        Assert.That((wallet.Get(Setups.Primary), wallet.Secondary), Is.EqualTo((50, 10)));
+        Assert.That(wallet.TryPay(40, 10), Is.True);
+        Assert.That((wallet.Get(Setups.Primary), wallet.Secondary), Is.EqualTo((10, 0)));
+    }
+
+    [Test]
+    public void OneResourceMatch_CannotPayTheSecond()
+    {
+        var wallet = new Wallet(1);
+        wallet.Add(Setups.Primary, 50);
+        Assert.That(wallet.CanPay(10, 0), Is.True);
+        Assert.That(wallet.CanPay(10, 1), Is.False);
+        Assert.That(wallet.Secondary, Is.Zero);
+    }
+
+    [Test]
     public void AddAndSpend_PerResourceType()
     {
         var wallet = new Wallet(2);

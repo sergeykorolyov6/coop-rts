@@ -96,8 +96,7 @@ namespace Game.Presentation
             for (int i = 0; i < _buttons.Count; i++)
             {
                 var stats = (BuildingStats)_buttons[i].userData;
-                bool affordable = wallet.Get(Game.Sim.Resources.Primary) >= stats.CostPrimary
-                    && (stats.CostSecondary == 0 || (wallet.ResourceTypeCount > Game.Sim.Resources.Secondary && wallet.Get(Game.Sim.Resources.Secondary) >= stats.CostSecondary));
+                bool affordable = wallet.CanPay(stats.CostPrimary, stats.CostSecondary);
                 if (affordable != _affordable[i])
                 {
                     _affordable[i] = affordable;

@@ -14,15 +14,6 @@ public class BuilderTests
 
     private static Unit Builder(Simulation sim, int player) => sim.State.UnitsOf(player).Single(u => u.IsBuilder);
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
-
-    private static void Kill(Entity e)
-    {
-        e.Hp = 0;
-        e.IsDead = true;
-    }
-
     private static int Wallet(Simulation sim, int player, int type = Resources.Primary) =>
         sim.State.GetPlayer(player).Wallet.Get(type);
 

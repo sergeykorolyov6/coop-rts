@@ -73,6 +73,7 @@ namespace Game.Presentation
                 ? GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text, _legionJson.text, _wavesJson.text)
                 : GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text);
             Catalog = MissionCatalog.Parse(_missionsJson.text);
+            DisplayNames.Data = Data;
 
             if (GameSession.MissionId == null)
                 return;

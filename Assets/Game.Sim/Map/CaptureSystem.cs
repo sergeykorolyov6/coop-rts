@@ -34,7 +34,7 @@ internal static class CaptureSystem
     private static void TickCapture(SimState state, Building b, List<SimEvent> events)
     {
         int radius = state.Rules.CaptureRadiusMilli;
-        if (b.GuardCampIndex >= 0 && state.CreepCamps[b.GuardCampIndex].State != CreepCampState.Cleared)
+        if (state.IsGuarded(b))
         {
             Reset(b);
             return;
@@ -71,8 +71,7 @@ internal static class CaptureSystem
         b.CapturePlayerId = 0;
     }
 
-    private static bool InRadius(Unit u, Building b, int radius) =>
-        Movement.DistanceToRectangle(u, b.CellX, b.CellY, b.Width, b.Height) - u.Radius <= radius;
+    private static bool InRadius(Unit u, Building b, int radius) => Combat.EdgeDistance(u, b) <= radius;
 
     // Lowest-id living unit of a team player (of `onlyPlayer` when it is not 0) within the radius.
     private static Unit? FirstTeamUnit(SimState state, Building b, int radius, int onlyPlayer)

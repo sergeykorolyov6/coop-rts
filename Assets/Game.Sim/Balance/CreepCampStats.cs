@@ -10,6 +10,7 @@ public sealed class CreepCampStats
     internal CreepCampStats(JsonNode row)
     {
         Id = row.GetString("id");
+        NameRu = row.GetString("name_ru");
         _creeps = row.GetStringList("creeps");
         AggroRadiusMilli = row.GetInt("aggro_radius_mc");
         LeashRadiusMilli = row.GetInt("leash_radius_mc");
@@ -21,6 +22,9 @@ public sealed class CreepCampStats
     }
 
     public string Id { get; }
+
+    // For the UI; the sim never reads it.
+    public string NameRu { get; }
 
     // Unit ids, one entry per creep; repeats mean several creeps of a kind.
     public IReadOnlyList<string> Creeps => _creeps;

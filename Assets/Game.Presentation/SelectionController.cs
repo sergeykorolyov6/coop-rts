@@ -195,12 +195,7 @@ namespace Game.Presentation
             // builder.md: Tab selects the player's builder; Tab again right away brings the camera to it.
             if (keyboard.tabKey.wasPressedThisFrame)
             {
-                Unit? builder = null;
-                foreach (Unit u in state.Units)
-                {
-                    if (!u.IsDead && u.IsBuilder && u.OwnerId == _localPlayer!.PlayerId)
-                        builder = u;
-                }
+                Unit? builder = state.FindBuilder(_localPlayer!.PlayerId);
                 if (builder != null)
                 {
                     bool again = _lastGroup == BuilderKey && Time.unscaledTime - _lastGroupTime <= _doubleTapSeconds;

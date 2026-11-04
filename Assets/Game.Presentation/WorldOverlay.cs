@@ -102,8 +102,7 @@ namespace Game.Presentation
 
                 if (building.OwnerId == state.NeutralPlayerId && building.Stats.Id != BuildingKinds.Lighthouse)
                 {
-                    bool guarded = building.GuardCampIndex >= 0 && state.CreepCamps[building.GuardCampIndex].State != CreepCampState.Cleared;
-                    if (guarded)
+                    if (state.IsGuarded(building))
                         ShowBar(top, width, 0f, _captureColor, "охраняется крипами");
                     else if (building.CaptureProgress > 0 && state.Rules.CaptureTimeTicks > 0)
                         ShowBar(top, width, building.CaptureProgress / (float)state.Rules.CaptureTimeTicks, _captureColor, $"захват: игрок {building.CapturePlayerId}");
@@ -111,14 +110,14 @@ namespace Game.Presentation
                 }
                 if (building.DemolishTicksLeft > 0 && state.Relations.IsAlly(playerId, building.OwnerId))
                 {
-                    int total = System.Math.Max(1, (building.Stats.BuildTimeTicks * state.Rules.DemolishTimePercent + 99) / 100);
+                    int total = DemolishSystem.DemolishTicks(state.Rules, building.Stats);
                     ShowBar(top + Vector3.up * 0.5f, width, building.DemolishTicksLeft / (float)total, _demolishColor, $"снос: {DisplayNames.Seconds(building.DemolishTicksLeft)}");
                 }
                 Wallet? stock = building.Factory?.Stock;
                 if (stock != null && building.IsComplete && building.OwnerId == playerId)
                 {
                     int cap = System.Math.Max(1, state.Rules.FactoryStock);
-                    int secondary = stock.ResourceTypeCount > Game.Sim.Resources.Secondary ? stock.Get(Game.Sim.Resources.Secondary) : 0;
+                    int secondary = stock.Secondary;
                     ShowBar(top + Vector3.down * 0.9f, width, stock.Get(Game.Sim.Resources.Primary) / (float)cap, _bufferColor,
                         $"склад {stock.Get(Game.Sim.Resources.Primary)} · {secondary}");
                 }

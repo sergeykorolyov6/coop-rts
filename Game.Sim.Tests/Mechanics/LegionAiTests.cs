@@ -48,15 +48,6 @@ public class LegionAiTests
     private static Building PlayerDrill(Simulation sim, int owner, int x, int y) =>
         sim.State.PlaceBuilding(owner, sim.State.Data.Building("drill"), x, y, Direction.Right, complete: true);
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
-
-    private static void Kill(Entity e)
-    {
-        e.Hp = 0;
-        e.IsDead = true;
-    }
-
     private static List<T> RunCollectingUntil<T>(Simulation sim, int tick) where T : SimEvent
     {
         var result = new List<T>();

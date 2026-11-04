@@ -24,15 +24,6 @@ public class CreepCampTests
     private static Unit Big(Simulation sim) => sim.State.FindUnit(Camp(sim).CreepIds[0])!;
     private static Unit Small(Simulation sim) => sim.State.FindUnit(Camp(sim).CreepIds[1])!;
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
-
-    private static void Kill(Entity e)
-    {
-        e.Hp = 0;
-        e.IsDead = true;
-    }
-
     [Test]
     public void Camp_SpawnsItsCreeps_OwnedByTheCreepPlayer_Calm()
     {

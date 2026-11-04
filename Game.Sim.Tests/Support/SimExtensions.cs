@@ -40,6 +40,17 @@ internal static class SimExtensions
 
     public static int Cells(int cells) => cells * Grid.MilliPerCell;
 
+    // A unit standing in the centre of cell (cx, cy).
+    public static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
+        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
+
+    // Dead now; removed at the end of the next tick, as after a killing blow.
+    public static void Kill(Entity e)
+    {
+        e.Hp = 0;
+        e.IsDead = true;
+    }
+
     public static int Center(int cell) => Grid.CellCenter(cell);
 
     public static void Order(this Simulation sim, ICommand command) => sim.Enqueue(command);

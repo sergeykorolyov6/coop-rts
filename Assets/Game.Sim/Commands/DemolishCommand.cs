@@ -33,6 +33,6 @@ public sealed class DemolishCommand : ICommand
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
             return;
         }
-        b.DemolishTicksLeft = b.DemolishTicksLeft > 0 ? 0 : DemolishSystem.DemolishTicks(state, b.Stats);
+        b.DemolishTicksLeft = b.DemolishTicksLeft > 0 ? 0 : DemolishSystem.DemolishTicks(state.Rules, b.Stats);
     }
 }

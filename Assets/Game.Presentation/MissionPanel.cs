@@ -83,7 +83,7 @@ namespace Game.Presentation
                 : "Цель: уничтожьте штаб и заводы Чёрного Легиона";
             if (seen > 0)
                 text += $"\nНайдено и ещё стоит: {seen}";
-            if (state.Goal == MissionGoal.KillBoss && FindBoss(state) is Unit boss && state.Fog.IsVisible(me, boss.CellX, boss.CellY))
+            if (state.Goal == MissionGoal.KillBoss && state.FindBoss() is Unit boss && state.Fog.IsVisible(me, boss.CellX, boss.CellY))
                 text += $"\nВожак: {boss.Hp} / {boss.MaxHp}";
             if (state.Outcome == MissionOutcome.InProgress && legion != null && legion.NextWaveTick != int.MaxValue)
                 text += $"\nВолна {legion.NextWave} через {DisplayNames.Clock(legion.NextWaveTick - state.Tick)}";
@@ -95,16 +95,6 @@ namespace Game.Presentation
                 _shown = text;
                 _objective.text = text;
             }
-        }
-
-        private static Unit? FindBoss(SimState state)
-        {
-            foreach (Unit u in state.Units)
-            {
-                if (!u.IsDead && u.Stats.HasTag(UnitTags.Boss))
-                    return u;
-            }
-            return null;
         }
 
         private void OnTickEvents(IReadOnlyList<SimEvent> events)

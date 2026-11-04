@@ -75,10 +75,9 @@ namespace Game.Presentation
 
         private static string RefundText(SimState state, BuildingStats stats)
         {
-            if (BuildingKinds.IsWalkable(stats.Id))
+            (int primary, int secondary) = DemolishSystem.Refund(state.Rules, stats);
+            if (primary + secondary == 0)
                 return " — без возврата";
-            int pct = state.Rules.DemolishRefundPercent;
-            int primary = stats.CostPrimary * pct / 100, secondary = stats.CostSecondary * pct / 100;
             return secondary > 0 ? $" — вернётся {primary} + {secondary}" : $" — вернётся {primary}";
         }
 

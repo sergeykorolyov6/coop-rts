@@ -24,12 +24,6 @@ public class MissionTests
     private static List<Building> Legion(Simulation sim) =>
         sim.State.Buildings.Where(b => b.OwnerId == Setups.EnemyAi).ToList();
 
-    private static void Kill(Entity e)
-    {
-        e.Hp = 0;
-        e.IsDead = true;
-    }
-
     private static void Wipe(Simulation sim, int player, bool keepWorker = false)
     {
         foreach (Building b in sim.State.Buildings.Where(b => b.OwnerId == player))

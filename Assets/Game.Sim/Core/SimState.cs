@@ -157,6 +157,32 @@ public sealed class SimState
         return null;
     }
 
+    // builder.md: the player's living builder (at most one), or null.
+    public Unit? FindBuilder(int playerId)
+    {
+        foreach (Unit u in _units)
+        {
+            if (!u.IsDead && u.OwnerId == playerId && u.IsBuilder)
+                return u;
+        }
+        return null;
+    }
+
+    // mission.md: the living boss of a kill_boss mission, or null.
+    public Unit? FindBoss()
+    {
+        foreach (Unit u in _units)
+        {
+            if (!u.IsDead && u.Stats.HasTag(UnitTags.Boss))
+                return u;
+        }
+        return null;
+    }
+
+    // neutral-buildings.md: a neutral building whose guard camp still has creeps cannot be captured.
+    public bool IsGuarded(Building b) =>
+        b.GuardCampIndex >= 0 && _camps[b.GuardCampIndex].State != CreepCampState.Cleared;
+
     internal Unit SpawnUnit(int ownerId, UnitStats stats, int x, int y)
     {
         var unit = new Unit(NextEntityId++, ownerId, stats, x, y);

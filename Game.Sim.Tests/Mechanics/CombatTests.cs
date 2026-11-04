@@ -9,9 +9,6 @@ public class CombatTests
 {
     private static Simulation Empty(int w = 32, int h = 16) => new Simulation(Setups.Coop(new MapSetup(w, h)));
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
-
     private static AttackCommand Attack(Simulation sim, int player, Entity target, params Unit[] units) =>
         new AttackCommand(player, sim.State.Tick, units.Select(u => u.Id).ToArray(), target.Id);
 

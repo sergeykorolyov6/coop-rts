@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
+using static Game.Sim.Tests.SimExtensions;
 
 namespace Game.Sim.Tests;
 
@@ -23,12 +24,6 @@ public class CoopMissionTests
     {
         MissionStats mission = Catalog().Find(missionId)!;
         return new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), mission, MapJson(mission.Map), seed));
-    }
-
-    private static void Kill(Entity e)
-    {
-        e.Hp = 0;
-        e.IsDead = true;
     }
 
     private static Unit Boss(Simulation sim) => sim.State.Units.Single(u => u.Stats.HasTag(UnitTags.Boss));

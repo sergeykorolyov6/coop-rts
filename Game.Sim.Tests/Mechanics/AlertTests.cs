@@ -9,9 +9,6 @@ public class AlertTests
 {
     private static Simulation Empty() => new Simulation(Setups.Coop(new MapSetup(32, 16)));
 
-    private static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
-
     [Test]
     public void GWT1_UnitHitEverySecond_AlarmOncePerFiveSeconds()
     {

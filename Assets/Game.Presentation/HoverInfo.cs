@@ -107,7 +107,7 @@ namespace Game.Presentation
             if (poi != null && !poi.IsDead && (poi.OwnerId == state.NeutralPlayerId || poi.Stats.Id == BuildingKinds.Lighthouse))
             {
                 int seconds = state.Rules.CaptureTimeTicks / Simulation.TicksPerSecond;
-                bool guarded = poi.GuardCampIndex >= 0 && state.CreepCamps[poi.GuardCampIndex].State != CreepCampState.Cleared;
+                bool guarded = state.IsGuarded(poi);
                 switch (poi.Stats.Id)
                 {
                     case BuildingKinds.Lighthouse:
