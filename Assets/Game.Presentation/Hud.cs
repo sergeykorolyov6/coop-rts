@@ -83,7 +83,8 @@ namespace Game.Presentation
             _shownPlayer = playerId;
             _shownIncomePrimary = incomePrimary;
             _shownIncomeSecondary = incomeSecondary;
-            _wallet.text = $"Игрок {playerId}    Основной ресурс: {primary} (+{incomePrimary}/мин)    Второй: {secondary} (+{incomeSecondary}/мин)";
+            string faction = simulation.State.GetPlayer(playerId).Faction?.NameRu ?? "";
+            _wallet.text = $"Игрок {playerId} ({faction})    Основной ресурс: {primary} (+{incomePrimary}/мин)    Второй: {secondary} (+{incomeSecondary}/мин)";
         }
 
         private void SampleIncome(int tick, int playerId, Wallet wallet, bool hasSecondary)

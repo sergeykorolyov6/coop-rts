@@ -161,13 +161,34 @@ namespace Game.Presentation
         }
 
         // Height of the finished model, for labels and the arrow on conveyors.
-        public static float BuildingHeight(string id)
+        // Which model a building gets: by what it does (factions.md — a faction's own headquarters,
+        // factory or turret looks like one), by id only for the unique points of interest.
+        public static string Shape(BuildingStats stats)
         {
-            switch (id)
+            if (stats.Id == BuildingIds.Cave)
+                return BuildingIds.Cave;
+            switch (stats.Behavior)
+            {
+                case BuildingBehavior.Lighthouse: return BuildingIds.Lighthouse;
+                case BuildingBehavior.Headquarters: return BuildingIds.Headquarters;
+                case BuildingBehavior.Drill: return BuildingIds.Drill;
+                case BuildingBehavior.Conveyor: return BuildingIds.Conveyor;
+                case BuildingBehavior.Bridge: return BuildingIds.ConveyorBridge;
+                case BuildingBehavior.Storage: return BuildingIds.Storage;
+            }
+            if (stats.Produces.Count > 0)
+                return BuildingIds.Factory;
+            if (stats.Damage > 0)
+                return BuildingIds.Turret;
+            return stats.Id;
+        }
+
+        public static float BuildingHeight(BuildingStats stats)
+        {
+            switch (Shape(stats))
             {
                 case BuildingIds.Headquarters: return 2.4f;
                 case BuildingIds.Factory: return 1.7f;
-                case BuildingIds.LegionFactory: return 1.7f;
                 case BuildingIds.Turret: return 1.3f;
                 case BuildingIds.Drill: return 1.0f;
                 case BuildingIds.Storage: return 1.0f;
@@ -187,7 +208,7 @@ namespace Game.Presentation
             Color light = Color.Lerp(owner, Color.white, 0.35f);
             // Front faces the camera (−Z): doors and openings go there.
 
-            switch (building.Stats.Id)
+            switch (Shape(building.Stats))
             {
                 case BuildingIds.Headquarters:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.2f, 0f), new Vector3(w - 0.1f, 0.4f, h - 0.1f));
@@ -198,7 +219,6 @@ namespace Game.Presentation
                     break;
 
                 case BuildingIds.Factory:
-                case BuildingIds.LegionFactory:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.12f, 0f), new Vector3(w - 0.1f, 0.24f, h - 0.1f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.7f, 0.15f), new Vector3(w - 0.4f, 1.0f, h - 0.7f));
                     Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, 1.25f, 0.15f), new Vector3(w - 0.6f, 0.15f, h - 0.9f));
@@ -261,6 +281,12 @@ namespace Game.Presentation
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.15f, 0f), new Vector3(w - 0.2f, 0.3f, h - 0.2f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 1.5f, 0f), new Vector3(0.8f, 1.3f, 0.8f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0f, 2.9f, 0f), new Vector3(1.0f, 0.1f, 1.0f));
+                    break;
+
+                case BuildingIds.Wall:
+                    // A squat block with a lighter cap: reads as a wall segment in a row.
+                    Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.4f, 0f), new Vector3(0.96f, 0.8f, 0.96f));
+                    Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, 0.85f, 0f), new Vector3(0.8f, 0.1f, 0.8f));
                     break;
 
                 default:

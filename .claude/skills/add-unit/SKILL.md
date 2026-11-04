@@ -13,8 +13,10 @@ description: Добавить новый юнит в CoopRTS от строки �
 
 - Проверь, что юнит есть в текущей вехе `PLAN.md` (раздел 3 и вехи). Нет — **остановись и скажи**, что это за пределами скоупа.
 - Найди строку юнита в `Docs/Design/units.csv`. Числа в CSV — в человеческих единицах. Обязательные колонки:
-  `id, name_ru, faction, hp, armor, damage, attack_range, attack_cooldown_s, move_speed, vision, cost_primary, cost_secondary, build_time_s, produced_at, size, tags`
-  - `faction` — id из глоссария `CLAUDE.md` (`blue_walls`, `black_legion`, `grey_creatures` …);
+  `id, name_ru, faction, hp, armor, damage, damage_vs_buildings, attack_range, attack_cooldown_s, move_speed, vision, cost_primary, cost_secondary, build_time_s, produced_at, size, tags, abilities`
+  - `faction` — id из `factions.csv` (`blue_walls`, `red_lightning`, `black_legion`, `grey_creatures` …); юнит производится там, где его перечисляет `produces` здания этой фракции;
+  - `tags` — умения, на которые реагирует Sim (`worker`, `builder`, `repairer`, `boss`, `creep`), и силуэт (`melee`, `ranged`, `scout`, `siege`, `armored`, `fast`);
+  - `abilities` — id из `abilities.csv` (`factions.md`), через `;`;
   - `attack_range`, `vision`, `size` — в клетках; `move_speed` — клеток/с; `*_s` — секунды;
   - ресурсов в прототипе два; `cost_secondary` может быть 0. Если юнит стоит второй ресурс, а второго типа месторождения на карте ещё нет (он в M2), — юнит реализуй, но отметь в отчёте, что заказать его в игре пока нечем;
   - `produced_at` — id здания, обычно `factory`.
@@ -34,19 +36,15 @@ description: Добавить новый юнит в CoopRTS от строки �
   - детерминизм: два прогона сценария с юнитом → одинаковый `StateHash`.
 - `dotnet test Game.Sim.Tests` — зелёный, иначе не идти дальше.
 
-## 2. Presentation (через Unity MCP)
+## 2. Presentation
 
-- Создай префаб `Assets/Game.Presentation/Prefabs/Units/<Id>.prefab` дублированием `_UnitTemplate.prefab`.
-- Геометрия: примитив по `tags` (`melee` → куб, `ranged` → цилиндр, `scout` → сфера, `siege` → усечённая пирамида, `worker` → капсула), масштаб по `size`.
-- Цвет — **цвет владельца**, не фракции: общий материал `Unit_Base`, цвет выставляет `UnitView` из `PlayerColors` в рантайме. Отдельных материалов по фракциям не создавай.
-- Компонент `UnitView`: поле `UnitId` = `id`.
-- Зарегистрируй в `UnitViewRegistry` (ScriptableObject `Assets/Game.Presentation/Registry/Units.asset`).
-- Прочитай консоль Unity. Ошибок нет → дальше.
+Префабов нет: модели собираются из примитивов в `PrimitiveModels` по тегам (`melee`, `ranged`, `scout`, `siege`, `armored`, `fast`, `worker`, `builder`, `repairer`, `creep`, `boss`), цвет — владельца. Новый юнит с обычными тегами получает силуэт сам; свой силуэт — только если тегов не хватает (ветка в `PrimitiveModels.Unit`).
+- Имя в интерфейсе — `name_ru` из данных (`DisplayNames`), кнопка производства — из `produces` здания (`FactoryPanel`), кнопки способностей — из `abilities` (`AbilityPanel`). Код Presentation для этого не трогается.
+- Если доступен Unity MCP — запусти Play, закажи юнит, прочитай консоль. Нет — опиши, что проверить руками.
 
 ## 3. UI
 
-- В `Assets/Game.Presentation/UI/CommandPanel.uxml` добавь кнопку производства в здание из `produced_at`, иконка — `Icons/<id>.png` (если нет — плейсхолдер `Icons/_missing.png` и пометка в отчёте).
-- Хоткей — следующий свободный из `Docs/Design/hotkeys.md`, запиши туда.
+- Горячие клавиши способностей — Q, E, X по порядку `abilities`; меню стройки — `BuildMenu._hotkeys`.
 
 ## 4. Отчёт
 

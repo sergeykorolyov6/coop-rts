@@ -23,7 +23,7 @@ namespace Game.Presentation
 
         [SerializeField] private Hud? _hud;
         [SerializeField] private LocalPlayer? _localPlayer;
-        [Tooltip("Hotkeys by building id; buildings without one get a button only.")]
+        [Tooltip("Hotkeys by building id, or by its model kind (PrimitiveModels.Shape): another faction's factory gets F too.")]
         [SerializeField] private Entry[] _hotkeys =
         {
             new Entry { BuildingId = BuildingIds.Drill, Hotkey = Key.D },
@@ -33,6 +33,7 @@ namespace Game.Presentation
             new Entry { BuildingId = BuildingIds.Factory, Hotkey = Key.F },
             new Entry { BuildingId = BuildingIds.Headquarters, Hotkey = Key.H },
             new Entry { BuildingId = BuildingIds.Turret, Hotkey = Key.T },
+            new Entry { BuildingId = BuildingIds.Wall, Hotkey = Key.W },
         };
         [SerializeField] private Color _activeColor = new Color(0.25f, 0.45f, 0.30f);
 
@@ -98,7 +99,7 @@ namespace Game.Presentation
             foreach (Button button in _buttons)
             {
                 var stats = (BuildingStats)button.userData;
-                Key key = HotkeyOf(stats.Id);
+                Key key = HotkeyOf(stats);
                 if (key != Key.None && keyboard[key].wasPressedThisFrame)
                 {
                     _placement!.Begin(stats.Id);
@@ -121,7 +122,7 @@ namespace Game.Presentation
                 if (!state.Data.TryGetBuilding(id, out BuildingStats? stats))
                     continue;
                 string price = stats!.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
-                Key key = HotkeyOf(id);
+                Key key = HotkeyOf(stats);
                 var button = new Button(() => _placement!.Begin(id))
                 {
                     text = $"{DisplayNames.Building(id)}\n{price}" + (key != Key.None ? $" · {key}" : ""),
@@ -137,11 +138,17 @@ namespace Game.Presentation
             }
         }
 
-        private Key HotkeyOf(string buildingId)
+        private Key HotkeyOf(BuildingStats stats)
         {
+            string shape = PrimitiveModels.Shape(stats);
             foreach (Entry entry in _hotkeys)
             {
-                if (entry.BuildingId == buildingId)
+                if (entry.BuildingId == stats.Id)
+                    return entry.Hotkey;
+            }
+            foreach (Entry entry in _hotkeys)
+            {
+                if (entry.BuildingId == shape)
                     return entry.Hotkey;
             }
             return Key.None;

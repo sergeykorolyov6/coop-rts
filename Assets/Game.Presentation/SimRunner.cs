@@ -24,6 +24,8 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _wavesJson;
         [Tooltip("Assets/Data/factions.json: what each faction starts with and builds.")]
         [SerializeField] private TextAsset? _factionsJson;
+        [Tooltip("Assets/Data/abilities.json: Blink, Overdrive and the other abilities (factions.md).")]
+        [SerializeField] private TextAsset? _abilitiesJson;
 
         [Header("Missions (mission.md, save-load.md)")]
         [Tooltip("Assets/Data/missions.json")]
@@ -72,7 +74,8 @@ namespace Game.Presentation
             }
 
             Data = GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text,
-                _legionJson != null ? _legionJson.text : "[]", _wavesJson != null ? _wavesJson.text : "[]", _factionsJson.text);
+                _legionJson != null ? _legionJson.text : "[]", _wavesJson != null ? _wavesJson.text : "[]", _factionsJson.text,
+                _abilitiesJson != null ? _abilitiesJson.text : "[]");
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;
 

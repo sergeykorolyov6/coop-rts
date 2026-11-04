@@ -38,6 +38,7 @@ namespace Game.Presentation
         private SimRunner? _runner;
         private EntityView? _entities;
         private LocalPlayer? _localPlayer;
+        private AbilityPanel? _abilities;
         private Camera? _view;
         private VisualElement? _box;
         private Vector2 _pressAt;
@@ -57,6 +58,7 @@ namespace Game.Presentation
             _runner = GetComponent<SimRunner>();
             _entities = GetComponent<EntityView>();
             _localPlayer = GetComponent<LocalPlayer>();
+            _abilities = GetComponent<AbilityPanel>();
             for (int i = 0; i < GroupCount; i++)
                 _groups[i] = new List<int>();
             if (_camera != null)
@@ -127,7 +129,8 @@ namespace Game.Presentation
             Vector2 pointer = mouse.position.ReadValue();
 
             // Placing a building owns the mouse; a press on a button is not a map click.
-            if (mouse.leftButton.wasPressedThisFrame && !(_placement != null && _placement.IsBusy) && !(_hud != null && _hud.IsPointerOverUi(pointer)))
+            if (mouse.leftButton.wasPressedThisFrame && !(_placement != null && _placement.IsBusy) && !(_abilities != null && _abilities.IsBusy)
+                && !(_hud != null && _hud.IsPointerOverUi(pointer)))
             {
                 _pressing = true;
                 _pressAt = pointer;

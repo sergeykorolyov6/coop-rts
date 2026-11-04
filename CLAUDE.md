@@ -95,7 +95,10 @@
 | отношения игроков (союзник/враг/нейтрал) | `Relations`, `Relation` |
 | фракция игрока, что строит фракция, роль фракции | `FactionStats` (`factions.csv`), `Player.Faction`, `PlayerFaction`, `FactionRole` |
 | поведение здания (штаб, бур, лента, мост, склад, маяк) | `BuildingStats.Behavior` (`BuildingBehavior`, колонка `behavior`). Логика смотрит на поведение, а не на id здания; id — только для арта (`BuildingIds` в Presentation) |
-| играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (в MVP только `blue_walls`) |
+| способность, Рывок, Перегрузка, Жажда; черты фракции (первый удар, регенерация, самопочинка, мародёрство) | `AbilityStats` (`abilities.csv`), `UseAbilityCommand`, `AbilitySystem`, `rl_blink`, `rl_overdrive`, `legion_frenzy`; `FactionTraits`, колонки `factions.csv` |
+| юниты и здания Красных Молний: Искра, Бегун, Разрядник, Копейщик, Дуговик; Узел молний, Кузня, Тесла | `rl_builder`, `rl_runner`, `rl_striker`, `rl_lancer`, `rl_arc`; `rl_hq`, `rl_factory`, `rl_tesla` |
+| стена (Синие Стены); Цитадель и Шип Легиона | `wall`; `legion_hq`, `legion_turret` |
+| играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (сейчас `blue_walls` и `red_lightning`) |
 | неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.

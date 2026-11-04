@@ -35,6 +35,7 @@ namespace Game.Presentation
                 case RejectReason.OneHeadquartersOnly: return "Штаб уже есть";
                 case RejectReason.NothingToRepair: return "Чинить нечего";
                 case RejectReason.CannotProduce: return "Нельзя произвести";
+                case RejectReason.AbilityNotReady: return "Способность не готова";
                 case RejectReason.FactoryStockLow: return "На складе здания не хватает ресурсов — подведите ленту от бура или склада";
                 default:
                     bool drill = buildingId != null && Data != null && Data.TryGetBuilding(buildingId, out BuildingStats? stats) && stats!.Behavior == BuildingBehavior.Drill;

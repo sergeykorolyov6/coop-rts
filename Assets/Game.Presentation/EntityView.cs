@@ -36,6 +36,7 @@ namespace Game.Presentation
         [SerializeField] private Color _fireColor = new Color(1.00f, 0.78f, 0.30f);
         [Tooltip("demolish.md: a building being demolished is drawn darker.")]
         [SerializeField, Range(0f, 1f)] private float _demolishDarken = 0.5f;
+        [SerializeField, Range(0f, 1f)] private float _boostLighten = 0.5f;
         [SerializeField] private Color _flashColor = Color.white;
         [SerializeField] private float _flashSeconds = 0.08f;
         [Tooltip("Degrees per second of a working drill's rotor.")]
@@ -137,6 +138,8 @@ namespace Game.Presentation
                 // A demolishing building gets darkened again on the next sync.
                 if (visual is BuildingVisual b)
                     b.Demolishing = false;
+                else if (visual is UnitVisual u)
+                    u.Boosted = false;
                 _flashing.RemoveAt(i);
             }
 
@@ -163,6 +166,21 @@ namespace Game.Presentation
                 visual.To = position;
                 visual.Alive = true;
                 visual.Transform.gameObject.SetActive(Visibility.UnitShown(state, _localPlayer!.PlayerId, unit));
+
+                // factions.md: a unit under a boost (Overdrive, frenzy) is drawn lighter.
+                bool boosted = unit.BoostTicksLeft > 0;
+                if (boosted != visual.Boosted && visual.FlashUntil <= 0f)
+                {
+                    visual.Boosted = boosted;
+                    if (boosted)
+                    {
+                        Material light = MaterialFor(Color.Lerp(visual.Color, Color.white, _boostLighten));
+                        foreach (MeshRenderer renderer in visual.Renderers)
+                            renderer.sharedMaterial = light;
+                    }
+                    else
+                        visual.RestoreMaterials();
+                }
 
                 // manual-mining.md: it is visible that the worker carries cargo, and of which type.
                 if (visual.Cargo != null && unit.Worker != null)
@@ -281,7 +299,7 @@ namespace Game.Presentation
 
         private BuildingVisual CreateBuilding(SimState state, Building building)
         {
-            float height = PrimitiveModels.BuildingHeight(building.Stats.Id);
+            float height = PrimitiveModels.BuildingHeight(building.Stats);
             Color color = OwnerColor(state, building.OwnerId);
             var renderers = new List<MeshRenderer>();
             // Cell (x, y) covers world XZ [x, x+1) × [y, y+1); the root stands at the footprint's centre.
@@ -456,6 +474,7 @@ namespace Game.Presentation
                 : base(pivot, renderers, color, size, centreHeight) => Cargo = cargo;
 
             public Transform? Cargo { get; }
+            public bool Boosted { get; set; }
             public Vector3 From { get; set; }
             public Vector3 To { get; set; }
         }

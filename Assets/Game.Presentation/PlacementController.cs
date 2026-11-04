@@ -75,7 +75,7 @@ namespace Game.Presentation
             if (simulation == null || !simulation.State.Data.TryGetBuilding(buildingId, out BuildingStats? stats) || !CollectWorkers(simulation.State))
                 return;
             _stats = stats;
-            _mode = stats!.Behavior == BuildingBehavior.Conveyor ? Mode.Line
+            _mode = stats!.LinePlacement ? Mode.Line
                 : stats.Behavior == BuildingBehavior.Bridge ? Mode.Bridge
                 : Mode.Single;
             _dragging = false;
@@ -210,7 +210,8 @@ namespace Game.Presentation
                 if (i == 0)
                     first = reason;
                 PlaceTile(_path[i].x, _path[i].y, reason == null ? _okColor : _blockedColor);
-                PlaceArrow(_path[i].x, _path[i].y, direction);
+                if (_stats.Behavior == BuildingBehavior.Conveyor)
+                    PlaceArrow(_path[i].x, _path[i].y, direction);
             }
 
             int total = count * _stats!.CostPrimary;

@@ -37,7 +37,10 @@ namespace Game.Presentation
             _runner = GetComponent<SimRunner>();
             _selection = GetComponent<SelectionController>();
             _localPlayer = GetComponent<LocalPlayer>();
+            _abilities = GetComponent<AbilityPanel>();
         }
+
+        private AbilityPanel? _abilities;
 
         public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally }
 
@@ -67,7 +70,8 @@ namespace Game.Presentation
 
             Vector2 pointer = mouse.position.ReadValue();
             // Placing owns the tip and the right click (it cancels the placement, not an order).
-            if (_placement != null && _placement.IsBusy)
+            // Placing and aiming an ability own the tip and the right click (it cancels them, not an order).
+            if ((_placement != null && _placement.IsBusy) || (_abilities != null && _abilities.IsBusy))
             {
                 _showingTip = false;
                 return;

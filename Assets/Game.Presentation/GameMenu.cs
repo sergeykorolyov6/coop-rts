@@ -25,7 +25,13 @@ namespace Game.Presentation
         private Label? _message;
         private bool _open;
 
-        private void Awake() => _runner = GetComponent<SimRunner>();
+        private AbilityPanel? _abilities;
+
+        private void Awake()
+        {
+            _runner = GetComponent<SimRunner>();
+            _abilities = GetComponent<AbilityPanel>();
+        }
 
         private void Start()
         {
@@ -60,7 +66,7 @@ namespace Game.Presentation
                 return;
             if (_open)
                 Close();
-            else if (_placement == null || !_placement.IsBusy)
+            else if ((_placement == null || !_placement.IsBusy) && (_abilities == null || !_abilities.IsBusy))
                 ShowPause();
         }
 
