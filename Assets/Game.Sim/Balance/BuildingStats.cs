@@ -25,6 +25,7 @@ public sealed class BuildingStats
         AttackRangeMilli = row.GetInt("attack_range_mc");
         AttackCooldownTicks = row.GetInt("attack_cooldown_ticks");
         _produces = row.GetStringList("produces");
+        Behavior = ParseBehavior(row.GetString("behavior"));
         Supply = row.GetString("supply");
         Invulnerable = row.GetInt("invulnerable") != 0;
     }
@@ -53,6 +54,11 @@ public sealed class BuildingStats
     public int AttackRangeMilli { get; }
     public int AttackCooldownTicks { get; }
 
+    public BuildingBehavior Behavior { get; }
+
+    // Units walk over belts: conveyors and bridge ends (conveyors.md, questions 27, 43).
+    public bool IsBelt => Behavior == BuildingBehavior.Conveyor || Behavior == BuildingBehavior.Bridge;
+
     // Unit ids this building can produce.
     public IReadOnlyList<string> Produces => _produces;
 
@@ -64,4 +70,19 @@ public sealed class BuildingStats
 
     // neutral-buildings.md: points of interest nobody can damage.
     public bool Invulnerable { get; }
+
+    private static BuildingBehavior ParseBehavior(string text)
+    {
+        switch (text)
+        {
+            case "": return BuildingBehavior.None;
+            case "headquarters": return BuildingBehavior.Headquarters;
+            case "drill": return BuildingBehavior.Drill;
+            case "conveyor": return BuildingBehavior.Conveyor;
+            case "bridge": return BuildingBehavior.Bridge;
+            case "storage": return BuildingBehavior.Storage;
+            case "lighthouse": return BuildingBehavior.Lighthouse;
+            default: throw new System.FormatException($"Unknown building behavior \"{text}\".");
+        }
+    }
 }

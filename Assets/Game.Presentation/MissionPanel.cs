@@ -73,7 +73,7 @@ namespace Game.Presentation
             int me = _localPlayer!.PlayerId;
             foreach (Building b in state.Buildings)
             {
-                if (b.OwnerId == state.LegionPlayerId && !b.IsDead && (b.Stats.Id == BuildingKinds.Headquarters || b.Factory != null)
+                if (b.OwnerId == state.LegionPlayerId && !b.IsDead && (b.Stats.Behavior == BuildingBehavior.Headquarters || b.Factory != null)
                     && state.Fog.IsDiscovered(me, b.CellX, b.CellY))
                     seen++;
             }

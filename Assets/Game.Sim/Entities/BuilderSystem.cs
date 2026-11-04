@@ -6,15 +6,16 @@ namespace Game.Sim;
 // next to the player's own finished headquarters, else next to the lowest-id ally's.
 internal static class BuilderSystem
 {
-    public const string BuilderUnitId = "builder";
-
     public static void Tick(SimState state, List<SimEvent> events)
     {
-        if (!state.Data.TryGetUnit(BuilderUnitId, out UnitStats? stats))
-            return;
         foreach (int playerId in state.TeamPlayerIds)
         {
             Player player = state.GetPlayer(playerId);
+            // The faction's builder (factions.csv); a faction without one has nobody to bring back.
+            string builderId = player.Faction?.BuilderUnitId ?? "";
+            if (builderId.Length == 0)
+                continue;
+            UnitStats stats = state.Data.Unit(builderId);
             if (!player.IsBuilderDead)
             {
                 if (state.FindBuilder(playerId) == null)
@@ -29,7 +30,7 @@ internal static class BuilderSystem
             Building? hq = RespawnHeadquarters(state, playerId);
             if (hq == null)
                 continue;
-            Unit? builder = Spawn(state, playerId, stats!, hq);
+            Unit? builder = Spawn(state, playerId, stats, hq);
             if (builder == null)
                 continue;
             player.BuilderRespawnTick = Entity.NeverTick;

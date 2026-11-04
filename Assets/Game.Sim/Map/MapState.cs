@@ -71,7 +71,7 @@ public sealed class MapState
 
     internal void Occupy(Building building)
     {
-        bool walkable = BuildingKinds.IsWalkable(building.Stats.Id);
+        bool walkable = building.Stats.IsBelt;
         for (int y = building.CellY; y < building.CellY + building.Height; y++)
         {
             for (int x = building.CellX; x < building.CellX + building.Width; x++)

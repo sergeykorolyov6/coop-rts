@@ -62,22 +62,22 @@ internal static class Logistics
             return true;
         }
 
-        switch (receiver.Stats.Id)
+        switch (receiver.Stats.Behavior)
         {
-            case BuildingKinds.Headquarters:
+            case BuildingBehavior.Headquarters:
                 if (kind == Giver.Storage)
                     return false;
                 // Only a headquarters credits a wallet: its owner's (answers 2, 15).
                 state.GetPlayer(receiver.OwnerId).Wallet.Credit(resourceType, 1);
                 return true;
 
-            case BuildingKinds.Storage:
+            case BuildingBehavior.Storage:
                 if (kind == Giver.Storage || receiver.Storage!.Total >= state.Rules.StorageCapacity)
                     return false;
                 receiver.Storage.Add(resourceType);
                 return true;
 
-            case BuildingKinds.Conveyor:
+            case BuildingBehavior.Conveyor:
                 if (kind == Giver.Belt && !own)
                     return false;
                 Conveyor c = receiver.Conveyor!;
@@ -87,7 +87,7 @@ internal static class Logistics
                 c.ItemPos = 0;
                 return true;
 
-            case BuildingKinds.ConveyorBridge:
+            case BuildingBehavior.Bridge:
                 if (kind == Giver.Belt && !own)
                     return false;
                 return ConveyorSystem.TryEnterBridge(state, giver, receiver, resourceType);

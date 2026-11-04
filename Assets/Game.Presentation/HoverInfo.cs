@@ -104,16 +104,18 @@ namespace Game.Presentation
                 return null;
             // neutral-buildings.md: what a neutral building gives and how to take it.
             Building? poi = state.FindBuilding(map.BuildingAt(cellX, cellY));
-            if (poi != null && !poi.IsDead && (poi.OwnerId == state.NeutralPlayerId || poi.Stats.Id == BuildingKinds.Lighthouse))
+            if (poi != null && !poi.IsDead && (poi.OwnerId == state.NeutralPlayerId || poi.Stats.Behavior == BuildingBehavior.Lighthouse))
             {
                 int seconds = state.Rules.CaptureTimeTicks / Simulation.TicksPerSecond;
                 bool guarded = state.IsGuarded(poi);
-                switch (poi.Stats.Id)
+                if (poi.Stats.Behavior == BuildingBehavior.Lighthouse)
                 {
-                    case BuildingKinds.Lighthouse:
                         return $"Маяк: подведите юнита — откроет обзор на {DisplayNames.Cells(poi.Stats.VisionMilli / Grid.MilliPerCell)}"
                             + (poi.LitForPlayerId != 0 ? $"\nСветит игроку {poi.LitForPlayerId}" : "");
-                    case BuildingKinds.Cave:
+                }
+                switch (poi.Stats.Id)
+                {
+                    case BuildingIds.Cave:
                         return guarded
                             ? "Пещера Серых Существ: сначала победите её стражей"
                             : $"Пещера: подведите юнита на {seconds} с — станет вашей и будет нанимать особых юнитов\nПлатит со своего склада: подведите ленту от бура или склада";

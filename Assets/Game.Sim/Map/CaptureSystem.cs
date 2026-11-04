@@ -15,7 +15,7 @@ internal static class CaptureSystem
         {
             if (b.IsDead)
                 continue;
-            if (b.Stats.Id == BuildingKinds.Lighthouse)
+            if (b.Stats.Behavior == BuildingBehavior.Lighthouse)
                 TickLighthouse(state, b, events);
             else if (b.OwnerId == state.NeutralPlayerId)
                 TickCapture(state, b, events);

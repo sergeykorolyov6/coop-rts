@@ -126,7 +126,7 @@ namespace Game.Presentation
             {
                 targetId = building.Id;
                 // Only picks the intent; DeliverCargoCommand checks the full rule itself.
-                if (building.IsComplete && building.Stats.Id == BuildingKinds.Headquarters && AnyCarries(state))
+                if (building.IsComplete && building.Stats.Behavior == BuildingBehavior.Headquarters && AnyCarries(state))
                     return Intent.Deliver;
                 if (!building.IsComplete || building.Hp < building.MaxHp)
                     return Intent.Repair;

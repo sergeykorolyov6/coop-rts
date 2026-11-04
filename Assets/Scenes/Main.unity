@@ -608,6 +608,7 @@ MonoBehaviour:
   _rulesJson: {fileID: 4900000, guid: 3b6fd5daf1474369ba6db60cc6a9aca8, type: 3}
   _legionJson: {fileID: 4900000, guid: 23f0e6e86cf44bccb1efe0f9c1f90b9f, type: 3}
   _wavesJson: {fileID: 4900000, guid: 9b136e90a7924fbd8fc56c50548942d8, type: 3}
+  _factionsJson: {fileID: 4900000, guid: 8a39e94ab6a744fa992da83c20a24a5e, type: 3}
   _missionsJson: {fileID: 4900000, guid: 0c7c18b83f79408d9d1772a089393ffa, type: 3}
   _maps:
   - {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
@@ -765,7 +766,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.BuildMenu
   _hud: {fileID: 1637688649}
   _localPlayer: {fileID: 1100000009}
-  _entries:
+  _hotkeys:
   - BuildingId: drill
     Hotkey: 18
   - BuildingId: conveyor

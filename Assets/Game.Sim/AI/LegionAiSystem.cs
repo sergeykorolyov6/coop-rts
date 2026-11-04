@@ -8,8 +8,6 @@ namespace Game.Sim;
 // rules of payment and placement are the players' rules.
 internal static class LegionAiSystem
 {
-    public const string Faction = "black_legion";
-
     // Waiting units this close to the rally point count as gathered.
     private const int RallySlack = 3 * Grid.MilliPerCell;
 

@@ -36,7 +36,9 @@ namespace Game.Presentation
                 case RejectReason.NothingToRepair: return "Чинить нечего";
                 case RejectReason.CannotProduce: return "Нельзя произвести";
                 case RejectReason.FactoryStockLow: return "На складе здания не хватает ресурсов — подведите ленту от бура или склада";
-                default: return buildingId == BuildingKinds.Drill ? "Под буром нет руды" : "Сюда нельзя";
+                default:
+                    bool drill = buildingId != null && Data != null && Data.TryGetBuilding(buildingId, out BuildingStats? stats) && stats!.Behavior == BuildingBehavior.Drill;
+                    return drill ? "Под буром нет руды" : "Сюда нельзя";
             }
         }
 

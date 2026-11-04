@@ -74,7 +74,7 @@ public sealed class BuildCommand : ICommand
             return;
         }
 
-        if (stats!.Id == BuildingKinds.ConveyorBridge && _sites.Length == 2
+        if (stats!.Behavior == BuildingBehavior.Bridge && _sites.Length == 2
             && !ConveyorSystem.InBridgeRange(state, _sites[0].CellX, _sites[0].CellY, _sites[1].CellX, _sites[1].CellY))
         {
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));

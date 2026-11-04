@@ -24,7 +24,7 @@ internal static class MissionRules
     {
         foreach (Building b in state.Buildings)
         {
-            if (!b.IsDead && b.OwnerId == state.LegionPlayerId && (b.Stats.Id == BuildingKinds.Headquarters || b.Factory != null))
+            if (!b.IsDead && b.OwnerId == state.LegionPlayerId && (b.Stats.Behavior == BuildingBehavior.Headquarters || b.Factory != null))
                 return true;
         }
         return false;
@@ -34,7 +34,7 @@ internal static class MissionRules
     {
         foreach (Building b in state.Buildings)
         {
-            if (!b.IsDead && b.IsComplete && b.Stats.Id == BuildingKinds.Headquarters && state.IsTeamPlayer(b.OwnerId))
+            if (!b.IsDead && b.IsComplete && b.Stats.Behavior == BuildingBehavior.Headquarters && state.IsTeamPlayer(b.OwnerId))
                 return true;
         }
         foreach (Unit u in state.Units)

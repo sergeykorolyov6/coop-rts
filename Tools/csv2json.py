@@ -172,6 +172,9 @@ BUILDINGS = {
     "damage": ("damage", int_),
     "attack_range": ("attack_range_mc", cells_to_milli),
     "attack_cooldown_s": ("attack_cooldown_ticks", seconds_to_ticks),
+    # What the sim does with it beyond the common columns: headquarters, drill, conveyor, bridge,
+    # storage, lighthouse; empty — nothing special (factory, turret and the rest follow from other columns).
+    "behavior": ("behavior", string),
     "produces": ("produces", id_list),
     # factory.md M2: "conveyor" — pays from its own stock that belts fill; empty — from the owner's wallet.
     "supply": ("supply", string),
@@ -221,6 +224,18 @@ WAVES = {
     "notes": None,
 }
 
+# Factions: who builds what, which builder and headquarters a player of the faction starts with.
+FACTIONS = {
+    "id": ("id", string),
+    "name_ru": ("name_ru", string),
+    "role": ("role", string),
+    "builder": ("builder", string),
+    "headquarters": ("headquarters", string),
+    "buildings": ("buildings", id_list),
+    "single_headquarters": ("single_headquarters", int_),
+    "notes": None,
+}
+
 # mission.md: one row per mission; the menu lists them.
 MISSIONS = {
     "id": ("id", string),
@@ -240,6 +255,7 @@ TABLES = [
     ("legion.csv", "legion.json", LEGION, "players"),
     ("waves.csv", "waves.json", WAVES, "wave"),
     ("missions.csv", "missions.json", MISSIONS, "id"),
+    ("factions.csv", "factions.json", FACTIONS, "id"),
 ]
 
 

@@ -27,7 +27,7 @@ public sealed class SimState
 
         _players = new List<Player>(setup.PlayerIds.Count);
         foreach (int id in setup.PlayerIds)
-            _players.Add(new Player(id, setup.ResourceTypeCount));
+            _players.Add(new Player(id, setup.ResourceTypeCount, setup.FactionOf(id)));
 
         Relations = new Relations(setup.PlayerIds);
         foreach (RelationSetup relation in setup.Relations)
@@ -151,7 +151,7 @@ public sealed class SimState
     {
         foreach (Building b in _buildings)
         {
-            if (b.OwnerId == playerId && !b.IsDead && b.Stats.Id == BuildingKinds.Headquarters)
+            if (b.OwnerId == playerId && !b.IsDead && b.Stats.Behavior == BuildingBehavior.Headquarters)
                 return b;
         }
         return null;
@@ -249,9 +249,11 @@ public sealed class SimState
     // construction.md, "Стартовые условия": headquarters, the builder and resources from the rules.
     private void ApplyStart(PlayerStart start)
     {
-        Building hq = PlaceBuilding(start.PlayerId, Data.Building(BuildingKinds.Headquarters), start.CellX, start.CellY, Direction.Right, complete: true);
+        FactionStats faction = GetPlayer(start.PlayerId).Faction!;
+        Building hq = PlaceBuilding(start.PlayerId, Data.Building(faction.HeadquartersId), start.CellX, start.CellY, Direction.Right, complete: true);
         // builder.md: one builder instead of the M1 workers.
-        BuilderSystem.Spawn(this, start.PlayerId, Data.Unit(BuilderSystem.BuilderUnitId), hq);
+        if (faction.BuilderUnitId.Length > 0)
+            BuilderSystem.Spawn(this, start.PlayerId, Data.Unit(faction.BuilderUnitId), hq);
 
         Wallet wallet = GetPlayer(start.PlayerId).Wallet;
         wallet.Add(Resources.Primary, Rules.StartPrimary);
@@ -270,14 +272,14 @@ public sealed class SimState
         {
             Building b = PlaceBuilding(LegionPlayerId, Data.Building(setup.BuildingTypeId), setup.CellX, setup.CellY, setup.Direction, complete: true);
             ai._slots.Add(new BaseSlot(setup) { BuildingId = b.Id });
-            if (hq == null && b.Stats.Id == BuildingKinds.Headquarters)
+            if (hq == null && b.Stats.Behavior == BuildingBehavior.Headquarters)
                 hq = b;
         }
 
         UnitStats? workerStats = null;
         foreach (UnitStats u in Data.Units)
         {
-            if (u.Faction == LegionAiSystem.Faction && u.HasTag(UnitTags.Worker))
+            if (u.Faction == GetPlayer(LegionPlayerId).Faction?.Id && u.HasTag(UnitTags.Worker))
             {
                 workerStats = u;
                 break;

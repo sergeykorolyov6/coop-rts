@@ -70,7 +70,7 @@ namespace Game.Presentation
             for (int y = plan.CellY; y < plan.CellY + stats!.SizeH; y++)
                 for (int x = plan.CellX; x < plan.CellX + stats.SizeW; x++)
                     Tile(x, y, color);
-            if (stats.Id == BuildingKinds.Conveyor || stats.Id == BuildingKinds.ConveyorBridge)
+            if (stats.IsBelt)
                 Arrow(plan.CellX, plan.CellY, plan.Direction, color);
         }
 

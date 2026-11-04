@@ -12,8 +12,6 @@ namespace Game.Presentation
     // A model is a root on the ground with parts as children: scaling the root's Y grows a site.
     public static class PrimitiveModels
     {
-        private const string Turret = "turret";
-        private const string LegionFactory = "legion_factory";
         private const string CaveBeast = "cave_beast";
         private const string CaveSpitter = "cave_spitter";
 
@@ -167,16 +165,16 @@ namespace Game.Presentation
         {
             switch (id)
             {
-                case BuildingKinds.Headquarters: return 2.4f;
-                case BuildingKinds.Factory: return 1.7f;
-                case LegionFactory: return 1.7f;
-                case Turret: return 1.3f;
-                case BuildingKinds.Drill: return 1.0f;
-                case BuildingKinds.Storage: return 1.0f;
-                case BuildingKinds.Conveyor: return 0.12f;
-                case BuildingKinds.Cave: return 1.6f;
-                case BuildingKinds.Lighthouse: return 3.0f;
-                case BuildingKinds.ConveyorBridge: return 0.45f;
+                case BuildingIds.Headquarters: return 2.4f;
+                case BuildingIds.Factory: return 1.7f;
+                case BuildingIds.LegionFactory: return 1.7f;
+                case BuildingIds.Turret: return 1.3f;
+                case BuildingIds.Drill: return 1.0f;
+                case BuildingIds.Storage: return 1.0f;
+                case BuildingIds.Conveyor: return 0.12f;
+                case BuildingIds.Cave: return 1.6f;
+                case BuildingIds.Lighthouse: return 3.0f;
+                case BuildingIds.ConveyorBridge: return 0.45f;
                 default: return 1.2f;
             }
         }
@@ -191,7 +189,7 @@ namespace Game.Presentation
 
             switch (building.Stats.Id)
             {
-                case BuildingKinds.Headquarters:
+                case BuildingIds.Headquarters:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.2f, 0f), new Vector3(w - 0.1f, 0.4f, h - 0.1f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 1.0f, 0.1f), new Vector3(w * 0.75f, 1.3f, h * 0.65f));
                     Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(-w * 0.22f, 1.7f, h * 0.15f), new Vector3(0.9f, 1.4f, 0.9f));
@@ -199,8 +197,8 @@ namespace Game.Presentation
                     Add(root, part, renderers, PrimitiveType.Cube, Dark, new Vector3(w * 0.12f, 0.75f, -h * 0.23f), new Vector3(1.0f, 0.8f, 0.1f));
                     break;
 
-                case BuildingKinds.Factory:
-                case LegionFactory:
+                case BuildingIds.Factory:
+                case BuildingIds.LegionFactory:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.12f, 0f), new Vector3(w - 0.1f, 0.24f, h - 0.1f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.7f, 0.15f), new Vector3(w - 0.4f, 1.0f, h - 0.7f));
                     Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, 1.25f, 0.15f), new Vector3(w - 0.6f, 0.15f, h - 0.9f));
@@ -208,7 +206,7 @@ namespace Game.Presentation
                     Add(root, part, renderers, PrimitiveType.Cube, Dark, new Vector3(0f, 0.55f, -(h - 0.7f) * 0.5f + 0.1f), new Vector3(1.0f, 0.65f, 0.1f));
                     break;
 
-                case BuildingKinds.Drill:
+                case BuildingIds.Drill:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.12f, 0f), new Vector3(w - 0.12f, 0.24f, h - 0.12f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 0.6f, 0f), new Vector3(w * 0.68f, 0.38f, h * 0.68f));
                     for (int i = 0; i < 4; i++)
@@ -218,14 +216,14 @@ namespace Game.Presentation
                     }
                     break;
 
-                case BuildingKinds.Storage:
+                case BuildingIds.Storage:
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.48f, 0f), new Vector3(w - 0.25f, 0.9f, h - 0.25f));
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.3f, 0f), new Vector3(w - 0.18f, 0.1f, h - 0.18f));
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.7f, 0f), new Vector3(w - 0.18f, 0.1f, h - 0.18f));
                     Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, 0.96f, 0f), new Vector3(w - 0.45f, 0.06f, h - 0.45f));
                     break;
 
-                case BuildingKinds.Conveyor:
+                case BuildingIds.Conveyor:
                     // A dark belt between two rails in the owner's colour, along the direction.
                     bool alongX = building.Direction == Direction.Right || building.Direction == Direction.Left;
                     Add(root, part, renderers, PrimitiveType.Cube, Dark, new Vector3(0f, 0.05f, 0f), new Vector3(0.9f, 0.08f, 0.9f));
@@ -237,7 +235,7 @@ namespace Game.Presentation
                     }
                     break;
 
-                case Turret:
+                case BuildingIds.Turret:
                     // A squat round base on a plinth, a gun housing and a barrel pointing at the camera.
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.15f, 0f), new Vector3(w - 0.2f, 0.3f, h - 0.2f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 0.55f, 0f), new Vector3(w * 0.6f, 0.25f, h * 0.6f));
@@ -246,19 +244,19 @@ namespace Game.Presentation
                     root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(90f, 0f, 0f);
                     break;
 
-                case BuildingKinds.ConveyorBridge:
+                case BuildingIds.ConveyorBridge:
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.18f, 0f), new Vector3(0.8f, 0.36f, 0.8f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.4f, 0f), new Vector3(0.9f, 0.1f, 0.9f));
                     break;
 
-                case BuildingKinds.Cave:
+                case BuildingIds.Cave:
                     // A rocky mound with a dark mouth facing the camera; the owner's colour on the rim.
                     Add(root, part, renderers, PrimitiveType.Sphere, new Color(0.42f, 0.40f, 0.37f), new Vector3(0f, 0.5f, 0.1f), new Vector3(w - 0.1f, 1.6f, h - 0.2f));
                     Add(root, part, renderers, PrimitiveType.Sphere, Dark, new Vector3(0f, 0.45f, -h * 0.38f), new Vector3(1.2f, 0.9f, 0.4f));
                     Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, 0.08f, -h * 0.45f), new Vector3(1.6f, 0.16f, 0.25f));
                     break;
 
-                case BuildingKinds.Lighthouse:
+                case BuildingIds.Lighthouse:
                     // A tall tower on a plinth; the fire on top is the view's (EntityView).
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.15f, 0f), new Vector3(w - 0.2f, 0.3f, h - 0.2f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 1.5f, 0f), new Vector3(0.8f, 1.3f, 0.8f));

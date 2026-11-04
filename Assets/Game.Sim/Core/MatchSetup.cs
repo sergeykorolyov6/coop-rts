@@ -17,6 +17,7 @@ public sealed class MatchSetup
     // legionPlayerId plays the Black Legion's base from the map (legion-ai.md); the map must have one.
     // neutralPlayerId owns the map's neutral buildings (neutral-buildings.md): neutral to everyone.
     // goal: mission.md; by default destroy_legion with a Legion, free play without.
+    // factions: chosen factions; every other player gets the first faction of its role (factions.csv).
     public MatchSetup(
         int seed,
         GameData data,
@@ -27,7 +28,8 @@ public sealed class MatchSetup
         int creepPlayerId = NoPlayer,
         int legionPlayerId = NoPlayer,
         int neutralPlayerId = NoPlayer,
-        MissionGoal? goal = null)
+        MissionGoal? goal = null,
+        IEnumerable<PlayerFaction>? factions = null)
         : this(seed, map.Width, map.Height, resourceTypeCount, playerIds, relations)
     {
         Data = data;
@@ -36,6 +38,13 @@ public sealed class MatchSetup
         LegionPlayerId = legionPlayerId;
         NeutralPlayerId = neutralPlayerId;
         Goal = goal ?? (legionPlayerId != NoPlayer ? MissionGoal.DestroyLegion : MissionGoal.None);
+        ResolveFactions(factions);
+        foreach (PlayerStart start in map.Starts)
+        {
+            FactionStats? f = FactionOf(start.PlayerId);
+            if (f == null || f.HeadquartersId.Length == 0)
+                throw new ArgumentException($"Player {start.PlayerId} has a start but no faction with a headquarters.", nameof(factions));
+        }
 
         if (Goal == MissionGoal.DestroyLegion && legionPlayerId == NoPlayer)
             throw new ArgumentException("A destroy_legion mission needs the Legion.", nameof(goal));
@@ -149,6 +158,47 @@ public sealed class MatchSetup
     public int LegionPlayerId { get; }
     public int NeutralPlayerId { get; }
     public MissionGoal Goal { get; }
+
+    // The player's faction, or null (data without factions, the core-loop matches).
+    public FactionStats? FactionOf(int playerId)
+    {
+        foreach (PlayerFaction pf in _factions)
+        {
+            if (pf.PlayerId == playerId)
+                return Data.Faction(pf.FactionId);
+        }
+        return null;
+    }
+
+    private readonly List<PlayerFaction> _factions = new List<PlayerFaction>();
+
+    private void ResolveFactions(IEnumerable<PlayerFaction>? chosen)
+    {
+        var given = new List<PlayerFaction>(chosen ?? System.Array.Empty<PlayerFaction>());
+        foreach (int id in _playerIds)
+        {
+            PlayerFaction? pf = given.Find(f => f.PlayerId == id);
+            if (pf != null)
+            {
+                if (!Data.TryGetFaction(pf.FactionId, out _))
+                    throw new ArgumentException($"Player {id}: unknown faction \"{pf.FactionId}\".", nameof(chosen));
+                _factions.Add(pf);
+                continue;
+            }
+            FactionRole role = id == LegionPlayerId ? FactionRole.Legion
+                : id == CreepPlayerId ? FactionRole.Creeps
+                : id == NeutralPlayerId ? FactionRole.Neutral
+                : FactionRole.Player;
+            FactionStats? f = Data.DefaultFaction(role);
+            if (f != null)
+                _factions.Add(new PlayerFaction(id, f.Id));
+        }
+        foreach (PlayerFaction pf in given)
+        {
+            if (_playerIds.BinarySearch(pf.PlayerId) < 0)
+                throw new ArgumentException($"Faction for unknown player {pf.PlayerId}.", nameof(chosen));
+        }
+    }
 
     public int Seed { get; }
     public int MapWidth { get; }

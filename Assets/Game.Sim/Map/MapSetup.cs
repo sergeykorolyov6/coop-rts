@@ -109,7 +109,7 @@ public sealed class MapSetup
         Direction d = dx > 0 ? Direction.Right : dx < 0 ? Direction.Left : dy > 0 ? Direction.Up : Direction.Down;
         int n = System.Math.Max(System.Math.Abs(x2 - x1), System.Math.Abs(y2 - y1)) + 1;
         for (int i = 0; i < n; i++)
-            LegionSlot(BuildingKinds.Conveyor, x1 + dx * i, y1 + dy * i, d);
+            LegionSlot(LineBuildingId, x1 + dx * i, y1 + dy * i, d);
         return this;
     }
 
@@ -120,6 +120,9 @@ public sealed class MapSetup
         _neutrals.Add(new NeutralBuildingSetup(buildingTypeId, cellX, cellY, guardCampIndex));
         return this;
     }
+
+    // The building a legion_line is made of (maps/*.txt).
+    public const string LineBuildingId = "conveyor";
 
     public MapSetup Rally(int cellX, int cellY)
     {

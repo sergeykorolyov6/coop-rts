@@ -22,6 +22,8 @@ namespace Game.Presentation
         [Tooltip("legion-ai.md: needed when the map has a Black Legion base.")]
         [SerializeField] private TextAsset? _legionJson;
         [SerializeField] private TextAsset? _wavesJson;
+        [Tooltip("Assets/Data/factions.json: what each faction starts with and builds.")]
+        [SerializeField] private TextAsset? _factionsJson;
 
         [Header("Missions (mission.md, save-load.md)")]
         [Tooltip("Assets/Data/missions.json")]
@@ -62,16 +64,15 @@ namespace Game.Presentation
 
         private void Awake()
         {
-            if (_unitsJson == null || _buildingsJson == null || _creepCampsJson == null || _rulesJson == null || _missionsJson == null)
+            if (_unitsJson == null || _buildingsJson == null || _creepCampsJson == null || _rulesJson == null || _missionsJson == null || _factionsJson == null)
             {
-                Debug.LogError("SimRunner: assign the balance json files and missions.json in the Inspector.", this);
+                Debug.LogError("SimRunner: assign the balance json files, factions.json and missions.json in the Inspector.", this);
                 enabled = false;
                 return;
             }
 
-            Data = _legionJson != null && _wavesJson != null
-                ? GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text, _legionJson.text, _wavesJson.text)
-                : GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text);
+            Data = GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text,
+                _legionJson != null ? _legionJson.text : "[]", _wavesJson != null ? _wavesJson.text : "[]", _factionsJson.text);
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;
 

@@ -20,7 +20,8 @@ internal static class RepoData
             File.ReadAllText(Path.Combine(dir, "creep_camps.json")),
             File.ReadAllText(Path.Combine(dir, "rules.json")),
             File.ReadAllText(Path.Combine(dir, "legion.json")),
-            File.ReadAllText(Path.Combine(dir, "waves.json")));
+            File.ReadAllText(Path.Combine(dir, "waves.json")),
+            File.ReadAllText(Path.Combine(dir, "factions.json")));
     }
 
     public static string RepoRoot()

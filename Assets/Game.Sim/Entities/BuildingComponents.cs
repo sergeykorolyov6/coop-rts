@@ -5,20 +5,20 @@ internal static class BuildingComponents
 {
     public static void Attach(SimState state, Building building)
     {
-        switch (building.Stats.Id)
+        switch (building.Stats.Behavior)
         {
-            case BuildingKinds.Drill:
+            case BuildingBehavior.Drill:
                 int cells = DrillPreview.Count(state.Map, building.CellX, building.CellY, building.Width, building.Height, out int type);
                 building.Drill = new Drill(type, cells);
                 break;
-            case BuildingKinds.Conveyor:
+            case BuildingBehavior.Conveyor:
                 building.Conveyor = new Conveyor();
                 break;
-            case BuildingKinds.ConveyorBridge:
+            case BuildingBehavior.Bridge:
                 building.Bridge = new ConveyorBridge();
                 ConveyorSystem.LinkNewBridgeEnd(state, building);
                 break;
-            case BuildingKinds.Storage:
+            case BuildingBehavior.Storage:
                 building.Storage = new Storage();
                 break;
         }

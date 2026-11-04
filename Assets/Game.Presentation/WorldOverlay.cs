@@ -100,7 +100,7 @@ namespace Game.Presentation
                     ShowBar(top, width, building.Hp / (float)building.MaxHp, HpColor(building), null);
                 }
 
-                if (building.OwnerId == state.NeutralPlayerId && building.Stats.Id != BuildingKinds.Lighthouse)
+                if (building.OwnerId == state.NeutralPlayerId && building.Stats.Behavior != BuildingBehavior.Lighthouse)
                 {
                     if (state.IsGuarded(building))
                         ShowBar(top, width, 0f, _captureColor, "охраняется крипами");

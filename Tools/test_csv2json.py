@@ -173,7 +173,7 @@ class RepoDataTest(unittest.TestCase):
     def test_repo_csv_converts(self):
         outputs = c.build_all()
         names = sorted(p.name for p in outputs)
-        for name in ("units.json", "buildings.json", "creep_camps.json", "rules.json", "legion.json", "waves.json", "missions.json", "prototype.json", "coop.json"):
+        for name in ("units.json", "buildings.json", "creep_camps.json", "rules.json", "legion.json", "waves.json", "missions.json", "factions.json", "prototype.json", "coop.json"):
             self.assertIn(name, names)
 
 

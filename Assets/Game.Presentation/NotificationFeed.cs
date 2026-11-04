@@ -105,12 +105,12 @@ namespace Game.Presentation
                         break;
                     // mission.md: a lost headquarters can be rebuilt while the builder lives.
                     case EntityDestroyed destroyed when destroyed.IsBuilding && destroyed.OwnerId == me:
-                        Show(destroyed.TypeId == BuildingKinds.Headquarters && state.FindHeadquarters(me) == null
+                        Show(IsHeadquarters(state, destroyed.TypeId) && state.FindHeadquarters(me) == null
                             ? "Штаб разрушен — отстройте его строителем"
                             : $"Разрушено: {DisplayNames.Building(destroyed.TypeId).ToLowerInvariant()}", _alarmColor);
                         break;
                     // alerts.md: own losses by name (the builder has its own message below).
-                    case EntityDestroyed lost when !lost.IsBuilding && lost.OwnerId == me && lost.TypeId != "builder":
+                    case EntityDestroyed lost when !lost.IsBuilding && lost.OwnerId == me && !IsBuilder(state, lost.TypeId):
                         Show($"Погиб: {DisplayNames.Unit(lost.TypeId).ToLowerInvariant()}", _warningColor);
                         break;
                     // alerts.md: one line per kind and player at most every few seconds.
@@ -179,6 +179,12 @@ namespace Game.Presentation
             };
             Show(text, _alarmColor);
         }
+
+        private static bool IsBuilder(SimState state, string unitId) =>
+            state.Data.TryGetUnit(unitId, out UnitStats? stats) && stats!.HasTag(UnitTags.Builder);
+
+        private static bool IsHeadquarters(SimState state, string buildingId) =>
+            state.Data.TryGetBuilding(buildingId, out BuildingStats? stats) && stats!.Behavior == BuildingBehavior.Headquarters;
 
         private static bool GuardsACave(SimState state, int campIndex)
         {

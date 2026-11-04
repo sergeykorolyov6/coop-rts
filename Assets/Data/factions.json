@@ -1,0 +1,54 @@
+[
+  {
+    "id": "black_legion",
+    "name_ru": "Чёрный Легион",
+    "role": "legion",
+    "builder": "",
+    "headquarters": "headquarters",
+    "buildings": [
+      "headquarters",
+      "legion_factory",
+      "drill",
+      "conveyor",
+      "conveyor_bridge",
+      "storage",
+      "turret"
+    ],
+    "single_headquarters": 0
+  },
+  {
+    "id": "blue_walls",
+    "name_ru": "Синие Стены",
+    "role": "player",
+    "builder": "builder",
+    "headquarters": "headquarters",
+    "buildings": [
+      "drill",
+      "conveyor",
+      "conveyor_bridge",
+      "storage",
+      "factory",
+      "headquarters",
+      "turret"
+    ],
+    "single_headquarters": 1
+  },
+  {
+    "id": "grey_creatures",
+    "name_ru": "Серые Существа",
+    "role": "creeps",
+    "builder": "",
+    "headquarters": "",
+    "buildings": [],
+    "single_headquarters": 0
+  },
+  {
+    "id": "neutral",
+    "name_ru": "Нейтральные здания",
+    "role": "neutral",
+    "builder": "",
+    "headquarters": "",
+    "buildings": [],
+    "single_headquarters": 0
+  }
+]

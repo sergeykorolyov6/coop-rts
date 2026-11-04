@@ -1,0 +1,5 @@
+id,name_ru,role,builder,headquarters,buildings,single_headquarters,notes
+blue_walls,Синие Стены,player,builder,headquarters,drill;conveyor;conveyor_bridge;storage;factory;headquarters;turret,1,"vision.md: прочность прощает ошибки. Порядок buildings — порядок кнопок меню стройки"
+black_legion,Чёрный Легион,legion,,headquarters,headquarters;legion_factory;drill;conveyor;conveyor_bridge;storage;turret,0,"legion-ai.md: строит рабочими (не строителем), штабов может быть несколько (ответ 6)"
+grey_creatures,Серые Существа,creeps,,,,0,"creep-camp.md: ничего не строят"
+neutral,Нейтральные здания,neutral,,,,0,"neutral-buildings.md: владелец пещер, маяков и нейтральных буров до захвата"

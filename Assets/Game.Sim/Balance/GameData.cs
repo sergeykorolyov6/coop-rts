@@ -13,10 +13,12 @@ public sealed class GameData
     private readonly List<CreepCampStats> _creepCamps;
     private readonly List<LegionStats> _legion;
     private readonly List<WaveStats> _waves;
+    private readonly List<FactionStats> _factions;
 
     private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps,
-        List<LegionStats> legion, List<WaveStats> waves, GameRules rules)
+        List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, GameRules rules)
     {
+        _factions = factions;
         _units = units;
         _buildings = buildings;
         _creepCamps = creepCamps;
@@ -39,13 +41,21 @@ public sealed class GameData
     public IReadOnlyList<LegionStats> Legion => _legion;
     public IReadOnlyList<WaveStats> Waves => _waves;
 
+    // factions.csv, sorted by id. Empty in data without players (tests of the core loop).
+    public IReadOnlyList<FactionStats> Factions => _factions;
+
     // Without the Legion tables: matches with no enemy AI (the M1 prototype, most tests).
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson) =>
         Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, "[]", "[]");
 
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
-        string legionJson, string wavesJson)
+        string legionJson, string wavesJson) =>
+        Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, legionJson, wavesJson, "[]");
+
+    public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
+        string legionJson, string wavesJson, string factionsJson)
     {
+        List<FactionStats> factions = ReadTable("factions.json", factionsJson, row => new FactionStats(row), f => f.Id);
         List<UnitStats> units = ReadTable("units.json", unitsJson, row => new UnitStats(row), u => u.Id);
         List<BuildingStats> buildings = ReadTable("buildings.json", buildingsJson, row => new BuildingStats(row), b => b.Id);
         List<CreepCampStats> camps = ReadTable("creep_camps.json", creepCampsJson, row => new CreepCampStats(row), c => c.Id);
@@ -62,7 +72,7 @@ public sealed class GameData
             throw new FormatException($"rules.json: {e.Message}", e);
         }
 
-        var data = new GameData(units, buildings, camps, legion, waves, rules);
+        var data = new GameData(units, buildings, camps, legion, waves, factions, rules);
         data.Validate();
         return data;
     }
@@ -83,6 +93,22 @@ public sealed class GameData
             throw new InvalidOperationException("No legion.json rows: this data has no Black Legion.");
         int index = System.Math.Min(System.Math.Max(players, 1), _legion.Count) - 1;
         return _legion[index];
+    }
+
+    public FactionStats Faction(string id) =>
+        TryGetFaction(id, out FactionStats? stats) ? stats! : throw new ArgumentException($"Unknown faction \"{id}\".", nameof(id));
+
+    public bool TryGetFaction(string id, out FactionStats? stats) => TryFind(_factions, id, f => f.Id, out stats);
+
+    // The first faction of the role (by id), or null when the data has none.
+    public FactionStats? DefaultFaction(FactionRole role)
+    {
+        foreach (FactionStats f in _factions)
+        {
+            if (f.Role == role)
+                return f;
+        }
+        return null;
     }
 
     public bool TryGetUnit(string id, out UnitStats? stats) => TryFind(_units, id, u => u.Id, out stats);
@@ -218,6 +244,19 @@ public sealed class GameData
             {
                 if (!TryGetUnit(unit, out _))
                     throw new FormatException($"buildings.json: \"{b.Id}\" produces unknown unit \"{unit}\".");
+            }
+        }
+
+        foreach (FactionStats f in _factions)
+        {
+            if (f.BuilderUnitId.Length > 0 && (!TryGetUnit(f.BuilderUnitId, out UnitStats? builder) || !builder!.HasTag(UnitTags.Builder)))
+                throw new FormatException($"factions.json: \"{f.Id}\" has builder \"{f.BuilderUnitId}\" that is not a unit tagged builder.");
+            if (f.HeadquartersId.Length > 0 && (!TryGetBuilding(f.HeadquartersId, out BuildingStats? hq) || hq!.Behavior != BuildingBehavior.Headquarters))
+                throw new FormatException($"factions.json: \"{f.Id}\" has headquarters \"{f.HeadquartersId}\" that is not a headquarters building.");
+            foreach (string b in f.Buildings)
+            {
+                if (!TryGetBuilding(b, out _))
+                    throw new FormatException($"factions.json: \"{f.Id}\" builds unknown building \"{b}\".");
             }
         }
 

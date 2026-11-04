@@ -7,21 +7,19 @@ namespace Game.Sim;
 // repair own and ally buildings for half the build price, paid by the repairer.
 internal static class Construction
 {
-    public const string NeutralFaction = "neutral";
 
     // Null when the player may place the building there now.
     public static RejectReason? CheckPlacement(SimState state, int playerId, BuildingStats stats, int x, int y, Direction direction)
     {
         MapState map = state.Map;
-        // One headquarters at a time for every player; the Legion may have several (answer 6).
-        if (stats.Id == BuildingKinds.Headquarters && playerId != state.LegionPlayerId && state.FindHeadquarters(playerId) != null)
+        // Only what the player's faction builds (factions.csv): the Legion's factory is not for players
+        // (question 49), neutral points of interest stand on the map from the start (neutral-buildings.md).
+        Player player = state.GetPlayer(playerId);
+        if (!player.CanBuild(stats.Id))
+            return RejectReason.NotAllowed;
+        // One headquarters at a time for a human player; the Legion may have several (answer 6).
+        if (stats.Behavior == BuildingBehavior.Headquarters && player.Faction!.SingleHeadquarters && state.FindHeadquarters(playerId) != null)
             return RejectReason.OneHeadquartersOnly;
-        // The Legion's own buildings (its factory) are not for players (question 49);
-        // neutral points of interest stand on the map from the start (neutral-buildings.md).
-        if (stats.Faction == LegionAiSystem.Faction && playerId != state.LegionPlayerId)
-            return RejectReason.NotAllowed;
-        if (stats.Faction == NeutralFaction)
-            return RejectReason.NotAllowed;
         if (!map.InBounds(x, y) || !map.InBounds(x + stats.SizeW - 1, y + stats.SizeH - 1))
             return RejectReason.NotAllowed;
         if (!state.Fog.IsAreaDiscovered(playerId, x, y, stats.SizeW, stats.SizeH))
@@ -38,7 +36,7 @@ internal static class Construction
             }
         }
 
-        if (stats.Id == BuildingKinds.Drill && !anyOre)
+        if (stats.Behavior == BuildingBehavior.Drill && !anyOre)
             return RejectReason.NotAllowed;
         return null;
     }

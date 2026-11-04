@@ -19,7 +19,7 @@ internal static class ManualMining
 
     // Own or an ally's finished headquarters; never an enemy's (manual-mining.md, limits).
     public static bool CanDeliverTo(SimState state, int playerId, Building hq) =>
-        !hq.IsDead && hq.IsComplete && hq.Stats.Id == BuildingKinds.Headquarters
+        !hq.IsDead && hq.IsComplete && hq.Stats.Behavior == BuildingBehavior.Headquarters
         && state.Relations.IsAlly(playerId, hq.OwnerId);
 
     public static void Start(SimState state, Unit unit, int x, int y)

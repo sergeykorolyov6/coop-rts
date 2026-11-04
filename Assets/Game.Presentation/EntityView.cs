@@ -290,7 +290,7 @@ namespace Game.Presentation
             root.SetParent(_root, worldPositionStays: false);
             root.localPosition = CellCentre(building);
             var visual = new BuildingVisual(root, renderers, color, Mathf.Max(building.Width, building.Height), height * 0.5f) { OwnerId = building.OwnerId };
-            if (building.Stats.Id == BuildingKinds.Lighthouse)
+            if (building.Stats.Behavior == BuildingBehavior.Lighthouse)
             {
                 // The fire on top burns while the lighthouse shines for someone.
                 Transform fire = CreatePrimitive(PrimitiveType.Sphere, "Fire", _fireColor);
@@ -300,7 +300,7 @@ namespace Game.Presentation
                 visual.Item = fire;
             }
 
-            if (building.Stats.Id == BuildingKinds.Conveyor || building.Stats.Id == BuildingKinds.ConveyorBridge)
+            if (building.Stats.IsBelt)
             {
                 // A bar from the cell centre towards the exit side, as in the placement silhouette.
                 Quaternion rotation = DirectionRotation(building.Direction);
@@ -310,7 +310,7 @@ namespace Game.Presentation
                 arrow.localPosition = CellCentre(building) + new Vector3(0f, height + 0.02f, 0f) + rotation * new Vector3(0f, 0f, 0.15f);
                 visual.Arrow = arrow;
             }
-            if (building.Stats.Id == BuildingKinds.Drill)
+            if (building.Stats.Behavior == BuildingBehavior.Drill)
             {
                 // Two crossed bars on the drill's top: they turn while it mines.
                 Transform rotor = new GameObject("Rotor").transform;

@@ -16,7 +16,7 @@ public static class DemolishSystem
     // Rounded down per resource; belts (conveyors, bridge ends) give nothing back.
     public static (int Primary, int Secondary) Refund(GameRules rules, BuildingStats stats)
     {
-        if (BuildingKinds.IsWalkable(stats.Id))
+        if (stats.IsBelt)
             return (0, 0);
         int pct = rules.DemolishRefundPercent;
         return (stats.CostPrimary * pct / 100, stats.CostSecondary * pct / 100);

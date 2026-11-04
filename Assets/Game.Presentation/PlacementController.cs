@@ -75,8 +75,8 @@ namespace Game.Presentation
             if (simulation == null || !simulation.State.Data.TryGetBuilding(buildingId, out BuildingStats? stats) || !CollectWorkers(simulation.State))
                 return;
             _stats = stats;
-            _mode = buildingId == BuildingKinds.Conveyor ? Mode.Line
-                : buildingId == BuildingKinds.ConveyorBridge ? Mode.Bridge
+            _mode = stats!.Behavior == BuildingBehavior.Conveyor ? Mode.Line
+                : stats.Behavior == BuildingBehavior.Bridge ? Mode.Bridge
                 : Mode.Single;
             _dragging = false;
             _bridgeStart = null;
@@ -154,7 +154,7 @@ namespace Game.Presentation
             RejectReason? reason = PlacementPreview.Check(state, playerId, stats.Id, x, y, _rotation);
             bool nearCamp = reason == null && InCampAggro(state, playerId, x, y, stats.SizeW, stats.SizeH);
             Color color = reason != null ? _blockedColor : nearCamp ? _warningColor : _okColor;
-            bool drill = stats.Id == BuildingKinds.Drill;
+            bool drill = stats.Behavior == BuildingBehavior.Drill;
             for (int cy = y; cy < y + stats.SizeH; cy++)
             {
                 for (int cx = x; cx < x + stats.SizeW; cx++)
