@@ -56,6 +56,17 @@ namespace Game.Presentation
                 return root;
             }
 
+            if (stats.HasTag(UnitTags.Hero))
+            {
+                // The hero (factions.md): bigger than the army, a light cape behind and a crown of three points.
+                Add(root, part, renderers, PrimitiveType.Capsule, owner, new Vector3(0f, s * 0.5f, 0f), new Vector3(s * 0.6f, s * 0.5f, s * 0.6f));
+                Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, s * 0.55f, s * 0.32f), new Vector3(s * 0.65f, s * 0.8f, s * 0.06f));
+                Add(root, part, renderers, PrimitiveType.Sphere, light, new Vector3(0f, s * 1.1f, 0f), Vector3.one * s * 0.34f);
+                for (int i = -1; i <= 1; i++)
+                    Add(root, part, renderers, PrimitiveType.Cube, new Color(0.98f, 0.85f, 0.3f), new Vector3(i * s * 0.1f, s * 1.32f, 0f), new Vector3(s * 0.06f, s * 0.14f, s * 0.06f));
+                return root;
+            }
+
             if (stats.HasTag(UnitTags.Repairer))
             {
                 // Repairer (builder.md): a round body with a light cross on top.
@@ -175,6 +186,7 @@ namespace Game.Presentation
                 case BuildingBehavior.Conveyor: return BuildingIds.Conveyor;
                 case BuildingBehavior.Bridge: return BuildingIds.ConveyorBridge;
                 case BuildingBehavior.Storage: return BuildingIds.Storage;
+                case BuildingBehavior.Booster: return BuildingIds.Booster;
             }
             if (stats.Produces.Count > 0)
                 return BuildingIds.Factory;
@@ -281,6 +293,12 @@ namespace Game.Presentation
                     Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, 0.15f, 0f), new Vector3(w - 0.2f, 0.3f, h - 0.2f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 1.5f, 0f), new Vector3(0.8f, 1.3f, 0.8f));
                     Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0f, 2.9f, 0f), new Vector3(1.0f, 0.1f, 1.0f));
+                    break;
+
+                case BuildingIds.Booster:
+                    // A barrel with a pipe on top: the drill lubricator (factions.md, Brown Scavengers).
+                    Add(root, part, renderers, PrimitiveType.Cylinder, owner, new Vector3(0f, 0.35f, 0f), new Vector3(0.7f, 0.35f, 0.7f));
+                    Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0.15f, 0.85f, 0f), new Vector3(0.12f, 0.2f, 0.12f));
                     break;
 
                 case BuildingIds.Wall:

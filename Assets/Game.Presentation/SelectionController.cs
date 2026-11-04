@@ -20,6 +20,7 @@ namespace Game.Presentation
 
         // The "group" number of the builder hotkey, for the double tap.
         private const int BuilderKey = -2;
+        private const int HeroKey = -3;
 
         [SerializeField] private RtsCamera? _camera;
         [Tooltip("The selection box is drawn on the HUD; clicks on its buttons are not map clicks.")]
@@ -195,22 +196,12 @@ namespace Game.Presentation
             bool ctrl = keyboard.ctrlKey.isPressed || keyboard.leftCommandKey.isPressed || keyboard.rightCommandKey.isPressed;
             bool shift = keyboard.shiftKey.isPressed;
 
-            // builder.md: Tab selects the player's builder; Tab again right away brings the camera to it.
+            // builder.md: Tab selects the player's builder, factions.md: G the hero; the same key again
+            // right away brings the camera to it.
             if (keyboard.tabKey.wasPressedThisFrame)
-            {
-                Unit? builder = state.FindBuilder(_localPlayer!.PlayerId);
-                if (builder != null)
-                {
-                    bool again = _lastGroup == BuilderKey && Time.unscaledTime - _lastGroupTime <= _doubleTapSeconds;
-                    _scratch.Clear();
-                    _scratch.Add(builder.Id);
-                    Select(_scratch, add: false);
-                    if (again)
-                        CentreCamera();
-                    _lastGroup = BuilderKey;
-                    _lastGroupTime = Time.unscaledTime;
-                }
-            }
+                SelectUnique(state.FindBuilder(_localPlayer!.PlayerId), BuilderKey);
+            if (keyboard.gKey.wasPressedThisFrame)
+                SelectUnique(state.FindHero(_localPlayer!.PlayerId), HeroKey);
 
             for (int group = 0; group < GroupCount; group++)
             {
@@ -255,6 +246,20 @@ namespace Game.Presentation
                     _selected.Add(id);
             }
             Changed?.Invoke();
+        }
+
+        private void SelectUnique(Unit? unit, int key)
+        {
+            if (unit == null)
+                return;
+            bool again = _lastGroup == key && Time.unscaledTime - _lastGroupTime <= _doubleTapSeconds;
+            _scratch.Clear();
+            _scratch.Add(unit.Id);
+            Select(_scratch, add: false);
+            if (again)
+                CentreCamera();
+            _lastGroup = key;
+            _lastGroupTime = Time.unscaledTime;
         }
 
         private void CentreCamera()

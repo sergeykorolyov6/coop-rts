@@ -63,7 +63,7 @@ namespace Game.Presentation
             bool can = !b.Stats.Invulnerable;
             string button = !can ? "Снести нельзя (точка интереса)"
                 : b.DemolishTicksLeft > 0 ? $"Отменить снос ({DisplayNames.Seconds(b.DemolishTicksLeft)})"
-                : $"Снести (Del){RefundText(state, b.Stats)}";
+                : $"Снести (Del){RefundText(state, b.OwnerId, b.Stats)}";
             string key = text + "|" + button;
             if (key == _shown)
                 return;
@@ -73,9 +73,9 @@ namespace Game.Presentation
             _demolish.SetEnabled(can);
         }
 
-        private static string RefundText(SimState state, BuildingStats stats)
+        private static string RefundText(SimState state, int owner, BuildingStats stats)
         {
-            (int primary, int secondary) = DemolishSystem.Refund(state.Rules, stats);
+            (int primary, int secondary) = DemolishSystem.Refund(state.GetPlayer(owner).Faction, stats);
             if (primary + secondary == 0)
                 return " — без возврата";
             return secondary > 0 ? $" — вернётся {primary} + {secondary}" : $" — вернётся {primary}";

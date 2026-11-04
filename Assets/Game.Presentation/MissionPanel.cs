@@ -89,7 +89,8 @@ namespace Game.Presentation
                 text += $"\nВолна {legion.NextWave} через {DisplayNames.Clock(legion.NextWaveTick - state.Tick)}";
             // The clock stops when the mission ends; the sim keeps ticking behind the banner.
             text += $"\nВремя миссии: {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
-            text += state.TeamPlayerIds.Count > 1 ? "\nTab — строитель · F1–F4 — игрок · Esc — меню" : "\nTab — строитель · Esc — меню";
+            string keys = state.FindHero(me) != null ? "Tab — строитель · G — герой" : "Tab — строитель";
+            text += state.TeamPlayerIds.Count > 1 ? $"\n{keys} · F1–F4 — игрок · Esc — меню" : $"\n{keys} · Esc — меню";
             if (text != _shown)
             {
                 _shown = text;

@@ -30,6 +30,7 @@ namespace Game.Presentation
         [SerializeField] private Color _stoppedColor = new Color(1.00f, 0.55f, 0.25f);
         [SerializeField] private Color _captureColor = new Color(0.95f, 0.95f, 0.90f);
         [SerializeField] private Color _demolishColor = new Color(0.95f, 0.35f, 0.30f);
+        [SerializeField] private Color _xpColor = new Color(0.98f, 0.85f, 0.30f);
 
         private readonly List<Bar> _bars = new List<Bar>();
         private readonly List<Floater> _floaters = new List<Floater>();
@@ -82,6 +83,21 @@ namespace Game.Presentation
                 ShowBar(ground + Vector3.up * (size * 1.4f + 0.2f), 34f, unit.Hp / (float)unit.MaxHp, HpColor(unit), null);
             }
 
+            // factions.md: the hero's level and the way to the next one, over its head.
+            foreach (Unit unit in state.Units)
+            {
+                if (unit.IsDead || !unit.IsHero || !Visibility.UnitShown(state, playerId, unit)
+                    || !_entities!.TryGetUnitPosition(unit.Id, out Vector3 ground))
+                    continue;
+                Player owner = state.GetPlayer(unit.OwnerId);
+                IReadOnlyList<HeroLevelStats> levels = state.Data.HeroLevels;
+                int level = owner.HeroLevel;
+                bool top = level >= levels.Count;
+                float share = top ? 1f : Mathf.InverseLerp(levels[level - 1].Xp, levels[level].Xp, owner.HeroXp);
+                float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
+                ShowBar(ground + Vector3.up * (size * 1.4f + 0.7f), 44f, share, _xpColor, top ? $"ур. {level} (макс.)" : $"ур. {level}");
+            }
+
             foreach (Building building in state.Buildings)
             {
                 if (building.IsDead || !Visibility.BuildingShown(state, playerId, building))
@@ -113,13 +129,17 @@ namespace Game.Presentation
                     int total = DemolishSystem.DemolishTicks(state.Rules, building.Stats);
                     ShowBar(top + Vector3.up * 0.5f, width, building.DemolishTicksLeft / (float)total, _demolishColor, $"снос: {DisplayNames.Seconds(building.DemolishTicksLeft)}");
                 }
-                Wallet? stock = building.Factory?.Stock;
+                Wallet? stock = building.Stock;
                 if (stock != null && building.IsComplete && building.OwnerId == playerId)
                 {
                     int cap = System.Math.Max(1, state.Rules.FactoryStock);
-                    int secondary = stock.Secondary;
-                    ShowBar(top + Vector3.down * 0.9f, width, stock.Get(Game.Sim.Resources.Primary) / (float)cap, _bufferColor,
-                        $"склад {stock.Get(Game.Sim.Resources.Primary)} · {secondary}");
+                    int primary = stock.Get(Game.Sim.Resources.Primary);
+                    // factions.md: an ammo turret shows its shells, a factory its stock of both resources.
+                    string text = building.Stats.Ammo > 0
+                        ? (primary < building.Stats.Ammo ? "нет боеприпасов — подведите ленту" : $"боеприпасы {primary}")
+                        : $"склад {primary} · {stock.Secondary}";
+                    ShowBar(top + Vector3.down * 0.9f, width, primary / (float)cap,
+                        building.Stats.Ammo > 0 && primary < building.Stats.Ammo ? _stoppedColor : _bufferColor, text);
                 }
 
                 Drill? drill = building.Drill;

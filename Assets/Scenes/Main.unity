@@ -611,6 +611,7 @@ MonoBehaviour:
   _wavesJson: {fileID: 4900000, guid: 9b136e90a7924fbd8fc56c50548942d8, type: 3}
   _factionsJson: {fileID: 4900000, guid: 8a39e94ab6a744fa992da83c20a24a5e, type: 3}
   _abilitiesJson: {fileID: 4900000, guid: 81800025404f4ddbab83d429ab017c01, type: 3}
+  _heroLevelsJson: {fileID: 4900000, guid: 1ddd1977d26f414f8c0f1a544a042ec1, type: 3}
   _missionsJson: {fileID: 4900000, guid: 0c7c18b83f79408d9d1772a089393ffa, type: 3}
   _maps:
   - {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
@@ -657,6 +658,7 @@ MonoBehaviour:
   - {r: 0.95, g: 0.3, b: 0.25, a: 1}
   - {r: 0.95, g: 0.8, b: 0.2, a: 1}
   - {r: 0.3, g: 0.8, b: 0.35, a: 1}
+  - {r: 0.6, g: 0.4, b: 0.22, a: 1}
   _creepColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
   _primaryCargoColor: {r: 0.8, g: 0.55, b: 0.25, a: 1}
   _secondaryCargoColor: {r: 0.35, g: 0.7, b: 0.85, a: 1}
@@ -785,6 +787,10 @@ MonoBehaviour:
     Hotkey: 34
   - BuildingId: wall
     Hotkey: 37
+  - BuildingId: bs_drill_small
+    Hotkey: 36
+  - BuildingId: booster
+    Hotkey: 30
   _activeColor: {r: 0.25, g: 0.45, b: 0.3, a: 1}
 --- !u!114 &1100000013
 MonoBehaviour:

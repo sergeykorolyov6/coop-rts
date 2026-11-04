@@ -14,5 +14,6 @@ namespace Game.Presentation
         public const string Cave = "cave";
         public const string Lighthouse = "lighthouse";
         public const string Wall = "wall";
+        public const string Booster = "booster";
     }
 }

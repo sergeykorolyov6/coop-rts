@@ -98,7 +98,10 @@
 | способность, Рывок, Перегрузка, Жажда; черты фракции (первый удар, регенерация, самопочинка, мародёрство) | `AbilityStats` (`abilities.csv`), `UseAbilityCommand`, `AbilitySystem`, `rl_blink`, `rl_overdrive`, `legion_frenzy`; `FactionTraits`, колонки `factions.csv` |
 | юниты и здания Красных Молний: Искра, Бегун, Разрядник, Копейщик, Дуговик; Узел молний, Кузня, Тесла | `rl_builder`, `rl_runner`, `rl_striker`, `rl_lancer`, `rl_arc`; `rl_hq`, `rl_factory`, `rl_tesla` |
 | стена (Синие Стены); Цитадель и Шип Легиона | `wall`; `legion_hq`, `legion_turret` |
-| играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (сейчас `blue_walls` и `red_lightning`) |
+| Мусорщики: Старьёвщик, Лом, Дробовик, Мортира, Жестянщик; Свалка, Мастерская, Малый бур, Смазчик, Ломомёт; склад здания, боеприпасы, ускорение буров | `bs_builder`, `bs_scrapper`, `bs_shotgun`, `bs_mortar`, `bs_repairbot`; `bs_hq`, `bs_factory`, `bs_drill_small`, `bs_pump`, `bs_scrap_gun`; `Building.Stock`, колонка `ammo`, поведение `booster` (`boost_pct`) |
+| Жёлтая Звезда: герой (Звёздный рыцарь), опыт, уровень, аура, Звездопад, Воодушевление; Подмастерье, Оруженосец, Лучник, Послушник, Катапульта; Святилище, Казарма, Сторожевая башня | тег `hero`, `ys_hero`, `HeroSystem`, `Player.HeroXp`/`HeroLevel`/`HeroRespawnTick`, `hero_levels.csv`, события `HeroDied`/`HeroRespawned`/`HeroLevelUp`; `ys_nova` (nova), `ys_inspire` (inspire); `ys_builder`, `ys_squire`, `ys_archer`, `ys_acolyte`, `ys_catapult`; `ys_hq`, `ys_barracks`, `ys_tower` |
+| источники данных для загрузки | `GameDataSources` → `GameData.Parse` |
+| играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (все четыре есть) |
 | неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.

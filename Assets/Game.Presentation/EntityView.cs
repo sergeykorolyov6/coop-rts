@@ -17,15 +17,16 @@ namespace Game.Presentation
     {
         [Tooltip("Colour of player N is element N-1. Every object of the player, unfinished ones included.")]
         // Names of _playerColors in order, as missions.csv "colors" writes them.
-        private static readonly string[] PaletteNames = { "blue", "red", "yellow", "green" };
+        private static readonly string[] PaletteNames = { "blue", "red", "yellow", "green", "brown" };
 
-        [Tooltip("Palette: blue, red, yellow, green (missions.csv names them); by default player N takes colour N.")]
+        [Tooltip("Palette: blue, red, yellow, green, brown (missions.csv names them); by default player N takes colour N.")]
         [SerializeField] private Color[] _playerColors =
         {
             new Color(0.20f, 0.45f, 0.95f),
             new Color(0.95f, 0.30f, 0.25f),
             new Color(0.95f, 0.80f, 0.20f),
             new Color(0.30f, 0.80f, 0.35f),
+            new Color(0.60f, 0.40f, 0.22f),
         };
         [Tooltip("creep-camp.md: creeps are neutral grey.")]
         [SerializeField] private Color _creepColor = new Color(0.55f, 0.55f, 0.55f);

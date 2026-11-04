@@ -173,7 +173,8 @@ namespace Game.Presentation
 
         private string Describe(SimState state, string abilityId, int slot, out bool ready)
         {
-            int have = 0, readyCount = 0, soonest = int.MaxValue;
+            int have = 0, readyCount = 0, soonest = int.MaxValue, needLevel = 0;
+            int minLevel = state.Data.TryGetAbility(abilityId, out AbilityStats? stats) ? stats!.MinLevel : 1;
             foreach (int id in _selection!.Selected)
             {
                 Unit? u = state.FindUnit(id);
@@ -181,7 +182,14 @@ namespace Game.Presentation
                 if (index < 0)
                     continue;
                 have++;
-                int cooldown = u!.AbilityCooldown(index);
+                // factions.md: a hero's ability opens at its level.
+                int level = u!.IsHero ? state.GetPlayer(u.OwnerId).HeroLevel : 1;
+                if (level < minLevel)
+                {
+                    needLevel = minLevel;
+                    continue;
+                }
+                int cooldown = u.AbilityCooldown(index);
                 if (cooldown == 0)
                     readyCount++;
                 else if (cooldown < soonest)
@@ -189,7 +197,9 @@ namespace Game.Presentation
             }
             ready = readyCount > 0;
             string key = slot < Hotkeys.Length ? $" ({Hotkeys[slot]})" : "";
-            string status = ready ? $"готово: {readyCount}/{have}" : $"через {DisplayNames.Seconds(soonest)}";
+            string status = ready ? $"готово: {readyCount}/{have}"
+                : soonest != int.MaxValue ? $"через {DisplayNames.Seconds(soonest)}"
+                : needLevel > 0 ? $"с ур. {needLevel}" : "не готово";
             return $"{AbilityName(state, abilityId)}{key}\n{status}";
         }
 

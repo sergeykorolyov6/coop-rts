@@ -88,8 +88,8 @@ namespace Game.Presentation
                 RebuildButtons(state, factory.Stats);
             IReadOnlyList<string> queue = factory.Factory!.Queue;
             bool queueFull = queue.Count >= state.Rules.FactoryQueue;
-            Wallet wallet = factory.Factory.Stock ?? state.GetPlayer(_localPlayer!.PlayerId).Wallet;
-            string stockText = factory.Factory.Stock == null
+            Wallet wallet = factory.Stock ?? state.GetPlayer(_localPlayer!.PlayerId).Wallet;
+            string stockText = factory.Stock == null
                 ? ""
                 : $"Склад: {wallet.Get(Game.Sim.Resources.Primary)} / {state.Rules.FactoryStock} основного · "
                   + $"{wallet.Secondary} / {state.Rules.FactoryStock} второго"

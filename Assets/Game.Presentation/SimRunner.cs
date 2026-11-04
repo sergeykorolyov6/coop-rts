@@ -26,6 +26,8 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _factionsJson;
         [Tooltip("Assets/Data/abilities.json: Blink, Overdrive and the other abilities (factions.md).")]
         [SerializeField] private TextAsset? _abilitiesJson;
+        [Tooltip("Assets/Data/hero_levels.json: Yellow Star's hero levels (factions.md).")]
+        [SerializeField] private TextAsset? _heroLevelsJson;
 
         [Header("Missions (mission.md, save-load.md)")]
         [Tooltip("Assets/Data/missions.json")]
@@ -73,9 +75,18 @@ namespace Game.Presentation
                 return;
             }
 
-            Data = GameData.Parse(_unitsJson.text, _buildingsJson.text, _creepCampsJson.text, _rulesJson.text,
-                _legionJson != null ? _legionJson.text : "[]", _wavesJson != null ? _wavesJson.text : "[]", _factionsJson.text,
-                _abilitiesJson != null ? _abilitiesJson.text : "[]");
+            Data = GameData.Parse(new GameDataSources
+            {
+                Units = _unitsJson.text,
+                Buildings = _buildingsJson.text,
+                CreepCamps = _creepCampsJson.text,
+                Rules = _rulesJson.text,
+                Legion = _legionJson != null ? _legionJson.text : "[]",
+                Waves = _wavesJson != null ? _wavesJson.text : "[]",
+                Factions = _factionsJson.text,
+                Abilities = _abilitiesJson != null ? _abilitiesJson.text : "[]",
+                HeroLevels = _heroLevelsJson != null ? _heroLevelsJson.text : "[]",
+            });
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;
 

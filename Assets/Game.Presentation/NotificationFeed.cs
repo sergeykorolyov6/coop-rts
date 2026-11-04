@@ -125,6 +125,17 @@ namespace Game.Presentation
                     case BuilderRespawned back when back.PlayerId == me:
                         Show("Строитель вернулся (Tab — выделить)", _infoColor);
                         break;
+                    case HeroDied heroDied when state.Relations.IsAlly(me, heroDied.PlayerId):
+                        Show(heroDied.PlayerId == me
+                            ? $"Герой погиб — вернётся через {DisplayNames.Clock(heroDied.RespawnTick - heroDied.Tick)}, уровень сохранится"
+                            : $"Герой союзника {heroDied.PlayerId} погиб", _alarmColor);
+                        break;
+                    case HeroRespawned heroBack when heroBack.PlayerId == me:
+                        Show("Герой вернулся (G — выделить)", _infoColor);
+                        break;
+                    case HeroLevelUp level when level.PlayerId == me:
+                        Show($"Герой получил уровень {level.Level}", _infoColor);
+                        break;
                     case BuildingCaptured captured when state.Relations.IsAlly(me, captured.PlayerId):
                         string who = captured.PlayerId == me ? "" : $" союзником {captured.PlayerId}";
                         Show($"Захвачено{who}: {BuildingName(state, captured.BuildingId)}", _infoColor);
