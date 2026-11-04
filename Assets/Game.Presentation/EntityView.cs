@@ -16,6 +16,10 @@ namespace Game.Presentation
     public sealed class EntityView : MonoBehaviour
     {
         [Tooltip("Colour of player N is element N-1. Every object of the player, unfinished ones included.")]
+        // Names of _playerColors in order, as missions.csv "colors" writes them.
+        private static readonly string[] PaletteNames = { "blue", "red", "yellow", "green" };
+
+        [Tooltip("Palette: blue, red, yellow, green (missions.csv names them); by default player N takes colour N.")]
         [SerializeField] private Color[] _playerColors =
         {
             new Color(0.20f, 0.45f, 0.95f),
@@ -416,6 +420,15 @@ namespace Game.Presentation
             if (ownerId == state.NeutralPlayerId)
                 return _neutralColor;
             int index = ownerId - 1;
+            // missions.csv "colors": the mission may give a start slot another colour of the palette
+            // (Red Lightning plays red); players are 1..N in slot order (MissionLauncher).
+            IReadOnlyList<string>? colors = _runner != null ? _runner.Mission?.Colors : null;
+            if (colors != null && index >= 0 && index < colors.Count)
+            {
+                int named = System.Array.IndexOf(PaletteNames, colors[index]);
+                if (named >= 0 && named < _playerColors.Length)
+                    index = named;
+            }
             return index >= 0 && index < _playerColors.Length ? _playerColors[index] : Color.white;
         }
 

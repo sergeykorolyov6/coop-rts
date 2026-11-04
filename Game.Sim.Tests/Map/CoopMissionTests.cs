@@ -36,6 +36,9 @@ public class CoopMissionTests
         Assert.That(catalog.Find("m2")!.Goal, Is.EqualTo(MissionGoal.DestroyLegion));
         Assert.That(catalog.Find("coop")!.Goal, Is.EqualTo(MissionGoal.KillBoss));
         Assert.That(catalog.Find("coop")!.HasLegion, Is.False);
+        // factions.md: Red Lightning plays red, Blue Walls blue.
+        Assert.That(catalog.Find("m2_red")!.Colors, Is.EqualTo(new[] { "red" }));
+        Assert.That(catalog.Find("coop")!.Colors, Is.EqualTo(new[] { "blue", "red" }));
     }
 
     [Test]

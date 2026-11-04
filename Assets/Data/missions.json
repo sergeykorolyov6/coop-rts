@@ -9,6 +9,10 @@
     "factions": [
       "blue_walls",
       "red_lightning"
+    ],
+    "colors": [
+      "blue",
+      "red"
     ]
   },
   {
@@ -20,6 +24,9 @@
     "goal": "destroy_legion",
     "factions": [
       "blue_walls"
+    ],
+    "colors": [
+      "blue"
     ]
   },
   {
@@ -31,6 +38,9 @@
     "goal": "destroy_legion",
     "factions": [
       "red_lightning"
+    ],
+    "colors": [
+      "red"
     ]
   }
 ]

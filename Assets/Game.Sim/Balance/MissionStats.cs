@@ -14,6 +14,7 @@ public sealed class MissionStats
         HasLegion = row.GetInt("legion") != 0;
         Goal = ParseGoal(row.GetString("goal"));
         Factions = row.GetStringList("factions");
+        Colors = row.GetStringList("colors");
         if (Players < 1)
             throw new FormatException($"Mission \"{Id}\" needs at least one player.");
         if (Goal == MissionGoal.DestroyLegion && !HasLegion)
@@ -31,6 +32,9 @@ public sealed class MissionStats
 
     // Faction of start slot 1, 2, …; a slot past the list gets the default player faction.
     public System.Collections.Generic.IReadOnlyList<string> Factions { get; }
+
+    // For the UI: colour name of start slot 1, 2, … (the sim never reads it).
+    public System.Collections.Generic.IReadOnlyList<string> Colors { get; }
 
     private static MissionGoal ParseGoal(string text)
     {

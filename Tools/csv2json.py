@@ -273,6 +273,8 @@ MISSIONS = {
     "goal": ("goal", string),
     # Faction of each start slot in order; a slot past the list gets the default player faction.
     "factions": ("factions", id_list),
+    # UI only: colour of each start slot (blue, red, yellow, green); a slot past the list keeps its own.
+    "colors": ("colors", id_list),
     "notes": None,
 }
 
