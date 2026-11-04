@@ -1,43 +1,57 @@
 namespace Game.Sim;
 
-// mission.md: victory when the Legion has no headquarters and no factory left (sites count),
-// defeat when the team has no headquarters (sites count) and no worker. Victory wins a tie.
+// mission.md: victory by the mission's goal — destroy_legion: the Legion has no headquarters and
+// no factory left (sites count); kill_boss: no living boss is left. Defeat: no team player has a
+// finished headquarters and no team builder lives (builder.md). Victory wins a tie.
 internal static class MissionRules
 {
     public static void Check(SimState state, System.Collections.Generic.List<SimEvent> events)
     {
-        if (state.Outcome != MissionOutcome.InProgress || state.Legion == null)
+        if (state.Outcome != MissionOutcome.InProgress || state.Goal == MissionGoal.None)
             return;
 
-        bool legionStands = false, teamStands = false;
-        foreach (Building b in state.Buildings)
-        {
-            if (b.IsDead)
-                continue;
-            bool key = b.Stats.Id == BuildingKinds.Headquarters || b.Factory != null;
-            if (b.OwnerId == state.LegionPlayerId && key)
-                legionStands = true;
-            else if (b.Stats.Id == BuildingKinds.Headquarters && state.IsTeamPlayer(b.OwnerId))
-                teamStands = true;
-        }
-        if (!teamStands)
-        {
-            foreach (Unit u in state.Units)
-            {
-                if (!u.IsDead && u.Worker != null && state.IsTeamPlayer(u.OwnerId))
-                {
-                    teamStands = true;
-                    break;
-                }
-            }
-        }
-
-        if (!legionStands)
+        bool goalDone = state.Goal == MissionGoal.DestroyLegion ? !LegionStands(state) : !BossLives(state);
+        if (goalDone)
             state.Outcome = MissionOutcome.Victory;
-        else if (!teamStands)
+        else if (!TeamStands(state))
             state.Outcome = MissionOutcome.Defeat;
         else
             return;
         events.Add(new MissionEnded(state.Tick, state.Outcome));
+    }
+
+    private static bool LegionStands(SimState state)
+    {
+        foreach (Building b in state.Buildings)
+        {
+            if (!b.IsDead && b.OwnerId == state.LegionPlayerId && (b.Stats.Id == BuildingKinds.Headquarters || b.Factory != null))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool BossLives(SimState state)
+    {
+        foreach (Unit u in state.Units)
+        {
+            if (!u.IsDead && u.Stats.HasTag(UnitTags.Boss))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool TeamStands(SimState state)
+    {
+        foreach (Building b in state.Buildings)
+        {
+            if (!b.IsDead && b.IsComplete && b.Stats.Id == BuildingKinds.Headquarters && state.IsTeamPlayer(b.OwnerId))
+                return true;
+        }
+        foreach (Unit u in state.Units)
+        {
+            if (!u.IsDead && u.IsBuilder && state.IsTeamPlayer(u.OwnerId))
+                return true;
+        }
+        return false;
     }
 }

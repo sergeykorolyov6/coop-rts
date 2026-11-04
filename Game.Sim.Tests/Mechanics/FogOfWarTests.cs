@@ -65,8 +65,8 @@ public class FogOfWarTests
         // Two runs that differ only in what was scouted must not hash the same.
         var a = new Simulation(Setups.Coop(new MapSetup(32, 8)));
         var b = new Simulation(Setups.Coop(new MapSetup(32, 8)));
-        a.State.SpawnUnit(Setups.PlayerA, a.State.Data.Unit("worker"), Center(2), Center(4));
-        b.State.SpawnUnit(Setups.PlayerA, b.State.Data.Unit("worker"), Center(2), Center(4));
+        a.State.SpawnUnit(Setups.PlayerA, a.State.Data.Unit("builder"), Center(2), Center(4));
+        b.State.SpawnUnit(Setups.PlayerA, b.State.Data.Unit("builder"), Center(2), Center(4));
         a.Order(a.Move(Setups.PlayerA, Center(30), Center(4), a.State.Units[0]));
         b.Order(b.Move(Setups.PlayerA, Center(30), Center(4), b.State.Units[0]));
         a.RunUntil(s => s.State.Units[0].Order.Kind == UnitOrderKind.Idle);
@@ -75,7 +75,7 @@ public class FogOfWarTests
 
         // Back at the same spot, but having seen the far end: discovered differs.
         var c = new Simulation(Setups.Coop(new MapSetup(32, 8)));
-        c.State.SpawnUnit(Setups.PlayerA, c.State.Data.Unit("worker"), Center(30), Center(4));
+        c.State.SpawnUnit(Setups.PlayerA, c.State.Data.Unit("builder"), Center(30), Center(4));
         c.Tick();
         Assert.That(c.State.Fog.IsDiscovered(Setups.PlayerA, 2, 4), Is.False);
         Assert.That(a.State.Fog.IsDiscovered(Setups.PlayerA, 2, 4), Is.True);

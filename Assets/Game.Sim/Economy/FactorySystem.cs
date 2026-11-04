@@ -26,6 +26,8 @@ internal static class FactorySystem
             if (cells.Count == 0)
                 continue;
             Unit unit = state.SpawnUnit(b.OwnerId, stats, Grid.CellCenter(cells[0].X), Grid.CellCenter(cells[0].Y));
+            if (factory.HasRally)
+                unit.Order = UnitOrder.MoveTo(factory.RallyX, factory.RallyY);
             factory._queue.RemoveAt(0);
             factory.Progress = 0;
             events.Add(new UnitProduced(state.Tick, b.OwnerId, b.Id, unit.Id));

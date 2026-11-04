@@ -363,7 +363,7 @@ internal static class LegionAiSystem
         long bestDist = long.MaxValue;
         foreach (Building b in state.Buildings)
         {
-            if (!IsAlive(b) || !match(b))
+            if (!IsAlive(b) || Combat.IsInvulnerable(b) || !match(b))
                 continue;
             long d = Combat.DistanceToRectangle(x, y, b);
             if (d < bestDist)

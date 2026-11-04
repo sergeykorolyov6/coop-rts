@@ -1,7 +1,6 @@
 id,value,unit,name_ru,source,notes
 start_primary,100,int,Стартовый основной ресурс,construction.md (ответ 7),"Прототип; в миссиях может отличаться"
 start_secondary,0,int,Стартовый второй ресурс,construction.md (ответ 7),
-start_workers,3,int,Стартовые рабочие,construction.md (ответ 7),
 construction_start_hp_pct,10,pct,Прочность стройки в начале,решение Claude (SC2),"Стройка начинается с 10 % прочности и набирает остальное по мере прогресса"
 repair_cost_pct,50,pct,Цена полного ремонта от цены постройки,construction.md (ответ 10),
 interact_range,1,cells,Дальность работы рабочего,решение Claude,"Рабочий строит, чинит, копает и сдаёт груз, если до клетки или края здания не больше этого"
@@ -20,3 +19,11 @@ ai_wave_repeat,120,s,Повтор последней волны,legion-ai.md (р
 ai_wave_warning,20,s,Предупреждение о волне,legion-ai.md (решение Claude),"Как в совместном режиме SC2"
 ai_defense_calm,10,s,Оборона базы: сколько без урона до отбоя,legion-ai.md (решение Claude),
 ai_rebuild_safe_radius,8,cells,Восстановление: врагов не ближе,legion-ai.md (решение Claude),"Чтобы ИИ не кормил осаду рабочими"
+builder_respawn,15,s,Возрождение строителя,builder.md (решение Claude),"У своего достроенного штаба, иначе у штаба союзника"
+auto_repair_radius,8,cells,Радиус авторемонта ремонтника,builder.md (решение Claude),
+factory_stock,150,int,Склад завода (каждого ресурса),factory.md M2 (решение Claude),"Mindustry unit factory: запас на 2–3 юнита"
+capture_time,10,s,Время захвата нейтрального здания,neutral-buildings.md (решение Claude),
+capture_radius,2,cells,Радиус захвата от края здания,neutral-buildings.md (решение Claude),
+lighthouse_radius,2,cells,Радиус маяка от края,neutral-buildings.md (решение Claude),
+demolish_time_pct,25,pct,Время сноса от времени постройки,demolish.md (просьба Сергея),"«значительно меньшее, чем постройка»"
+demolish_refund_pct,50,pct,Возврат при сносе,demolish.md (просьба Сергея),"Лента и мост — 0"

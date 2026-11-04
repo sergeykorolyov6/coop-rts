@@ -21,7 +21,7 @@ public class GameDataTests
       {""id"": ""factory"", ""name_ru"": ""Завод"", ""faction"": ""blue_walls"", ""hp"": 1200, ""armor"": 1,
        ""size_w"": 3, ""size_h"": 3, ""cost_primary"": 50, ""cost_secondary"": 0, ""build_time_ticks"": 700,
        ""max_builders"": 4, ""vision_mc"": 7000, ""damage"": 0, ""attack_range_mc"": 0,
-       ""attack_cooldown_ticks"": 0, ""produces"": [""worker""]}
+       ""attack_cooldown_ticks"": 0, ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0}
     ]";
 
     private const string Camps = @"[
@@ -34,10 +34,13 @@ public class GameDataTests
       ""bridge_range"": 4, ""construction_start_hp_pct"": 10, ""conveyor_item_spacing_mc"": 1000,
       ""conveyor_item_speed_mc_per_tick"": 200, ""drill_buffer"": 10, ""drill_rate_per_ore_cell_ticks_per_unit"": 160,
       ""interact_range_mc"": 1000, ""manual_cargo"": 5, ""manual_mining_rate_ticks_per_unit"": 40,
-      ""repair_cost_pct"": 50, ""start_primary"": 100, ""start_secondary"": 0, ""start_workers"": 3,
+      ""repair_cost_pct"": 50, ""start_primary"": 100, ""start_secondary"": 0,
       ""storage_capacity"": 100, ""factory_queue"": 5, ""attack_alarm_cooldown_ticks"": 100,
       ""ai_think_interval_ticks"": 20, ""ai_wave_repeat_ticks"": 2400, ""ai_wave_warning_ticks"": 400,
-      ""ai_defense_calm_ticks"": 200, ""ai_rebuild_safe_radius_mc"": 8000
+      ""ai_defense_calm_ticks"": 200, ""ai_rebuild_safe_radius_mc"": 8000,
+      ""builder_respawn_ticks"": 300, ""auto_repair_radius_mc"": 8000, ""factory_stock"": 150,
+      ""capture_time_ticks"": 200, ""capture_radius_mc"": 2000, ""lighthouse_radius_mc"": 2000,
+      ""demolish_time_pct"": 25, ""demolish_refund_pct"": 50
     }";
 
     [Test]
@@ -46,7 +49,8 @@ public class GameDataTests
         GameRules rules = GameData.Parse(Units, Buildings, Camps, Rules).Rules;
         Assert.That(rules.DrillTicksPerUnitPerOreCell, Is.EqualTo(160));
         Assert.That(rules.ConveyorItemSpeedMilliPerTick, Is.EqualTo(200));
-        Assert.That(rules.StartWorkers, Is.EqualTo(3));
+        Assert.That(rules.BuilderRespawnTicks, Is.EqualTo(300));
+        Assert.That(rules.DemolishRefundPercent, Is.EqualTo(50));
     }
 
     [Test]
@@ -83,6 +87,8 @@ public class GameDataTests
         Assert.That(factory.BuildTimeTicks, Is.EqualTo(700));
         Assert.That(factory.MaxBuilders, Is.EqualTo(4));
         Assert.That(factory.Produces, Is.EqualTo(new[] { "worker" }));
+        Assert.That(factory.SuppliedByConveyor, Is.True);
+        Assert.That(factory.Invulnerable, Is.False);
 
         CreepCampStats camp = data.CreepCamp("small_camp");
         Assert.That(camp.Creeps, Is.EqualTo(new[] { "creep_small", "creep_small" }));
@@ -162,8 +168,11 @@ public class GameDataTests
         Assert.That(drill.SizeW, Is.EqualTo(2));
         Assert.That(drill.SizeH, Is.EqualTo(2));
 
-        // units.csv: 2.4 cells/s = 120 milli-cells per tick; 0.8 s = 16 ticks.
-        Assert.That(data.Unit("worker").MoveSpeedMilliPerTick, Is.EqualTo(120));
+        // units.csv: 3 cells/s = 150 milli-cells per tick; 0.8 s = 16 ticks.
+        Assert.That(data.Unit("builder").MoveSpeedMilliPerTick, Is.EqualTo(150));
+        Assert.That(data.Unit("builder").ProducedAt, Is.EqualTo(""));
+        Assert.That(data.Building("factory").Produces, Does.Contain("repairer").And.Not.Contain("builder"));
+        Assert.That(data.Building("cave").Invulnerable, Is.True);
         Assert.That(data.Unit("infantry").AttackCooldownTicks, Is.EqualTo(16));
 
         // creep-camp.md: M1 camp «Стражи».

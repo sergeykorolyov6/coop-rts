@@ -1,5 +1,54 @@
 [
   {
+    "id": "big_camp",
+    "name_ru": "Большой лагерь",
+    "creeps": [
+      "creep_big",
+      "creep_big",
+      "creep_small"
+    ],
+    "aggro_radius_mc": 5000,
+    "leash_radius_mc": 7000,
+    "regen_pct_per_s": 5,
+    "calm_delay_ticks": 100,
+    "trophy_primary": 80,
+    "trophy_secondary": 20,
+    "trophy_per_trip": 5
+  },
+  {
+    "id": "boss_lair",
+    "name_ru": "Логово вожака",
+    "creeps": [
+      "creep_boss",
+      "creep_big",
+      "creep_big"
+    ],
+    "aggro_radius_mc": 6000,
+    "leash_radius_mc": 9000,
+    "regen_pct_per_s": 5,
+    "calm_delay_ticks": 100,
+    "trophy_primary": 0,
+    "trophy_secondary": 0,
+    "trophy_per_trip": 5
+  },
+  {
+    "id": "cave_guard",
+    "name_ru": "Стражи пещеры",
+    "creeps": [
+      "creep_big",
+      "creep_small",
+      "creep_small",
+      "creep_small"
+    ],
+    "aggro_radius_mc": 5000,
+    "leash_radius_mc": 7000,
+    "regen_pct_per_s": 5,
+    "calm_delay_ticks": 100,
+    "trophy_primary": 0,
+    "trophy_secondary": 0,
+    "trophy_per_trip": 5
+  },
+  {
     "id": "guard_camp",
     "name_ru": "Стражи",
     "creeps": [

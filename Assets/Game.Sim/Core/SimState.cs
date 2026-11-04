@@ -18,6 +18,8 @@ public sealed class SimState
         Data = setup.Data;
         CreepPlayerId = setup.CreepPlayerId;
         LegionPlayerId = setup.LegionPlayerId;
+        NeutralPlayerId = setup.NeutralPlayerId;
+        Goal = setup.Goal;
         Map = new MapState(setup.Map);
         Grid = new Grid(setup.MapWidth, setup.MapHeight);
         Rng = new DeterministicRng(setup.Seed);
@@ -40,17 +42,31 @@ public sealed class SimState
         if (LegionPlayerId != MatchSetup.NoPlayer)
             Legion = SpawnLegion(setup.Map);
 
-        // Grey Creatures are enemies of everyone else, whatever the setup says (creep-camp.md, assumption 1).
+        // Grey Creatures are enemies of everyone else, whatever the setup says (creep-camp.md, assumption 1);
+        // the neutral player is no one's enemy (neutral-buildings.md).
         if (CreepPlayerId != MatchSetup.NoPlayer)
         {
             foreach (int id in setup.PlayerIds)
             {
-                if (id != CreepPlayerId)
+                if (id != CreepPlayerId && id != NeutralPlayerId)
                     Relations.Set(CreepPlayerId, id, Relation.Enemy);
+            }
+        }
+        if (NeutralPlayerId != MatchSetup.NoPlayer)
+        {
+            foreach (int id in setup.PlayerIds)
+            {
+                if (id != NeutralPlayerId)
+                    Relations.Set(NeutralPlayerId, id, Relation.Neutral);
             }
         }
         foreach (CreepCampSetup camp in setup.Map.CreepCamps)
             SpawnCamp(camp);
+        foreach (NeutralBuildingSetup n in setup.Map.Neutrals)
+        {
+            Building b = PlaceBuilding(NeutralPlayerId, Data.Building(n.BuildingTypeId), n.CellX, n.CellY, Direction.Right, complete: true);
+            b.GuardCampIndex = n.GuardCampIndex;
+        }
 
         Fog = new FogOfWar(_players, Map.Width, Map.Height);
         Fog.Update(this);
@@ -77,6 +93,12 @@ public sealed class SimState
     // The Black Legion (legion-ai.md), MatchSetup.NoPlayer and null without one.
     public int LegionPlayerId { get; }
     public LegionAi? Legion { get; }
+
+    // Owner of the neutral buildings (neutral-buildings.md), MatchSetup.NoPlayer without them.
+    public int NeutralPlayerId { get; }
+
+    // mission.md.
+    public MissionGoal Goal { get; }
 
     // Players with a start on the map, ascending: the team that wins or loses together (mission.md).
     public IReadOnlyList<int> TeamPlayerIds => _teamPlayerIds;
@@ -194,21 +216,18 @@ public sealed class SimState
         return false;
     }
 
-    // construction.md, "Стартовые условия": headquarters, workers and resources from the rules.
+    // construction.md, "Стартовые условия": headquarters, the builder and resources from the rules.
     private void ApplyStart(PlayerStart start)
     {
         Building hq = PlaceBuilding(start.PlayerId, Data.Building(BuildingKinds.Headquarters), start.CellX, start.CellY, Direction.Right, complete: true);
-        UnitStats workerStats = Data.Unit(StartWorkerUnitId);
-        foreach ((int x, int y) in FreeCellsAround(hq.CellX, hq.CellY, hq.Width, hq.Height, Rules.StartWorkers))
-            SpawnUnit(start.PlayerId, workerStats, Grid.CellCenter(x), Grid.CellCenter(y));
+        // builder.md: one builder instead of the M1 workers.
+        BuilderSystem.Spawn(this, start.PlayerId, Data.Unit(BuilderSystem.BuilderUnitId), hq);
 
         Wallet wallet = GetPlayer(start.PlayerId).Wallet;
         wallet.Add(Resources.Primary, Rules.StartPrimary);
         if (ResourceTypeCount > Resources.Secondary)
             wallet.Add(Resources.Secondary, Rules.StartSecondary);
     }
-
-    private const string StartWorkerUnitId = "worker";
 
     // legion-ai.md: every slot built at the start, workers next to the first headquarters,
     // money and income by the number of players.

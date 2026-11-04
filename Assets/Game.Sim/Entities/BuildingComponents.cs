@@ -24,7 +24,7 @@ internal static class BuildingComponents
         }
         // Whatever produces units (the players' factory, the Legion's own) has a queue (factory.md).
         if (building.Stats.Produces.Count > 0)
-            building.Factory = new Factory();
+            building.Factory = new Factory(building.Stats.SuppliedByConveyor ? new Wallet(state.ResourceTypeCount) : null);
         // Any building with a gun shoots by itself (turret.md), whoever owns it.
         if (building.Stats.Damage > 0)
             building.Turret = new Turret();

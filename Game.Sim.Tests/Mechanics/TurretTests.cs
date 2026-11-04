@@ -204,7 +204,7 @@ public class TurretTests
     {
         var sim = Empty();
         Building turret = Turret(sim);
-        Unit ally = AtRange(sim, Setups.PlayerB, "worker", Cells(2));
+        Unit ally = AtRange(sim, Setups.PlayerB, "builder", Cells(2));
         sim.Run(40);
         Assert.That(ally.Hp, Is.EqualTo(ally.MaxHp));
         Assert.That(turret.Turret!.TargetId, Is.EqualTo(0));

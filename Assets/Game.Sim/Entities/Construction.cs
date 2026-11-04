@@ -7,6 +7,8 @@ namespace Game.Sim;
 // repair own and ally buildings for half the build price, paid by the repairer.
 internal static class Construction
 {
+    public const string NeutralFaction = "neutral";
+
     // Null when the player may place the building there now.
     public static RejectReason? CheckPlacement(SimState state, int playerId, BuildingStats stats, int x, int y, Direction direction)
     {
@@ -14,8 +16,11 @@ internal static class Construction
         // One headquarters at a time for every player; the Legion may have several (answer 6).
         if (stats.Id == BuildingKinds.Headquarters && playerId != state.LegionPlayerId && state.FindHeadquarters(playerId) != null)
             return RejectReason.OneHeadquartersOnly;
-        // The Legion's own buildings (its factory) are not for players (question 49).
+        // The Legion's own buildings (its factory) are not for players (question 49);
+        // neutral points of interest stand on the map from the start (neutral-buildings.md).
         if (stats.Faction == LegionAiSystem.Faction && playerId != state.LegionPlayerId)
+            return RejectReason.NotAllowed;
+        if (stats.Faction == NeutralFaction)
             return RejectReason.NotAllowed;
         if (!map.InBounds(x, y) || !map.InBounds(x + stats.SizeW - 1, y + stats.SizeH - 1))
             return RejectReason.NotAllowed;
@@ -161,64 +166,107 @@ internal static class Construction
         }
     }
 
+    // A target worth repairing by this unit now: own or ally, alive, damaged; buildings finished;
+    // a unit never repairs itself (builder.md).
+    public static bool IsRepairable(SimState state, Unit unit, Entity? target)
+    {
+        if (target == null || target.IsDead || target == unit || target.Hp >= target.MaxHp || !state.Relations.IsAlly(unit.OwnerId, target.OwnerId))
+            return false;
+        if (target is Building b)
+            return b.IsComplete && !b.Stats.Invulnerable;
+        return RepairWork((Unit)target) > 0;
+    }
+
     public static void TickRepair(SimState state, Unit unit, List<SimEvent> events)
     {
-        Worker worker = unit.Worker!;
-        Building? b = state.FindBuilding(unit.Order.TargetId);
-        if (b == null || b.IsDead || !b.IsComplete || !state.Relations.IsAlly(unit.OwnerId, b.OwnerId) || b.Hp >= b.MaxHp)
+        Entity? target = state.FindEntity(unit.Order.TargetId);
+        if (!IsRepairable(state, unit, target))
         {
             UnitOrders.Give(unit, UnitOrder.Idle);
             return;
         }
 
-        if (Movement.DistanceToRectangle(unit, b.CellX, b.CellY, b.Width, b.Height) > state.Rules.InteractRangeMilli)
+        if (target is Building b)
         {
-            Movement.StepToRectangle(state, unit, b.CellX, b.CellY, b.Width, b.Height);
-            return;
-        }
-        if (b.WorkersThisTick >= b.Stats.MaxBuilders)
-            return;
-        b.WorkersThisTick++;
-
-        if (b.BuildWork == 0)
-        {
-            b.Hp = b.MaxHp;
+            if (Movement.DistanceToRectangle(unit, b.CellX, b.CellY, b.Width, b.Height) > state.Rules.InteractRangeMilli)
+            {
+                Movement.StepToRectangle(state, unit, b.CellX, b.CellY, b.Width, b.Height);
+                return;
+            }
+            if (b.WorkersThisTick >= b.Stats.MaxBuilders)
+                return;
+            b.WorkersThisTick++;
         }
         else
         {
-            // One worker restores MaxHp over the build time: MaxHp / BuildWork HP per tick, exactly.
-            worker.RepairHpAccumulator += b.MaxHp;
-            while (worker.RepairHpAccumulator >= b.BuildWork && b.Hp < b.MaxHp)
+            var patient = (Unit)target!;
+            long gap = Movement.Distance(unit.X, unit.Y, patient.X, patient.Y) - unit.Radius - patient.Radius;
+            if (gap > state.Rules.InteractRangeMilli)
             {
-                if (!PayForOneHp(state, unit, b))
-                {
-                    events.Add(new CommandRejected(state.Tick, unit.OwnerId, RejectReason.NotEnoughResources, unit.Id));
-                    UnitOrders.Give(unit, UnitOrder.Idle);
-                    return;
-                }
-                worker.RepairHpAccumulator -= b.BuildWork;
-                b.Hp++;
+                Movement.StepToPoint(state, unit, patient.X, patient.Y);
+                return;
             }
         }
 
-        if (b.Hp >= b.MaxHp)
+        int work = target is Building site ? site.BuildWork : RepairWork((Unit)target!);
+        if (work == 0)
+        {
+            target!.Hp = target.MaxHp;
+        }
+        else
+        {
+            // One repairer restores MaxHp over the build time: MaxHp / work HP per tick, exactly.
+            unit.RepairHpAccumulator += target!.MaxHp;
+            while (unit.RepairHpAccumulator >= work && target.Hp < target.MaxHp)
+            {
+                if (!PayForOneHp(state, unit, target))
+                {
+                    if (!unit.Order.IsAuto)
+                        events.Add(new CommandRejected(state.Tick, unit.OwnerId, RejectReason.NotEnoughResources, unit.Id));
+                    UnitOrders.Give(unit, UnitOrder.Idle);
+                    return;
+                }
+                unit.RepairHpAccumulator -= work;
+                target.Hp++;
+            }
+        }
+
+        if (target.Hp >= target.MaxHp)
             UnitOrders.Give(unit, UnitOrder.Idle);
+    }
+
+    // builder.md: a unit is repaired over its own build time.
+    private static int RepairWork(Unit target) => target.Stats.BuildTimeTicks;
+
+    private static (int Primary, int Secondary) Cost(Entity target) =>
+        target is Building b ? (b.Stats.CostPrimary, b.Stats.CostSecondary) : (((Unit)target).Stats.CostPrimary, ((Unit)target).Stats.CostSecondary);
+
+    // The repairer's player can pay for at least the next unit of every resource the repair uses.
+    public static bool CanAffordRepair(SimState state, Unit unit, Entity target)
+    {
+        if (state.Rules.RepairCostPercent == 0)
+            return true;
+        (int primary, int secondary) = Cost(target);
+        Wallet wallet = state.GetPlayer(unit.OwnerId).Wallet;
+        if (primary > 0 && wallet.Get(Resources.Primary) == 0)
+            return false;
+        return secondary == 0 || (wallet.ResourceTypeCount > Resources.Secondary && wallet.Get(Resources.Secondary) > 0);
     }
 
     // Each HP adds the build price to the repairer's counter; every MaxHp × 100 / pct of it
     // costs one unit (construction.md: 30 per HP, 1 unit per 600 for a drill at 50 %).
-    private static bool PayForOneHp(SimState state, Unit unit, Building b)
+    private static bool PayForOneHp(SimState state, Unit unit, Entity target)
     {
-        Worker worker = unit.Worker!;
         int pct = state.Rules.RepairCostPercent;
         if (pct == 0)
             return true;
-        int threshold = (int)((long)b.MaxHp * 100 / pct);
+        int threshold = (int)((long)target.MaxHp * 100 / pct);
         if (threshold <= 0)
             return true;
 
-        int primary = worker.RepairCostAccumulator + b.Stats.CostPrimary;
-        int secondary = worker.RepairCostAccumulatorSecondary + b.Stats.CostSecondary;
+        (int costPrimary, int costSecondary) = Cost(target);
+        int primary = unit.RepairCostAccumulator + costPrimary;
+        int secondary = unit.RepairCostAccumulatorSecondary + costSecondary;
         int duePrimary = primary / threshold, dueSecondary = secondary / threshold;
 
         Wallet wallet = state.GetPlayer(unit.OwnerId).Wallet;
@@ -231,8 +279,8 @@ internal static class Construction
             wallet.TrySpend(Resources.Primary, duePrimary);
         if (dueSecondary > 0)
             wallet.TrySpend(Resources.Secondary, dueSecondary);
-        worker.RepairCostAccumulator = primary - duePrimary * threshold;
-        worker.RepairCostAccumulatorSecondary = secondary - dueSecondary * threshold;
+        unit.RepairCostAccumulator = primary - duePrimary * threshold;
+        unit.RepairCostAccumulatorSecondary = secondary - dueSecondary * threshold;
         return true;
     }
 

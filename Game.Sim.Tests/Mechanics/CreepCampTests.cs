@@ -157,7 +157,7 @@ public class CreepCampTests
         var map = new MapSetup(44, 18).OreRect(CX - 4, CY + 2, 2, 2, Resources.Primary);
         var sim = Match(map: map);
         Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), CX - 4, CY + 2, Direction.Right, complete: true);
-        Unit worker = Spawn(sim, Setups.PlayerA, "worker", CX - 3, CY - 2);
+        Unit worker = Spawn(sim, Setups.PlayerA, "builder", CX - 3, CY - 2);
         sim.Run(3);
         Assert.That(Big(sim).TargetId, Is.EqualTo(worker.Id));
         sim.RunUntil(s => worker.IsDead);
@@ -242,8 +242,8 @@ public class CreepCampTests
         Kill(Small(sim));
         sim.Tick();
         Camp(sim).TrophyPrimary = 5;
-        Unit w1 = Spawn(sim, Setups.PlayerA, "worker", CX - 1, CY);
-        Unit w2 = Spawn(sim, Setups.PlayerA, "worker", CX + 1, CY);
+        Unit w1 = Spawn(sim, Setups.PlayerA, "builder", CX - 1, CY);
+        Unit w2 = Spawn(sim, Setups.PlayerA, "builder", CX + 1, CY);
         sim.Order(new CarryTrophyCommand(Setups.PlayerA, sim.State.Tick, new[] { w2.Id, w1.Id }, 0));
         sim.Tick();
         Assert.That(w1.Worker!.Cargo, Is.EqualTo(5));
@@ -273,8 +273,8 @@ public class CreepCampTests
     public void Edge_TargetDies_CreepTakesTheNextOneWithoutGoingHome()
     {
         var sim = Match();
-        Unit first = Spawn(sim, Setups.PlayerA, "worker", CX - 2, CY);
-        Unit second = Spawn(sim, Setups.PlayerA, "worker", CX - 4, CY);
+        Unit first = Spawn(sim, Setups.PlayerA, "builder", CX - 2, CY);
+        Unit second = Spawn(sim, Setups.PlayerA, "builder", CX - 4, CY);
         sim.Run(2);
         Assert.That(Big(sim).TargetId, Is.EqualTo(first.Id));
         sim.RunUntil(s => first.IsDead);

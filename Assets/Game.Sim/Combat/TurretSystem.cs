@@ -69,7 +69,7 @@ internal static class TurretSystem
 
     private static bool CanShoot(SimState state, Building turret, Entity? target) =>
         target != null && !target.IsDead
-        && state.Relations.IsEnemy(turret.OwnerId, target.OwnerId)
+        && state.Relations.IsEnemy(turret.OwnerId, target.OwnerId) && !Combat.IsInvulnerable(target)
         && EdgeDistance(turret, target) <= turret.Stats.AttackRangeMilli
         && IsVisible(state, turret.OwnerId, target);
 

@@ -72,7 +72,7 @@ public class MissionTests
     }
 
     [Test]
-    public void GWT4_NoHeadquarters_LastWorkerKilled_Defeat()
+    public void GWT4_NoHeadquarters_LastBuilderKilled_Defeat()
     {
         var sim = Match();
         Wipe(sim, Setups.PlayerA);
@@ -86,19 +86,32 @@ public class MissionTests
     }
 
     [Test]
-    public void GWT5_HeadquartersLost_AWorkerRebuildsIt_TheSiteCounts()
+    public void GWT5_HeadquartersLost_TheBuilderRebuildsIt_ASiteWithoutABuilderDoesNotCount()
     {
+        // mission.md M2+: a finished headquarters or a living builder keeps the team in the game.
         var sim = Match();
         Wipe(sim, Setups.PlayerB);
         Kill(sim.State.FindHeadquarters(Setups.PlayerA)!);
         sim.Tick();
-        Unit worker = sim.State.UnitsOf(Setups.PlayerA).First(u => u.Worker != null);
-        sim.Order(new BuildCommand(Setups.PlayerA, sim.State.Tick, new[] { worker.Id }, "headquarters", new[] { new BuildSite(2, 8, Direction.Right) }));
+        Unit builder = sim.State.UnitsOf(Setups.PlayerA).First(u => u.IsBuilder);
+        sim.Order(new BuildCommand(Setups.PlayerA, sim.State.Tick, new[] { builder.Id }, "headquarters", new[] { new BuildSite(2, 8, Direction.Right) }));
         sim.RunUntil(s => s.State.FindHeadquarters(Setups.PlayerA) != null, 60 * Simulation.TicksPerSecond);
+        Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.InProgress));
         foreach (Unit u in sim.State.UnitsOf(Setups.PlayerA))
             Kill(u);
         sim.Run(2);
         Assert.That(sim.State.FindHeadquarters(Setups.PlayerA)!.IsComplete, Is.False);
+        Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.Defeat));
+    }
+
+    [Test]
+    public void GWT5b_FinishedHeadquarters_BuilderDead_MissionGoesOn()
+    {
+        var sim = Match();
+        Wipe(sim, Setups.PlayerB);
+        foreach (Unit u in sim.State.UnitsOf(Setups.PlayerA))
+            Kill(u);
+        sim.Run(2);
         Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.InProgress));
     }
 

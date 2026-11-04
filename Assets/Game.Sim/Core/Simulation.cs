@@ -12,6 +12,7 @@ public sealed class Simulation
         new SortedDictionary<int, List<PendingCommand>>();
     private readonly List<SimEvent> _events = new List<SimEvent>();
     private readonly StateHasher _hasher = new StateHasher();
+    private readonly List<ICommand> _log = new List<ICommand>();
     private long _nextSequence;
 
     public Simulation(MatchSetup setup)
@@ -27,6 +28,10 @@ public sealed class Simulation
 
     // Hash of the state after the last Tick() (or of the initial state before the first one).
     public ulong StateHash { get; private set; }
+
+    // Every command accepted by Enqueue, in arrival order: with the setup it is the whole match
+    // (save-load.md). The Legion's own commands never come through here.
+    public IReadOnlyList<ICommand> CommandLog => _log;
 
     // Commands may arrive in any order and ahead of time. Within a tick they execute by
     // PlayerId and then in the order each player issued them, so network arrival order
@@ -44,6 +49,7 @@ public sealed class Simulation
             _pending.Add(command.Tick, commands);
         }
         commands.Add(new PendingCommand(command, _nextSequence++));
+        _log.Add(command);
     }
 
     public void Tick()
@@ -65,11 +71,14 @@ public sealed class Simulation
         CreepCampSystem.EndTick(State);
         TurretSystem.Tick(State);
         Combat.ApplyHits(State, _events);
+        DemolishSystem.Tick(State, _events);
+        BuilderSystem.Tick(State, _events);
         FactorySystem.Tick(State, _events);
         DrillSystem.Tick(State);
         ConveyorSystem.Tick(State);
         Movement.Separate(State);
         Movement.PushOutOfBlockedCells(State);
+        CaptureSystem.Tick(State, _events);
         State.RemoveDead();
         MissionRules.Check(State, _events);
         State.Fog.Update(State);

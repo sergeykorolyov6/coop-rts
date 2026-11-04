@@ -4,15 +4,15 @@ using NUnit.Framework;
 
 namespace Game.Sim.Tests;
 
-// construction.md, "Стартовые условия прототипа" (answer 7): per player a headquarters,
-// 3 workers and 100 of the primary resource — taken from rules.csv, not hard-coded.
+// construction.md, "Стартовые условия прототипа" (answer 7) and builder.md: per player a
+// headquarters, one builder and 100 of the primary resource — taken from rules.csv, not hard-coded.
 public class StartConditionsTests
 {
     private static MapSetup TwoStarts() =>
         new MapSetup(32, 32).Start(Setups.PlayerA, 2, 2).Start(Setups.PlayerB, 20, 20);
 
     [Test]
-    public void EachPlayer_GetsHeadquartersWorkersAndResources()
+    public void GWT1_Builder_EachPlayer_GetsHeadquartersOneBuilderAndResources()
     {
         var state = new SimState(Setups.Coop(TwoStarts()));
         GameRules rules = state.Rules;
@@ -25,8 +25,9 @@ public class StartConditionsTests
             Assert.That(hq.Hp, Is.EqualTo(hq.MaxHp));
 
             var workers = state.Units.Where(u => u.OwnerId == player).ToList();
-            Assert.That(workers, Has.Count.EqualTo(rules.StartWorkers));
-            Assert.That(workers.All(u => u.Worker != null), Is.True);
+            Assert.That(workers, Has.Count.EqualTo(1));
+            Assert.That(workers[0].Stats.Id, Is.EqualTo("builder"));
+            Assert.That(workers[0].IsBuilder && workers[0].Worker != null, Is.True);
 
             Assert.That(state.GetPlayer(player).Wallet.Get(Resources.Primary), Is.EqualTo(rules.StartPrimary));
             Assert.That(state.GetPlayer(player).Wallet.Get(Resources.Secondary), Is.EqualTo(rules.StartSecondary));
@@ -35,7 +36,6 @@ public class StartConditionsTests
         // Players without a start (enemy AI, creeps) get nothing.
         Assert.That(state.FindHeadquarters(Setups.EnemyAi), Is.Null);
         Assert.That(state.GetPlayer(Setups.EnemyAi).Wallet.Get(Resources.Primary), Is.EqualTo(0));
-        Assert.That(rules.StartWorkers, Is.EqualTo(3));
         Assert.That(rules.StartPrimary, Is.EqualTo(100));
     }
 
@@ -58,13 +58,13 @@ public class StartConditionsTests
     }
 
     [Test]
-    public void Workers_StandOnFreeCellsNextToHeadquarters()
+    public void Builder_StandsOnAFreeCellNextToHeadquarters()
     {
         var state = new SimState(Setups.Coop(TwoStarts()));
         var workers = state.Units.Where(u => u.OwnerId == Setups.PlayerA).ToList();
 
         // Bottom row of the ring around the 4x4 footprint at (2, 2), left to right.
-        Assert.That(workers.Select(u => (u.CellX, u.CellY)), Is.EqualTo(new[] { (1, 1), (2, 1), (3, 1) }));
+        Assert.That(workers.Select(u => (u.CellX, u.CellY)), Is.EqualTo(new[] { (1, 1) }));
         Assert.That(workers[0].X, Is.EqualTo(1500));
         Assert.That(workers[0].Y, Is.EqualTo(1500));
     }

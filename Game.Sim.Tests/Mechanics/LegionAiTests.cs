@@ -160,7 +160,7 @@ public class LegionAiTests
         var sim = Match();
         Kill(SlotBuilding(sim, SlotTurret));
         // A's worker stands 4 cells from the turret's slot (44..45, 18..19) and does not fight.
-        Unit watcher = Spawn(sim, Setups.PlayerA, "worker", 44, 14);
+        Unit watcher = Spawn(sim, Setups.PlayerA, "builder", 44, 14);
         sim.Run(40 * Second);
         Assert.That(Ai(sim).Slots[SlotTurret].WorkerId, Is.EqualTo(0));
         Assert.That(Ai(sim).Slots[SlotTurret].BuildingId, Is.EqualTo(0));
@@ -219,7 +219,7 @@ public class LegionAiTests
     {
         var sim = new Simulation(Setups.Coop(new MapSetup(40, 12)));
         Unit gunner = Spawn(sim, Legion, "legion_gunner", 2, 5);
-        Unit worker = Spawn(sim, Setups.PlayerA, "worker", 15, 5);
+        Unit worker = Spawn(sim, Setups.PlayerA, "builder", 15, 5);
         UnitOrders.Replace(gunner, UnitOrder.AttackMoveTo(Center(35), Center(5)));
         sim.RunUntil(s => gunner.TargetId == worker.Id, 20 * Second);
         sim.RunUntil(s => worker.IsDead, 30 * Second);
@@ -273,6 +273,8 @@ public class LegionAiTests
         foreach (Unit u in sim.State.UnitsOf(Setups.PlayerB))
             Kill(u);
         Kill(sim.State.FindHeadquarters(Setups.PlayerB)!);
+        // builder.md: B's builder would come back at A's headquarters; here it never does.
+        sim.State.GetPlayer(Setups.PlayerB).BuilderRespawnTick = int.MaxValue;
         List<WaveLaunched> launched = RunCollectingUntil<WaveLaunched>(sim, 270 * Second + 1);
         Assert.That(launched.Select(w => w.TargetPlayerId), Is.EqualTo(new[] { Setups.PlayerA, Setups.PlayerA }));
     }

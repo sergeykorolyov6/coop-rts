@@ -51,6 +51,17 @@ internal static class Logistics
         if (!ally)
             return false;
 
+        // factory.md M2: a factory (or cave) supplied by conveyor takes from belts, drills and storages,
+        // own or ally, up to factory_stock of each resource.
+        Wallet? stock = receiver.Factory?.Stock;
+        if (stock != null)
+        {
+            if (stock.Get(resourceType) >= state.Rules.FactoryStock)
+                return false;
+            stock.Add(resourceType, 1);
+            return true;
+        }
+
         switch (receiver.Stats.Id)
         {
             case BuildingKinds.Headquarters:

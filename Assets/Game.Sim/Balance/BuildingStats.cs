@@ -24,6 +24,8 @@ public sealed class BuildingStats
         AttackRangeMilli = row.GetInt("attack_range_mc");
         AttackCooldownTicks = row.GetInt("attack_cooldown_ticks");
         _produces = row.GetStringList("produces");
+        Supply = row.GetString("supply");
+        Invulnerable = row.GetInt("invulnerable") != 0;
     }
 
     public string Id { get; }
@@ -49,4 +51,13 @@ public sealed class BuildingStats
 
     // Unit ids this building can produce.
     public IReadOnlyList<string> Produces => _produces;
+
+    // factory.md M2: "conveyor" — production is paid from the building's own stock that belts
+    // fill; empty — from the owner's wallet (the Legion's factory).
+    public string Supply { get; }
+    public bool SuppliedByConveyor => Supply == SupplyConveyor;
+    public const string SupplyConveyor = "conveyor";
+
+    // neutral-buildings.md: points of interest nobody can damage.
+    public bool Invulnerable { get; }
 }

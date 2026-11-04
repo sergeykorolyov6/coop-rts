@@ -100,14 +100,14 @@ internal static class CreepCampSystem
     private static Entity? ChooseTarget(SimState state, CreepCamp camp, Unit creep)
     {
         Entity? current = state.FindEntity(creep.TargetId);
-        if (current != null && !current.IsDead && current.OwnerId != creep.OwnerId && Reachable(camp, creep, current))
+        if (current != null && !current.IsDead && state.Relations.IsEnemy(creep.OwnerId, current.OwnerId) && !Combat.IsInvulnerable(current) && Reachable(camp, creep, current))
             return current;
 
         Entity? best = null;
         long bestDist = long.MaxValue;
         foreach (Unit u in state.Units)
         {
-            if (u.IsDead || u.OwnerId == creep.OwnerId || !(InRadius(camp, u) || camp._attackers.Contains(u.Id)) || !Reachable(camp, creep, u))
+            if (u.IsDead || !state.Relations.IsEnemy(creep.OwnerId, u.OwnerId) || !(InRadius(camp, u) || camp._attackers.Contains(u.Id)) || !Reachable(camp, creep, u))
                 continue;
             long d = Dist2(creep.X, creep.Y, u.X, u.Y);
             if (d < bestDist)
@@ -121,7 +121,7 @@ internal static class CreepCampSystem
 
         foreach (Building b in state.Buildings)
         {
-            if (b.IsDead || b.OwnerId == creep.OwnerId || !(InRadius(camp, b) || camp._attackers.Contains(b.Id)) || !Reachable(camp, creep, b))
+            if (b.IsDead || !state.Relations.IsEnemy(creep.OwnerId, b.OwnerId) || b.Stats.Invulnerable || !(InRadius(camp, b) || camp._attackers.Contains(b.Id)) || !Reachable(camp, creep, b))
                 continue;
             long d = Combat.DistanceToRectangle(creep.X, creep.Y, b);
             if (d < bestDist)
@@ -168,12 +168,12 @@ internal static class CreepCampSystem
     {
         foreach (Unit u in state.Units)
         {
-            if (!u.IsDead && u.OwnerId != state.CreepPlayerId && InRadius(camp, u))
+            if (!u.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, u.OwnerId) && InRadius(camp, u))
                 return true;
         }
         foreach (Building b in state.Buildings)
         {
-            if (!b.IsDead && b.OwnerId != state.CreepPlayerId && InRadius(camp, b))
+            if (!b.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, b.OwnerId) && !b.Stats.Invulnerable && InRadius(camp, b))
                 return true;
         }
         return false;

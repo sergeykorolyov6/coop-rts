@@ -69,16 +69,16 @@ public class PrototypeMapTests
         Assert.That(Play(), Is.EqualTo(Play()));
     }
 
-    // Both players mine by hand, A builds a drill on its deposit, B a factory and infantry.
+    // A's builder puts a drill on its deposit, then mines by hand; B's builds a factory, then mines.
     private static ulong[] Play()
     {
         var sim = new Simulation(Setups.Coop(Load(Setups.PlayerA, Setups.PlayerB)));
         var a = sim.State.UnitsOf(Setups.PlayerA);
         var b = sim.State.UnitsOf(Setups.PlayerB);
-        sim.Order(new MineCommand(Setups.PlayerA, 0, new[] { a[0].Id, a[1].Id }, 14, 4));
-        sim.Order(new BuildCommand(Setups.PlayerA, 0, new[] { a[2].Id }, "drill", new[] { new BuildSite(16, 6, Direction.Right) }));
-        sim.Order(new MineCommand(Setups.PlayerB, 0, new[] { b[0].Id, b[1].Id }, 14, 56));
-        sim.Order(new BuildCommand(Setups.PlayerB, 0, new[] { b[2].Id }, "factory", new[] { new BuildSite(11, 52, Direction.Right) }));
+        sim.Order(new BuildCommand(Setups.PlayerA, 0, new[] { a[0].Id }, "drill", new[] { new BuildSite(16, 6, Direction.Right) }));
+        sim.Order(new MineCommand(Setups.PlayerA, 0, new[] { a[0].Id }, 14, 4, queued: true));
+        sim.Order(new BuildCommand(Setups.PlayerB, 0, new[] { b[0].Id }, "factory", new[] { new BuildSite(11, 52, Direction.Right) }));
+        sim.Order(new MineCommand(Setups.PlayerB, 0, new[] { b[0].Id }, 14, 56, queued: true));
         var hashes = new System.Collections.Generic.List<ulong>();
         for (int t = 0; t < 15 * 60 * Simulation.TicksPerSecond; t++)
         {

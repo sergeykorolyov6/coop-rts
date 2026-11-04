@@ -72,12 +72,12 @@ public class CombatTests
     public void Edge_DamageBelowArmor_DealsOne()
     {
         var sim = Empty();
-        Unit worker = Spawn(sim, Setups.PlayerA, "worker", 5, 5);          // damage 4
+        Unit worker = Spawn(sim, Setups.PlayerA, "builder", 5, 5);          // damage 6
         Unit brute = Spawn(sim, Setups.EnemyAi, "legion_brute", 6, 5);     // armor 2 → 2
         Unit dummy = Spawn(sim, Setups.EnemyAi, "creep_big", 5, 8);        // armor 2
         sim.Order(Attack(sim, Setups.PlayerA, brute, worker));
         sim.RunUntil(s => brute.Hp < brute.MaxHp || worker.IsDead);
-        Assert.That(brute.MaxHp - brute.Hp, Is.EqualTo(2));
+        Assert.That(brute.MaxHp - brute.Hp, Is.EqualTo(4));
         Assert.That(DamageRules.Damage(1, 5), Is.EqualTo(1));
     }
 
@@ -113,7 +113,7 @@ public class CombatTests
     public void Edge_IdleWorker_DoesNotAttackByItself()
     {
         var sim = Empty();
-        Unit worker = Spawn(sim, Setups.PlayerA, "worker", 5, 5);
+        Unit worker = Spawn(sim, Setups.PlayerA, "builder", 5, 5);
         Unit enemy = Spawn(sim, Setups.EnemyAi, "legion_worker", 6, 5);
         sim.Run(60);
         Assert.That(enemy.Hp, Is.EqualTo(enemy.MaxHp));

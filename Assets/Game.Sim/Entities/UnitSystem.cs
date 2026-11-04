@@ -37,6 +37,8 @@ internal static class UnitSystem
             switch (unit.Order.Kind)
             {
                 case UnitOrderKind.Idle:
+                    if (unit.IsRepairer && AutoRepair.TickIdle(state, unit, events))
+                        break;
                     Combat.TickIdle(state, unit);
                     break;
                 case UnitOrderKind.Attack:

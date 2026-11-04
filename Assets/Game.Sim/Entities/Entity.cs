@@ -14,7 +14,8 @@ public abstract class Entity
     }
 
     public int Id { get; }
-    public int OwnerId { get; }
+    // Changes only when a neutral building is captured (neutral-buildings.md).
+    public int OwnerId { get; internal set; }
     public int MaxHp { get; }
     public int Hp { get; internal set; }
     public int Armor { get; }
@@ -25,6 +26,9 @@ public abstract class Entity
     // Last blow taken: when and from whom (creeps answer attackers, creep-camp.md).
     public int LastDamagedTick { get; internal set; } = NeverTick;
     public int LastAttackerId { get; internal set; }
+
+    // Tick of the last "attacked" alarm (combat.md, alerts.md: at most once per cooldown).
+    internal int LastAlarmTick { get; set; } = NeverTick;
 
     // Far enough in the past that every "N ticks since" check passes, without overflow.
     internal const int NeverTick = int.MinValue / 2;

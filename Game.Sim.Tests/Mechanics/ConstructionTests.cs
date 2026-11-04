@@ -79,7 +79,7 @@ public class ConstructionTests
 
         Assert.That(Wallet(sim, Setups.PlayerA), Is.EqualTo(wallet - 100));
         Assert.That(sim.State.FindBuilding(factory.Id), Is.Not.Null);
-        Assert.That(sim.State.UnitsOf(Setups.PlayerA), Has.Count.EqualTo(3));
+        Assert.That(sim.State.UnitsOf(Setups.PlayerA), Has.Count.EqualTo(1));
         Assert.That(sim.State.FindHeadquarters(Setups.PlayerA)!.IsComplete, Is.False);
     }
 
@@ -226,8 +226,11 @@ public class ConstructionTests
     {
         var map = new MapSetup(32, 16).Start(Setups.PlayerA, 2, 2).OreRect(10, 2, 2, 2, Resources.Primary);
         var sim = new Simulation(Setups.Coop(map));
+        // One builder per player in a match; extra ones here stand in for allies' builders.
+        sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("builder"), Center(7), Center(2));
+        sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("builder"), Center(7), Center(3));
         var a = sim.State.UnitsOf(Setups.PlayerA);
-        var extra = sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("worker"), Center(7), Center(1));
+        var extra = sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("builder"), Center(7), Center(1));
         sim.State.GetPlayer(Setups.PlayerA).Wallet.Add(Resources.Primary, 100);
         sim.Order(Build(sim, Setups.PlayerA, "drill", 10, 2, a[0], a[1], a[2], extra));
         sim.RunUntil(s => SiteAt(s, 10, 2) != null);

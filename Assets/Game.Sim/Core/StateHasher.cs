@@ -31,6 +31,7 @@ internal sealed class StateHasher
         foreach (Player player in state.Players)
         {
             _writer.Write(player.Id);
+            _writer.Write(player.BuilderRespawnTick);
             for (int type = 0; type < player.Wallet.ResourceTypeCount; type++)
             {
                 _writer.Write(player.Wallet.Get(type));
@@ -129,6 +130,7 @@ internal sealed class StateHasher
         _writer.Write(u.Order.X);
         _writer.Write(u.Order.Y);
         _writer.Write(u.Order.TargetId);
+        _writer.Write(u.Order.IsAuto);
         _writer.Write(u.OrderQueue.Count);
         foreach (QueuedOrder queued in u.OrderQueue)
         {
@@ -146,6 +148,10 @@ internal sealed class StateHasher
         _writer.Write(u.HomeX);
         _writer.Write(u.HomeY);
         _writer.Write(u.RegenAccumulator);
+        _writer.Write(u.RepairCostAccumulator);
+        _writer.Write(u.RepairCostAccumulatorSecondary);
+        _writer.Write(u.RepairHpAccumulator);
+        _writer.Write(u.LastAlarmTick);
 
         Worker? w = u.Worker;
         if (w == null)
@@ -155,9 +161,6 @@ internal sealed class StateHasher
         _writer.Write(w.MiningAccumulator);
         _writer.Write(w.DeliverToId);
         _writer.Write((byte)w.Phase);
-        _writer.Write(w.RepairCostAccumulator);
-        _writer.Write(w.RepairCostAccumulatorSecondary);
-        _writer.Write(w.RepairHpAccumulator);
         _writer.Write(w.CurrentPlanKey);
         _writer.Write(w.Plans.Count);
         foreach (PlannedBuild plan in w.Plans)
@@ -208,9 +211,22 @@ internal sealed class StateHasher
             }
         }
         _writer.Write(b.LastAlarmTick);
+        _writer.Write(b.DemolishTicksLeft);
+        _writer.Write(b.CaptureProgress);
+        _writer.Write(b.CapturePlayerId);
+        _writer.Write(b.GuardCampIndex);
+        _writer.Write(b.LitForPlayerId);
         if (b.Factory != null)
         {
             _writer.Write(b.Factory.Progress);
+            _writer.Write(b.Factory.HasRally);
+            _writer.Write(b.Factory.RallyX);
+            _writer.Write(b.Factory.RallyY);
+            if (b.Factory.Stock != null)
+            {
+                for (int type = 0; type < b.Factory.Stock.ResourceTypeCount; type++)
+                    _writer.Write(b.Factory.Stock.Get(type));
+            }
             _writer.Write(b.Factory.Queue.Count);
             foreach (string unit in b.Factory.Queue)
                 _writer.Write(unit);

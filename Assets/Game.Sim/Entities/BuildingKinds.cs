@@ -10,6 +10,10 @@ public static class BuildingKinds
     public const string ConveyorBridge = "conveyor_bridge";
     public const string Storage = "storage";
 
+    // neutral-buildings.md.
+    public const string Cave = "cave";
+    public const string Lighthouse = "lighthouse";
+
     // Ground units walk over conveyors and bridge ends (conveyors.md, question 27).
     public static bool IsWalkable(string id) => id == Conveyor || id == ConveyorBridge;
 }

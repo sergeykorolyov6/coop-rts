@@ -14,6 +14,7 @@ public sealed class MapSetup
     private readonly List<PlayerStart> _starts = new List<PlayerStart>();
     private readonly List<CreepCampSetup> _camps = new List<CreepCampSetup>();
     private readonly List<BaseSlotSetup> _legionSlots = new List<BaseSlotSetup>();
+    private readonly List<NeutralBuildingSetup> _neutrals = new List<NeutralBuildingSetup>();
 
     public MapSetup(int width, int height)
     {
@@ -33,6 +34,9 @@ public sealed class MapSetup
     public int Height { get; }
     public IReadOnlyList<PlayerStart> Starts => _starts;
     public IReadOnlyList<CreepCampSetup> CreepCamps => _camps;
+
+    // neutral-buildings.md: neutral drills, caves, lighthouses standing from the start.
+    public IReadOnlyList<NeutralBuildingSetup> Neutrals => _neutrals;
 
     // legion-ai.md: the Legion's base in rebuild order, and where its army gathers.
     public IReadOnlyList<BaseSlotSetup> LegionSlots => _legionSlots;
@@ -106,6 +110,14 @@ public sealed class MapSetup
         int n = System.Math.Max(System.Math.Abs(x2 - x1), System.Math.Abs(y2 - y1)) + 1;
         for (int i = 0; i < n; i++)
             LegionSlot(BuildingKinds.Conveyor, x1 + dx * i, y1 + dy * i, d);
+        return this;
+    }
+
+    // guardCampIndex: the camp (index in CreepCamps) that must be cleared before capture, -1 for none.
+    public MapSetup Neutral(string buildingTypeId, int cellX, int cellY, int guardCampIndex = -1)
+    {
+        Index(cellX, cellY);
+        _neutrals.Add(new NeutralBuildingSetup(buildingTypeId, cellX, cellY, guardCampIndex));
         return this;
     }
 

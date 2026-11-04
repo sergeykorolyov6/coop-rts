@@ -1,5 +1,4 @@
 id,name_ru,faction,hp,armor,damage,damage_vs_buildings,attack_range,attack_cooldown_s,move_speed,vision,cost_primary,cost_secondary,build_time_s,produced_at,size,tags,reference,notes
-worker,Рабочий,blue_walls,60,0,4,4,0.5,1.0,2.4,5,10,0,12,factory,0.5,worker;melee,"SC2 SCV: 50 мин., 12 с, 45 HP, 5 урона, 3,94 скор.","Строит, чинит, добывает (manual-mining.md). Производится на заводе, как все юниты (ответ 17)"
 scout,Разведчик,blue_walls,60,0,5,5,3,1.0,3.6,10,15,0,15,factory,0.5,scout;ranged,"SC2 Hellion: 100 мин., 90 HP, 5,95 скор.; Mindustry flare: в 5 раз быстрее dagger, 70 HP",Самый быстрый и самый большой обзор; воевать не должен
 infantry,Пехотинец,blue_walls,220,1,12,12,0.5,0.8,1.9,5,30,0,25,factory,0.7,melee,"SC2 Zealot: 100 мин., 100 HP + 50 щит, 8×2 урона","Ближний бой, держит удар; бьёт стрелка 1 на 1"
 shooter,Стрелок,blue_walls,100,0,9,9,4,1.0,1.9,6,20,0,18,factory,0.6,ranged,"SC2 Marine: 50 мин., 18 с, 45 HP, 6 урона, дальн. 5; Mindustry dagger: 150 HP",Основной дальний юнит; за стеной и турелями сильнее пехоты
@@ -11,3 +10,8 @@ legion_gunner,Стрелок Легиона,black_legion,90,0,8,8,4,1.0,1.9,6,20
 legion_brute,Громила Легиона,black_legion,400,2,20,40,0.5,1.5,1.6,5,50,20,30,legion_factory,1.0,melee;armored,SC2 Ultralisk/Thor в уменьшенном виде; Mindustry mace,Ломает оборону: урон по зданиям ×2
 creep_small,Малый крип,grey_creatures,80,0,6,6,0.5,1.0,2.2,5,0,0,0,,0.6,melee;creep,SC2 Zergling ×2 HP,Охраняет лагерь; радиус агрессии и поводок — creep-camp.md, creep_camps.csv
 creep_big,Большой крип,grey_creatures,500,2,20,20,0.5,1.5,1.6,6,0,0,0,,1.2,melee;creep,SC2 Ultralisk в уменьшенном виде,Страж лагеря
+builder,Строитель,blue_walls,200,1,6,6,1,1.0,3,7,0,0,20,,0.7,worker;builder;melee,"Mindustry alpha (юнит ядра): строит, копает, слабое оружие","Один на игрока, не производится, возрождается у штаба (builder.md). build_time_s — только для скорости его ремонта"
+repairer,Ремонтник,blue_walls,80,0,0,0,0,1.0,2.6,6,25,0,15,factory,0.5,repairer,"Mindustry mender/poly; SC2 авторемонт SCV","Сам чинит свои и союзные здания и юнитов в 8 клетках (builder.md). Вместо рабочего на заводе"
+cave_beast,Пещерный зверь,grey_creatures,700,2,30,30,0.5,1.2,2.0,6,60,30,30,cave,1.2,melee;armored,"WC3: наёмник из лавки — сильнее своих юнитов того же уровня","Только из захваченной пещеры (neutral-buildings.md). Крепче тяжёлого, бьёт как осадный по юнитам"
+cave_spitter,Плевун,grey_creatures,260,1,18,18,5,1.0,2.0,7,45,25,25,cave,0.8,ranged,"WC3: наёмник-стрелок","Только из пещеры: вдвое сильнее стрелка, бьёт дальше"
+creep_boss,Вожак Серых Существ,grey_creatures,3000,3,45,45,1,1.5,1.4,7,0,0,0,,2.0,melee;creep;boss,"WC3: красный лагерь с боссом; SC2 Co-op: босс-цель миссии","Цель миссии coop (mission.md): нужно ≈ 8–10 боевых юнитов с тяжёлыми или пещерными"

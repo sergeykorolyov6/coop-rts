@@ -14,7 +14,7 @@ public class MovementTests
     private static (Simulation Sim, Unit Unit) OneWorker(MapSetup map, int cellX, int cellY)
     {
         var sim = new Simulation(Setups.Coop(map));
-        Unit unit = sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("worker"), Center(cellX), Center(cellY));
+        Unit unit = sim.State.SpawnUnit(Setups.PlayerA, sim.State.Data.Unit("legion_worker"), Center(cellX), Center(cellY));
         return (sim, unit);
     }
 

@@ -80,6 +80,13 @@ public sealed class FogOfWar
                 continue;
             int cx = Grid.CellToMilli(b.CellX) + Grid.CellToMilli(b.Width) / 2;
             int cy = Grid.CellToMilli(b.CellY) + Grid.CellToMilli(b.Height) / 2;
+            // neutral-buildings.md: a lighthouse sees for whoever stands by it, never for itself.
+            if (b.Stats.Id == BuildingKinds.Lighthouse)
+            {
+                if (b.LitForPlayerId != 0)
+                    Reveal(IndexOf(b.LitForPlayerId), cx, cy, b.Stats.VisionMilli);
+                continue;
+            }
             Reveal(IndexOf(b.OwnerId), cx, cy, b.Stats.VisionMilli);
         }
 

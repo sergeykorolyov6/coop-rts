@@ -39,7 +39,7 @@ public sealed class CancelProductionCommand : ICommand
         if (queue.Count == 0)
             b.Factory.Progress = 0;
 
-        Wallet wallet = state.GetPlayer(PlayerId).Wallet;
+        Wallet wallet = ProduceCommand.Payer(state, b);
         wallet.Add(Resources.Primary, stats.CostPrimary);
         if (stats.CostSecondary > 0)
             wallet.Add(Resources.Secondary, stats.CostSecondary);

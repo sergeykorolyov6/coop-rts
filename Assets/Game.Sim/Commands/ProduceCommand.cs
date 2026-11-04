@@ -3,7 +3,8 @@ using System.IO;
 
 namespace Game.Sim;
 
-// factory.md: queue a unit at an own finished factory; paid at once.
+// factory.md: queue a unit at an own finished factory; paid at once, from the factory's stock
+// when belts supply it (M2), otherwise from the owner's wallet.
 public sealed class ProduceCommand : ICommand
 {
     public const int Id = 7;
@@ -39,7 +40,7 @@ public sealed class ProduceCommand : ICommand
             events.Add(new CommandRejected(state.Tick, PlayerId, reason.Value));
             return;
         }
-        Wallet wallet = state.GetPlayer(PlayerId).Wallet;
+        Wallet wallet = Payer(state, factory!);
         wallet.TrySpend(Resources.Primary, stats!.CostPrimary);
         if (stats.CostSecondary > 0)
             wallet.TrySpend(Resources.Secondary, stats.CostSecondary);
@@ -57,13 +58,18 @@ public sealed class ProduceCommand : ICommand
             || !state.Data.TryGetUnit(UnitTypeId, out stats))
             return RejectReason.CannotProduce;
 
-        Wallet wallet = state.GetPlayer(PlayerId).Wallet;
+        Wallet wallet = Payer(state, factory);
+        RejectReason low = factory.Factory.Stock != null ? RejectReason.FactoryStockLow : RejectReason.NotEnoughResources;
         if (wallet.Get(Resources.Primary) < stats!.CostPrimary)
-            return RejectReason.NotEnoughResources;
+            return low;
         if (stats.CostSecondary > 0 && (wallet.ResourceTypeCount <= Resources.Secondary || wallet.Get(Resources.Secondary) < stats.CostSecondary))
-            return RejectReason.NotEnoughResources;
+            return low;
         return null;
     }
+
+    // factory.md M2: the factory's own stock, or the owner's wallet when it has none.
+    internal static Wallet Payer(SimState state, Building factory) =>
+        factory.Factory!.Stock ?? state.GetPlayer(factory.OwnerId).Wallet;
 
     private static bool Contains(IReadOnlyList<string> list, string value)
     {

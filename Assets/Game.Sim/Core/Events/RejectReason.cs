@@ -12,4 +12,7 @@ public enum RejectReason : byte
     OneHeadquartersOnly,
     NothingToRepair,
     CannotProduce,
+
+    // factory.md M2: the factory's own stock (filled by belts) cannot pay.
+    FactoryStockLow,
 }

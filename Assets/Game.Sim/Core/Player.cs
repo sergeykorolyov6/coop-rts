@@ -10,4 +10,9 @@ public sealed class Player
 
     public int Id { get; }
     public Wallet Wallet { get; }
+
+    // builder.md: when the dead builder may come back; Entity.NeverTick while it lives
+    // (or for players who never had one).
+    public int BuilderRespawnTick { get; internal set; } = Entity.NeverTick;
+    public bool IsBuilderDead => BuilderRespawnTick != Entity.NeverTick;
 }

@@ -173,6 +173,10 @@ BUILDINGS = {
     "attack_range": ("attack_range_mc", cells_to_milli),
     "attack_cooldown_s": ("attack_cooldown_ticks", seconds_to_ticks),
     "produces": ("produces", id_list),
+    # factory.md M2: "conveyor" — pays from its own stock that belts fill; empty — from the owner's wallet.
+    "supply": ("supply", string),
+    # neutral-buildings.md: points of interest nobody can damage (1) or ordinary buildings (0).
+    "invulnerable": ("invulnerable", int_),
     "reference": None,
     "notes": None,
 }
@@ -217,6 +221,17 @@ WAVES = {
     "notes": None,
 }
 
+# mission.md: one row per mission; the menu lists them.
+MISSIONS = {
+    "id": ("id", string),
+    "name_ru": ("name_ru", string),
+    "map": ("map", string),
+    "players": ("players", int_),
+    "legion": ("legion", int_),
+    "goal": ("goal", string),
+    "notes": None,
+}
+
 # (csv, json, schema, key column)
 TABLES = [
     ("units.csv", "units.json", UNITS, "id"),
@@ -224,6 +239,7 @@ TABLES = [
     ("creep_camps.csv", "creep_camps.json", CREEP_CAMPS, "id"),
     ("legion.csv", "legion.json", LEGION, "players"),
     ("waves.csv", "waves.json", WAVES, "wave"),
+    ("missions.csv", "missions.json", MISSIONS, "id"),
 ]
 
 
@@ -279,7 +295,7 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
     """Docs/Design/maps/*.txt → map json. Rows are stored bottom-up: rows[y] is row y."""
     building_sizes = building_sizes or {}
     lines = text.splitlines()
-    grid, camps, legion, rally, inside, done = [], [], [], None, False, False
+    grid, camps, legion, neutrals, rally, inside, done = [], [], [], [], None, False, False
     for number, raw in enumerate(lines, start=1):
         line = raw.rstrip("\r")
         if inside:
@@ -302,6 +318,9 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
             continue
         if parts[0] in ("legion", "legion_line"):
             legion.append((number, parts))
+            continue
+        if parts[0] == "neutral":
+            neutrals.append((number, parts))
             continue
         if parts[0] == "rally":
             try:
@@ -406,6 +425,36 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
     if rally is not None and cell(rally[1], rally[2]) in (None, "#"):
         raise ConvertError(f"{file_name}, строка {rally[0]}: точка сбора вне карты или в скале")
 
+    # neutral-buildings.md: neutral <здание> <x> <y> [guard <номер лагеря с 1>].
+    out_neutral = []
+    for number, parts in neutrals:
+        try:
+            if len(parts) not in (4, 6) or (len(parts) == 6 and parts[4] != "guard"):
+                raise ValueError
+            building, x, y = parts[1], int(parts[2]), int(parts[3])
+            guard = int(parts[5]) if len(parts) == 6 else 0
+        except ValueError:
+            raise ConvertError(f"{file_name}, строка {number}: ожидается neutral <здание> <x> <y> [guard <номер лагеря>]") from None
+        if building not in building_sizes:
+            raise ConvertError(f"{file_name}, строка {number}: здания «{building}» нет в buildings.csv")
+        if guard < 0 or guard > len(out_camps):
+            raise ConvertError(f"{file_name}, строка {number}: лагеря номер {guard} нет (их {len(out_camps)}, нумерация с 1)")
+        w, h = building_sizes[building]
+        for yy in range(y, y + h):
+            for xx in range(x, x + w):
+                c = cell(xx, yy)
+                if c in (None, "#") or c.isdigit():
+                    raise ConvertError(f"{file_name}, строка {number}: «{building}» в ({x}, {y}) задевает клетку ({xx}, {yy}) вне карты, в скале или на старте")
+                if (xx, yy) in taken:
+                    raise ConvertError(f"{file_name}, строка {number}: клетка ({xx}, {yy}) уже занята строкой {taken[(xx, yy)]}")
+                taken[(xx, yy)] = number
+        if building == "drill" and not any(cell(xx, yy) in ("o", "s") for yy in range(y, y + h) for xx in range(x, x + w)):
+            raise ConvertError(f"{file_name}, строка {number}: бур в ({x}, {y}) не стоит на руде")
+        item = {"building": building, "x": x, "y": y}
+        if guard:
+            item["guard"] = guard - 1
+        out_neutral.append(item)
+
     out = {
         "width": width,
         "height": height,
@@ -415,6 +464,8 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
     }
     if slots:
         out["legion"] = {"slots": slots, "rally": [rally[1], rally[2]]}
+    if out_neutral:
+        out["neutral"] = out_neutral
     return out
 
 
@@ -441,7 +492,7 @@ def render_map(data: dict) -> str:
     # One row per line keeps the json diffable and readable as a picture.
     rows = ",\n".join("    " + json.dumps(r) for r in data["rows_bottom_up"])
     head = {k: data[k] for k in ("width", "height")}
-    tail = {k: data[k] for k in ("starts", "camps", "legion") if k in data}
+    tail = {k: data[k] for k in ("starts", "camps", "legion", "neutral") if k in data}
     return ("{\n" + ",\n".join(f'  "{k}": {json.dumps(v)}' for k, v in head.items())
             + ',\n  "rows_bottom_up": [\n' + rows + "\n  ],\n"
             + ",\n".join(f'  "{k}": {json.dumps(v, ensure_ascii=False)}' for k, v in tail.items()) + "\n}\n")

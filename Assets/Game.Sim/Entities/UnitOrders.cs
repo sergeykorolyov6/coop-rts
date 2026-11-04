@@ -14,13 +14,13 @@ internal static class UnitOrders
     {
         unit.Order = order;
         unit.TargetId = 0;
+        unit.RepairHpAccumulator = 0;
         Worker? worker = unit.Worker;
         if (worker != null)
         {
             worker._plans.Clear();
             worker.Phase = WorkerPhase.None;
             worker.CurrentPlanKey = -1;
-            worker.RepairHpAccumulator = 0;
         }
     }
 

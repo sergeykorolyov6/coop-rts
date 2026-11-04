@@ -1,5 +1,71 @@
 [
   {
+    "id": "builder",
+    "name_ru": "Строитель",
+    "faction": "blue_walls",
+    "hp": 200,
+    "armor": 1,
+    "damage": 6,
+    "damage_vs_buildings": 6,
+    "attack_range_mc": 1000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 150,
+    "vision_mc": 7000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 400,
+    "produced_at": "",
+    "size_mc": 700,
+    "tags": [
+      "worker",
+      "builder",
+      "melee"
+    ]
+  },
+  {
+    "id": "cave_beast",
+    "name_ru": "Пещерный зверь",
+    "faction": "grey_creatures",
+    "hp": 700,
+    "armor": 2,
+    "damage": 30,
+    "damage_vs_buildings": 30,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 24,
+    "move_speed_mc_per_tick": 100,
+    "vision_mc": 6000,
+    "cost_primary": 60,
+    "cost_secondary": 30,
+    "build_time_ticks": 600,
+    "produced_at": "cave",
+    "size_mc": 1200,
+    "tags": [
+      "melee",
+      "armored"
+    ]
+  },
+  {
+    "id": "cave_spitter",
+    "name_ru": "Плевун",
+    "faction": "grey_creatures",
+    "hp": 260,
+    "armor": 1,
+    "damage": 18,
+    "damage_vs_buildings": 18,
+    "attack_range_mc": 5000,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 100,
+    "vision_mc": 7000,
+    "cost_primary": 45,
+    "cost_secondary": 25,
+    "build_time_ticks": 500,
+    "produced_at": "cave",
+    "size_mc": 800,
+    "tags": [
+      "ranged"
+    ]
+  },
+  {
     "id": "creep_big",
     "name_ru": "Большой крип",
     "faction": "grey_creatures",
@@ -19,6 +85,29 @@
     "tags": [
       "melee",
       "creep"
+    ]
+  },
+  {
+    "id": "creep_boss",
+    "name_ru": "Вожак Серых Существ",
+    "faction": "grey_creatures",
+    "hp": 3000,
+    "armor": 3,
+    "damage": 45,
+    "damage_vs_buildings": 45,
+    "attack_range_mc": 1000,
+    "attack_cooldown_ticks": 30,
+    "move_speed_mc_per_tick": 70,
+    "vision_mc": 7000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 0,
+    "produced_at": "",
+    "size_mc": 2000,
+    "tags": [
+      "melee",
+      "creep",
+      "boss"
     ]
   },
   {
@@ -174,6 +263,27 @@
     ]
   },
   {
+    "id": "repairer",
+    "name_ru": "Ремонтник",
+    "faction": "blue_walls",
+    "hp": 80,
+    "armor": 0,
+    "damage": 0,
+    "damage_vs_buildings": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 130,
+    "vision_mc": 6000,
+    "cost_primary": 25,
+    "cost_secondary": 0,
+    "build_time_ticks": 300,
+    "produced_at": "factory",
+    "size_mc": 500,
+    "tags": [
+      "repairer"
+    ]
+  },
+  {
     "id": "scout",
     "name_ru": "Разведчик",
     "faction": "blue_walls",
@@ -236,28 +346,6 @@
     "tags": [
       "siege",
       "ranged"
-    ]
-  },
-  {
-    "id": "worker",
-    "name_ru": "Рабочий",
-    "faction": "blue_walls",
-    "hp": 60,
-    "armor": 0,
-    "damage": 4,
-    "damage_vs_buildings": 4,
-    "attack_range_mc": 500,
-    "attack_cooldown_ticks": 20,
-    "move_speed_mc_per_tick": 120,
-    "vision_mc": 5000,
-    "cost_primary": 10,
-    "cost_secondary": 0,
-    "build_time_ticks": 240,
-    "produced_at": "factory",
-    "size_mc": 500,
-    "tags": [
-      "worker",
-      "melee"
     ]
   }
 ]

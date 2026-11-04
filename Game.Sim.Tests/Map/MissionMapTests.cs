@@ -39,7 +39,7 @@ public class MissionMapTests
         Assert.That((s.Map.Width, s.Map.Height), Is.EqualTo((80, 80)));
         Assert.That(s.TeamPlayerIds, Is.EqualTo(new[] { 1 }));
         Assert.That(s.FindHeadquarters(1), Is.Not.Null);
-        Assert.That(s.UnitsOf(1).Count(u => u.Worker != null), Is.EqualTo(3));
+        Assert.That(s.UnitsOf(1).Count(u => u.IsBuilder), Is.EqualTo(1));
         Assert.That(s.GetPlayer(1).Wallet.Get(Resources.Primary), Is.EqualTo(100));
 
         LegionAi ai = s.Legion!;

@@ -15,6 +15,8 @@ public sealed class MatchSetup
     // A real match: balance data, hand-made map with starts and camps.
     // creepPlayerId owns the creeps (Grey Creatures); it must be one of playerIds when the map has camps.
     // legionPlayerId plays the Black Legion's base from the map (legion-ai.md); the map must have one.
+    // neutralPlayerId owns the map's neutral buildings (neutral-buildings.md): neutral to everyone.
+    // goal: mission.md; by default destroy_legion with a Legion, free play without.
     public MatchSetup(
         int seed,
         GameData data,
@@ -23,13 +25,34 @@ public sealed class MatchSetup
         IEnumerable<int> playerIds,
         IEnumerable<RelationSetup> relations,
         int creepPlayerId = NoPlayer,
-        int legionPlayerId = NoPlayer)
+        int legionPlayerId = NoPlayer,
+        int neutralPlayerId = NoPlayer,
+        MissionGoal? goal = null)
         : this(seed, map.Width, map.Height, resourceTypeCount, playerIds, relations)
     {
         Data = data;
         Map = map;
         CreepPlayerId = creepPlayerId;
         LegionPlayerId = legionPlayerId;
+        NeutralPlayerId = neutralPlayerId;
+        Goal = goal ?? (legionPlayerId != NoPlayer ? MissionGoal.DestroyLegion : MissionGoal.None);
+
+        if (Goal == MissionGoal.DestroyLegion && legionPlayerId == NoPlayer)
+            throw new ArgumentException("A destroy_legion mission needs the Legion.", nameof(goal));
+        if (map.Neutrals.Count > 0)
+        {
+            if (_playerIds.BinarySearch(neutralPlayerId) < 0)
+                throw new ArgumentException("The map has neutral buildings but no neutral player.", nameof(neutralPlayerId));
+            if (neutralPlayerId == creepPlayerId || neutralPlayerId == legionPlayerId)
+                throw new ArgumentException("The neutral player is neither the creeps nor the Legion.", nameof(neutralPlayerId));
+            foreach (NeutralBuildingSetup n in map.Neutrals)
+            {
+                if (!data.TryGetBuilding(n.BuildingTypeId, out _))
+                    throw new ArgumentException($"Neutral building with unknown type \"{n.BuildingTypeId}\".", nameof(map));
+                if (n.GuardCampIndex >= map.CreepCamps.Count)
+                    throw new ArgumentException($"Neutral building guarded by unknown camp {n.GuardCampIndex}.", nameof(map));
+            }
+        }
 
         if (legionPlayerId != NoPlayer)
         {
@@ -117,12 +140,15 @@ public sealed class MatchSetup
         Map = new MapSetup(mapWidth, mapHeight);
         CreepPlayerId = NoPlayer;
         LegionPlayerId = NoPlayer;
+        NeutralPlayerId = NoPlayer;
     }
 
     public GameData Data { get; }
     public MapSetup Map { get; }
     public int CreepPlayerId { get; }
     public int LegionPlayerId { get; }
+    public int NeutralPlayerId { get; }
+    public MissionGoal Goal { get; }
 
     public int Seed { get; }
     public int MapWidth { get; }

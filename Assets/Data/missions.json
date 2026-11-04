@@ -1,0 +1,18 @@
+[
+  {
+    "id": "coop",
+    "name_ru": "Логово Серых Существ",
+    "map": "coop",
+    "players": 2,
+    "legion": 0,
+    "goal": "kill_boss"
+  },
+  {
+    "id": "m2",
+    "name_ru": "Чёрный Легион",
+    "map": "m2",
+    "players": 1,
+    "legion": 1,
+    "goal": "destroy_legion"
+  }
+]

@@ -71,6 +71,20 @@ public static class MapLoader
 
         foreach (KeyValuePair<string, JsonNode> field in root.Fields)
         {
+            if (field.Key == "neutral")
+            {
+                foreach (JsonNode n in field.Value.Items)
+                {
+                    int guard = -1;
+                    foreach (KeyValuePair<string, JsonNode> f in n.Fields)
+                    {
+                        if (f.Key == "guard")
+                            guard = f.Value.Integer;
+                    }
+                    map.Neutral(n.GetString("building"), n.GetInt("x"), n.GetInt("y"), guard);
+                }
+                continue;
+            }
             if (field.Key != "legion")
                 continue;
             foreach (JsonNode slot in field.Value.Get("slots").Items)

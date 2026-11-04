@@ -50,6 +50,17 @@ public sealed class Unit : Entity
     // Creeps heal while their camp is calm (creep-camp.md, appendix).
     internal int RegenAccumulator { get; set; }
 
+    // builder.md: builders (tag "worker") repair on orders, repairers on their own as well.
+    public bool CanRepair => Worker != null || Stats.HasTag(UnitTags.Repairer);
+    public bool IsBuilder => Stats.HasTag(UnitTags.Builder);
+    public bool IsRepairer => Stats.HasTag(UnitTags.Repairer);
+
+    // Repair: HP accumulator (MaxHp per tick against the target's build work) and cost
+    // accumulators per resource (construction.md, "Реализация в Sim"; builder.md for units).
+    internal int RepairHpAccumulator { get; set; }
+    internal int RepairCostAccumulator { get; set; }
+    internal int RepairCostAccumulatorSecondary { get; set; }
+
     public int CellX => Grid.MilliToCell(X);
     public int CellY => Grid.MilliToCell(Y);
 }

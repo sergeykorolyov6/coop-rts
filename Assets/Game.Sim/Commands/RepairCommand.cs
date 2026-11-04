@@ -3,8 +3,9 @@ using System.IO;
 
 namespace Game.Sim;
 
-// Right-click with workers on an own or ally building: help build it if unfinished
-// (a frozen or ally site, drill.md), otherwise repair it (construction.md).
+// Right-click with builders or repairers on an own or ally building or unit: builders help build
+// an unfinished site (a frozen or ally one, drill.md); otherwise it is repaired (construction.md,
+// builder.md). The id field keeps its old name: the serialized format does not change.
 public sealed class RepairCommand : ICommand
 {
     public const int Id = 5;
@@ -41,13 +42,17 @@ public sealed class RepairCommand : ICommand
 
     public void Execute(SimState state, List<SimEvent> events)
     {
-        Building? target = state.FindBuilding(BuildingId);
-        if (target == null || target.IsDead || !state.Relations.IsAlly(PlayerId, target.OwnerId))
+        // BuildingId may name a unit too: builders and repairers heal own and ally units (builder.md).
+        Entity? target = state.FindEntity(BuildingId);
+        if (target == null || target.IsDead || !state.Relations.IsAlly(PlayerId, target.OwnerId)
+            || (target is Building tb && tb.Stats.Invulnerable))
         {
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
             return;
         }
-        if (target.IsComplete && target.Hp >= target.MaxHp)
+        var site = target as Building;
+        bool unfinished = site != null && !site.IsComplete;
+        if (!unfinished && target.Hp >= target.MaxHp)
         {
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NothingToRepair));
             return;
@@ -56,17 +61,18 @@ public sealed class RepairCommand : ICommand
         bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
         {
-            Worker? worker = unit.Worker;
-            if (worker == null)
+            if (!unit.CanRepair || unit == target)
                 continue;
-            if (target.IsComplete)
+            Worker? worker = unit.Worker;
+            if (!unfinished)
             {
                 if (!UnitOrders.Defer(unit, Queued, UnitOrder.Repair(target.Id), null, ref full))
                     UnitOrders.Replace(unit, UnitOrder.Repair(target.Id));
             }
-            else
+            else if (worker != null)
             {
-                var plan = new PlannedBuild(target.Stats.Id, target.CellX, target.CellY, target.Direction) { ExistingSiteId = target.Id };
+                // Only builders build; a repairer does not help an unfinished site.
+                var plan = new PlannedBuild(site!.Stats.Id, site.CellX, site.CellY, site.Direction) { ExistingSiteId = site.Id };
                 if (UnitOrders.Defer(unit, Queued, UnitOrder.Build(), new[] { plan }, ref full))
                     continue;
                 UnitOrders.Replace(unit, UnitOrder.Build());

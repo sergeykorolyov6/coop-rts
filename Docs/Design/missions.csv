@@ -1,0 +1,3 @@
+id,name_ru,map,players,legion,goal,notes
+m2,Чёрный Легион,m2,1,1,destroy_legion,"mission.md: уничтожить штаб и заводы Легиона; соло"
+coop,Логово Серых Существ,coop,2,0,kill_boss,"mission.md M2+: две базы рядом (F1/F2), без Легиона, много крипов, цель — вожак"

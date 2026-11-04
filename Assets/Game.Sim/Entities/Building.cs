@@ -48,12 +48,20 @@ public sealed class Building : Entity
     public Drill? Drill { get; internal set; }
     public Factory? Factory { get; internal set; }
 
-    // Tick of the last "building attacked" alarm (combat.md: at most once per cooldown).
-    internal int LastAlarmTick { get; set; } = NeverTick;
     public Conveyor? Conveyor { get; internal set; }
     public ConveyorBridge? Bridge { get; internal set; }
     public Storage? Storage { get; internal set; }
     public Turret? Turret { get; internal set; }
+
+    // demolish.md: ticks until the building is gone, 0 when it is not being demolished.
+    public int DemolishTicksLeft { get; internal set; }
+
+    // neutral-buildings.md: capture of a neutral building (ticks and who is capturing, 0 for nobody),
+    // the guard camp that must be cleared first (-1 for none), and who a lighthouse shines for (0: dark).
+    public int CaptureProgress { get; internal set; }
+    public int CapturePlayerId { get; internal set; }
+    public int GuardCampIndex { get; internal set; } = -1;
+    public int LitForPlayerId { get; internal set; }
 
     // Builders or repairers counted so far in the current tick, against MaxBuilders.
     internal int WorkersThisTick { get; set; }

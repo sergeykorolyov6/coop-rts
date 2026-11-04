@@ -9,12 +9,13 @@ public sealed class GameRules
 {
     private static readonly string[] Keys =
     {
-        "start_primary", "start_secondary", "start_workers", "construction_start_hp_pct", "repair_cost_pct",
+        "start_primary", "start_secondary", "construction_start_hp_pct", "repair_cost_pct",
         "interact_range_mc", "drill_rate_per_ore_cell_ticks_per_unit", "drill_buffer", "manual_cargo",
         "manual_mining_rate_ticks_per_unit", "conveyor_item_speed_mc_per_tick", "conveyor_item_spacing_mc",
         "bridge_range", "storage_capacity", "factory_queue", "attack_alarm_cooldown_ticks",
         "ai_think_interval_ticks", "ai_wave_repeat_ticks", "ai_wave_warning_ticks", "ai_defense_calm_ticks",
-        "ai_rebuild_safe_radius_mc",
+        "ai_rebuild_safe_radius_mc", "builder_respawn_ticks", "auto_repair_radius_mc", "factory_stock",
+        "capture_time_ticks", "capture_radius_mc", "lighthouse_radius_mc", "demolish_time_pct", "demolish_refund_pct",
     };
 
     private readonly List<string> _read = new List<string>();
@@ -26,7 +27,6 @@ public sealed class GameRules
 
         StartPrimary = Read(root, "start_primary");
         StartSecondary = Read(root, "start_secondary");
-        StartWorkers = Read(root, "start_workers");
         ConstructionStartHpPercent = Read(root, "construction_start_hp_pct");
         RepairCostPercent = Read(root, "repair_cost_pct");
         InteractRangeMilli = Read(root, "interact_range_mc");
@@ -45,6 +45,14 @@ public sealed class GameRules
         AiWaveWarningTicks = Read(root, "ai_wave_warning_ticks");
         AiDefenseCalmTicks = Read(root, "ai_defense_calm_ticks");
         AiRebuildSafeRadiusMilli = Read(root, "ai_rebuild_safe_radius_mc");
+        BuilderRespawnTicks = Read(root, "builder_respawn_ticks");
+        AutoRepairRadiusMilli = Read(root, "auto_repair_radius_mc");
+        FactoryStock = Read(root, "factory_stock");
+        CaptureTimeTicks = Read(root, "capture_time_ticks");
+        CaptureRadiusMilli = Read(root, "capture_radius_mc");
+        LighthouseRadiusMilli = Read(root, "lighthouse_radius_mc");
+        DemolishTimePercent = Read(root, "demolish_time_pct");
+        DemolishRefundPercent = Read(root, "demolish_refund_pct");
 
         // An unknown key is a typo or a rule the sim does not implement yet; both should be loud.
         foreach (KeyValuePair<string, JsonNode> field in root.Fields)
@@ -56,7 +64,6 @@ public sealed class GameRules
 
     public int StartPrimary { get; }
     public int StartSecondary { get; }
-    public int StartWorkers { get; }
     public int ConstructionStartHpPercent { get; }
     public int RepairCostPercent { get; }
     public int InteractRangeMilli { get; }
@@ -83,6 +90,22 @@ public sealed class GameRules
     public int AiWaveWarningTicks { get; }
     public int AiDefenseCalmTicks { get; }
     public int AiRebuildSafeRadiusMilli { get; }
+
+    // builder.md.
+    public int BuilderRespawnTicks { get; }
+    public int AutoRepairRadiusMilli { get; }
+
+    // factory.md M2: each resource of a conveyor-supplied factory's stock.
+    public int FactoryStock { get; }
+
+    // neutral-buildings.md.
+    public int CaptureTimeTicks { get; }
+    public int CaptureRadiusMilli { get; }
+    public int LighthouseRadiusMilli { get; }
+
+    // demolish.md.
+    public int DemolishTimePercent { get; }
+    public int DemolishRefundPercent { get; }
 
     internal static string ZeroJson()
     {

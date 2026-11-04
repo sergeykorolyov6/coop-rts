@@ -21,7 +21,10 @@ internal static class Combat
     }
 
     public static bool IsValidTarget(SimState state, Unit unit, Entity? target) =>
-        target != null && !target.IsDead && state.Relations.IsEnemy(unit.OwnerId, target.OwnerId);
+        target != null && !target.IsDead && state.Relations.IsEnemy(unit.OwnerId, target.OwnerId) && !IsInvulnerable(target);
+
+    // neutral-buildings.md: caves and lighthouses take no damage, whoever owns them.
+    public static bool IsInvulnerable(Entity target) => target is Building b && b.Stats.Invulnerable;
 
     // One tick against a target: step closer, or strike when in range and ready.
     public static void Engage(SimState state, Unit unit, Entity target)
@@ -156,17 +159,20 @@ internal static class Combat
         foreach (PendingHit hit in state.PendingHits)
         {
             Entity? target = state.FindEntity(hit.TargetId);
-            if (target == null || target.IsDead)
+            if (target == null || target.IsDead || IsInvulnerable(target))
                 continue;
             target.Hp -= hit.Amount;
             target.LastDamagedTick = state.Tick;
             target.LastAttackerId = hit.AttackerId;
             events.Add(new HitLanded(state.Tick, hit.AttackerId, target.Id, hit.Amount));
 
-            if (target is Building b && state.Tick - b.LastAlarmTick >= state.Rules.AttackAlarmCooldownTicks)
+            if (state.Tick - target.LastAlarmTick >= state.Rules.AttackAlarmCooldownTicks)
             {
-                b.LastAlarmTick = state.Tick;
-                events.Add(new BuildingAttacked(state.Tick, b.OwnerId, b.Id, hit.AttackerId));
+                target.LastAlarmTick = state.Tick;
+                if (target is Building b)
+                    events.Add(new BuildingAttacked(state.Tick, b.OwnerId, b.Id, hit.AttackerId));
+                else
+                    events.Add(new UnitAttacked(state.Tick, target.OwnerId, target.Id, hit.AttackerId));
             }
             if (target.Hp <= 0)
             {
