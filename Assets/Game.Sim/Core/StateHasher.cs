@@ -152,6 +152,12 @@ internal sealed class StateHasher
         _writer.Write(u.RepairCostAccumulatorSecondary);
         _writer.Write(u.RepairHpAccumulator);
         _writer.Write(u.LastAlarmTick);
+        _writer.Write(u.BoostTicksLeft);
+        _writer.Write(u.BoostMovePercent);
+        _writer.Write(u.BoostAttackPercent);
+        _writer.Write(u.LastAttackTick);
+        foreach (int cooldown in u._abilityCooldowns)
+            _writer.Write(cooldown);
 
         Worker? w = u.Worker;
         if (w == null)
@@ -216,6 +222,7 @@ internal sealed class StateHasher
         _writer.Write(b.CapturePlayerId);
         _writer.Write(b.GuardCampIndex);
         _writer.Write(b.LitForPlayerId);
+        _writer.Write(b.RegenAccumulator);
         if (b.Factory != null)
         {
             _writer.Write(b.Factory.Progress);

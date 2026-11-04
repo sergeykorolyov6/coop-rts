@@ -1,3 +1,4 @@
-id,name_ru,map,players,legion,goal,notes
-m2,Чёрный Легион,m2,1,1,destroy_legion,"mission.md: уничтожить штаб и заводы Легиона; соло"
-coop,Логово Серых Существ,coop,2,0,kill_boss,"mission.md M2+: две базы рядом (F1/F2), без Легиона, много крипов, цель — вожак"
+id,name_ru,map,players,legion,goal,factions,notes
+m2,Чёрный Легион — Синие Стены,m2,1,1,destroy_legion,blue_walls,"mission.md: уничтожить штаб и заводы Легиона; соло"
+m2_red,Чёрный Легион — Красные Молнии,m2,1,1,destroy_legion,red_lightning,"factions.md: та же миссия за Молнии — сравнить фракции"
+coop,Логово Серых Существ,coop,2,0,kill_boss,blue_walls;red_lightning,"mission.md M2+, factions.md: игрок 1 — Синие Стены, игрок 2 — Красные Молнии (F1/F2)"

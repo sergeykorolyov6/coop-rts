@@ -4,17 +4,25 @@
     "name_ru": "Чёрный Легион",
     "role": "legion",
     "builder": "",
-    "headquarters": "headquarters",
+    "headquarters": "legion_hq",
     "buildings": [
-      "headquarters",
+      "legion_hq",
       "legion_factory",
       "drill",
       "conveyor",
       "conveyor_bridge",
       "storage",
-      "turret"
+      "legion_turret"
     ],
-    "single_headquarters": 0
+    "single_headquarters": 0,
+    "builder_respawn_ticks": 0,
+    "unit_regen_pct_per_s": 0,
+    "building_regen_pct_per_s": 0,
+    "regen_delay_ticks": 0,
+    "first_strike_pct": 100,
+    "first_strike_delay_ticks": 0,
+    "on_kill_ability": "legion_frenzy",
+    "bounty_pct": 25
   },
   {
     "id": "blue_walls",
@@ -29,9 +37,18 @@
       "storage",
       "factory",
       "headquarters",
-      "turret"
+      "turret",
+      "wall"
     ],
-    "single_headquarters": 1
+    "single_headquarters": 1,
+    "builder_respawn_ticks": 300,
+    "unit_regen_pct_per_s": 0,
+    "building_regen_pct_per_s": 1,
+    "regen_delay_ticks": 200,
+    "first_strike_pct": 100,
+    "first_strike_delay_ticks": 0,
+    "on_kill_ability": "",
+    "bounty_pct": 0
   },
   {
     "id": "grey_creatures",
@@ -40,7 +57,15 @@
     "builder": "",
     "headquarters": "",
     "buildings": [],
-    "single_headquarters": 0
+    "single_headquarters": 0,
+    "builder_respawn_ticks": 0,
+    "unit_regen_pct_per_s": 0,
+    "building_regen_pct_per_s": 0,
+    "regen_delay_ticks": 0,
+    "first_strike_pct": 100,
+    "first_strike_delay_ticks": 0,
+    "on_kill_ability": "",
+    "bounty_pct": 0
   },
   {
     "id": "neutral",
@@ -49,6 +74,39 @@
     "builder": "",
     "headquarters": "",
     "buildings": [],
-    "single_headquarters": 0
+    "single_headquarters": 0,
+    "builder_respawn_ticks": 0,
+    "unit_regen_pct_per_s": 0,
+    "building_regen_pct_per_s": 0,
+    "regen_delay_ticks": 0,
+    "first_strike_pct": 100,
+    "first_strike_delay_ticks": 0,
+    "on_kill_ability": "",
+    "bounty_pct": 0
+  },
+  {
+    "id": "red_lightning",
+    "name_ru": "Красные Молнии",
+    "role": "player",
+    "builder": "rl_builder",
+    "headquarters": "rl_hq",
+    "buildings": [
+      "drill",
+      "conveyor",
+      "conveyor_bridge",
+      "storage",
+      "rl_factory",
+      "rl_hq",
+      "rl_tesla"
+    ],
+    "single_headquarters": 1,
+    "builder_respawn_ticks": 200,
+    "unit_regen_pct_per_s": 3,
+    "building_regen_pct_per_s": 0,
+    "regen_delay_ticks": 80,
+    "first_strike_pct": 200,
+    "first_strike_delay_ticks": 60,
+    "on_kill_ability": "",
+    "bounty_pct": 0
   }
 ]

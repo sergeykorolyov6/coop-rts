@@ -13,6 +13,7 @@ public sealed class MissionStats
         Players = row.GetInt("players");
         HasLegion = row.GetInt("legion") != 0;
         Goal = ParseGoal(row.GetString("goal"));
+        Factions = row.GetStringList("factions");
         if (Players < 1)
             throw new FormatException($"Mission \"{Id}\" needs at least one player.");
         if (Goal == MissionGoal.DestroyLegion && !HasLegion)
@@ -27,6 +28,9 @@ public sealed class MissionStats
     public int Players { get; }
     public bool HasLegion { get; }
     public MissionGoal Goal { get; }
+
+    // Faction of start slot 1, 2, …; a slot past the list gets the default player faction.
+    public System.Collections.Generic.IReadOnlyList<string> Factions { get; }
 
     private static MissionGoal ParseGoal(string text)
     {

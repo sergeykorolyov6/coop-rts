@@ -35,8 +35,13 @@ internal static class Combat
             if (unit.AttackCooldown == 0)
             {
                 int raw = target is Building ? unit.Stats.DamageVsBuildings : unit.Stats.Damage;
+                // factions.md, first strike: a blow after a pause hits harder (Red Lightning).
+                FactionStats? faction = state.GetPlayer(unit.OwnerId).Faction;
+                if (faction != null && faction.FirstStrikePercent != 100 && state.Tick - unit.LastAttackTick >= faction.FirstStrikeDelayTicks)
+                    raw = raw * faction.FirstStrikePercent / 100;
+                unit.LastAttackTick = state.Tick;
                 state.PendingHits.Add(new PendingHit(unit.Id, target.Id, DamageRules.Damage(raw, target.Armor)));
-                unit.AttackCooldown = unit.Stats.AttackCooldownTicks;
+                unit.AttackCooldown = unit.AttackCooldownTicks;
             }
             return;
         }
@@ -178,6 +183,7 @@ internal static class Combat
             {
                 target.Hp = 0;
                 target.IsDead = true;
+                FactionTraits.OnKill(state, hit.AttackerId, target);
                 events.Add(new EntityDestroyed(state.Tick, target.OwnerId, target.Id, target is Building, typeId: target is Building tb ? tb.Stats.Id : ((Unit)target).Stats.Id));
             }
         }

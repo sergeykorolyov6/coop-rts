@@ -44,6 +44,14 @@ internal static class SimExtensions
     public static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
         sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
 
+    // Damaged "just now" for good: keeps Blue Walls' self-repair (factions.md) out of a test about
+    // something else, such as the price of a repair.
+    public static T NoSelfRepair<T>(this T e) where T : Entity
+    {
+        e.LastDamagedTick = int.MaxValue / 2;
+        return e;
+    }
+
     // Dead now; removed at the end of the next tick, as after a killing blow.
     public static void Kill(Entity e)
     {

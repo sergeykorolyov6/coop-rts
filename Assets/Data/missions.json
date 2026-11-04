@@ -5,14 +5,32 @@
     "map": "coop",
     "players": 2,
     "legion": 0,
-    "goal": "kill_boss"
+    "goal": "kill_boss",
+    "factions": [
+      "blue_walls",
+      "red_lightning"
+    ]
   },
   {
     "id": "m2",
-    "name_ru": "Чёрный Легион",
+    "name_ru": "Чёрный Легион — Синие Стены",
     "map": "m2",
     "players": 1,
     "legion": 1,
-    "goal": "destroy_legion"
+    "goal": "destroy_legion",
+    "factions": [
+      "blue_walls"
+    ]
+  },
+  {
+    "id": "m2_red",
+    "name_ru": "Чёрный Легион — Красные Молнии",
+    "map": "m2",
+    "players": 1,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "red_lightning"
+    ]
   }
 ]

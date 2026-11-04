@@ -10,18 +10,18 @@ public class GameDataTests
       {""id"": ""worker"", ""name_ru"": ""Рабочий"", ""faction"": ""blue_walls"", ""hp"": 60, ""armor"": 0,
        ""damage"": 4, ""damage_vs_buildings"": 4, ""attack_range_mc"": 500, ""attack_cooldown_ticks"": 20,
        ""move_speed_mc_per_tick"": 120, ""vision_mc"": 5000, ""cost_primary"": 10, ""cost_secondary"": 0,
-       ""build_time_ticks"": 240, ""produced_at"": ""factory"", ""size_mc"": 500, ""tags"": [""worker"", ""melee""]},
+       ""build_time_ticks"": 240, ""produced_at"": ""factory"", ""size_mc"": 500, ""tags"": [""worker"", ""melee""], ""abilities"": []},
       {""id"": ""creep_small"", ""name_ru"": ""Малый крип"", ""faction"": ""grey_creatures"", ""hp"": 80, ""armor"": 0,
        ""damage"": 6, ""damage_vs_buildings"": 6, ""attack_range_mc"": 500, ""attack_cooldown_ticks"": 20,
        ""move_speed_mc_per_tick"": 110, ""vision_mc"": 5000, ""cost_primary"": 0, ""cost_secondary"": 0,
-       ""build_time_ticks"": 0, ""produced_at"": """", ""size_mc"": 600, ""tags"": [""melee"", ""creep""]}
+       ""build_time_ticks"": 0, ""produced_at"": """", ""size_mc"": 600, ""tags"": [""melee"", ""creep""], ""abilities"": []}
     ]";
 
     private const string Buildings = @"[
       {""id"": ""factory"", ""name_ru"": ""Завод"", ""faction"": ""blue_walls"", ""hp"": 1200, ""armor"": 1,
        ""size_w"": 3, ""size_h"": 3, ""cost_primary"": 50, ""cost_secondary"": 0, ""build_time_ticks"": 700,
        ""max_builders"": 4, ""vision_mc"": 7000, ""damage"": 0, ""attack_range_mc"": 0,
-       ""attack_cooldown_ticks"": 0, ""behavior"": """", ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0}
+       ""attack_cooldown_ticks"": 0, ""behavior"": """", ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0, ""placement"": """"}
     ]";
 
     private const string Camps = @"[
@@ -38,7 +38,7 @@ public class GameDataTests
       ""storage_capacity"": 100, ""factory_queue"": 5, ""attack_alarm_cooldown_ticks"": 100,
       ""ai_think_interval_ticks"": 20, ""ai_wave_repeat_ticks"": 2400, ""ai_wave_warning_ticks"": 400,
       ""ai_defense_calm_ticks"": 200, ""ai_rebuild_safe_radius_mc"": 8000,
-      ""builder_respawn_ticks"": 300, ""auto_repair_radius_mc"": 8000, ""factory_stock"": 150,
+      ""auto_repair_radius_mc"": 8000, ""factory_stock"": 150,
       ""capture_time_ticks"": 200, ""capture_radius_mc"": 2000, ""lighthouse_radius_mc"": 2000,
       ""demolish_time_pct"": 25, ""demolish_refund_pct"": 50
     }";
@@ -49,7 +49,6 @@ public class GameDataTests
         GameRules rules = GameData.Parse(Units, Buildings, Camps, Rules).Rules;
         Assert.That(rules.DrillTicksPerUnitPerOreCell, Is.EqualTo(160));
         Assert.That(rules.ConveyorItemSpeedMilliPerTick, Is.EqualTo(200));
-        Assert.That(rules.BuilderRespawnTicks, Is.EqualTo(300));
         Assert.That(rules.DemolishRefundPercent, Is.EqualTo(50));
     }
 

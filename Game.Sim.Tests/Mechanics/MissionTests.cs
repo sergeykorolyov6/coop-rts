@@ -14,7 +14,7 @@ public class MissionTests
         var map = new MapSetup(48, 36)
             .Start(Setups.PlayerA, 2, 2)
             .Start(Setups.PlayerB, 2, 20)
-            .LegionSlot("headquarters", 38, 24)
+            .LegionSlot("legion_hq", 38, 24)
             .LegionSlot("legion_factory", 32, 26)
             .LegionSlot("legion_factory", 32, 30)
             .Rally(28, 22);
@@ -49,7 +49,7 @@ public class MissionTests
         foreach (Building f in Legion(sim).Where(b => b.Factory != null))
             Kill(f);
         sim.Tick();
-        Kill(Legion(sim).Single(b => b.Stats.Id == "headquarters"));
+        Kill(Legion(sim).Single(b => b.Stats.Id == "legion_hq"));
         var ended = sim.RunCollecting<MissionEnded>(40);
         Assert.That(ended, Has.Count.EqualTo(1));
         Assert.That(ended[0].Outcome, Is.EqualTo(MissionOutcome.Victory));
@@ -118,7 +118,7 @@ public class MissionTests
         Wipe(sim, Setups.PlayerA);
         Wipe(sim, Setups.PlayerB, keepWorker: true);
         sim.Tick();
-        Kill(Legion(sim).Single(b => b.Stats.Id == "headquarters"));
+        Kill(Legion(sim).Single(b => b.Stats.Id == "legion_hq"));
         Kill(sim.State.UnitsOf(Setups.PlayerB).Single());
         sim.Tick();
         Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.Victory));
@@ -128,7 +128,7 @@ public class MissionTests
     public void Edge_FactorySiteOfTheLegionCounts_NoVictoryWhileItStands()
     {
         var sim = Match();
-        Building hq = Legion(sim).Single(b => b.Stats.Id == "headquarters");
+        Building hq = Legion(sim).Single(b => b.Stats.Id == "legion_hq");
         foreach (Building f in Legion(sim).Where(b => b.Factory != null))
             Kill(f);
         sim.Tick();

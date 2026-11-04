@@ -93,7 +93,7 @@ end
 camp small_camp 7 52 creeps 6 52 8 52
 camp guard_camp 52 16 creeps 52 16 53 16
 camp guard_camp 29 65 creeps 29 65 30 65
-legion headquarters 66 66
+legion legion_hq 66 66
 legion legion_factory 60 72
 legion legion_factory 72 60
 legion drill 70 66
@@ -103,7 +103,7 @@ legion drill 63 68
 legion_line 61 67 65 67
 legion drill 66 62
 legion_line 66 64 66 65
-legion turret 57 64
-legion turret 64 57
-legion turret 60 60
+legion legion_turret 57 64
+legion legion_turret 64 57
+legion legion_turret 60 60
 rally 58 58

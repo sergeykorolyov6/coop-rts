@@ -68,6 +68,7 @@ public class BuilderTests
         var sim = Match();
         Building turret = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("turret"), 12, 6, Direction.Right, complete: true);
         turret.Hp = 200;
+        turret.NoSelfRepair();
         sim.State.GetPlayer(Setups.PlayerA).Wallet.Add(Resources.Secondary, 20);
         int primary = Wallet(sim, Setups.PlayerA), secondary = Wallet(sim, Setups.PlayerA, Resources.Secondary);
         Unit repairer = Spawn(sim, Setups.PlayerA, "repairer", 9, 9);
@@ -113,6 +114,7 @@ public class BuilderTests
         var sim = Match();
         Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), 20, 10, Direction.Right, complete: true);
         drill.Hp = 150;
+        drill.NoSelfRepair();
         Unit repairer = Spawn(sim, Setups.PlayerA, "repairer", 2, 12);
         sim.Order(ConstructionTests.Repair(sim, Setups.PlayerA, drill, repairer));
         sim.RunUntil(s => drill.Hp == drill.MaxHp, 60 * Second);
@@ -148,6 +150,7 @@ public class BuilderTests
         var sim = Match();
         Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), 12, 6, Direction.Right, complete: true);
         drill.Hp = 100;
+        drill.NoSelfRepair();
         var wallet = sim.State.GetPlayer(Setups.PlayerA).Wallet;
         wallet.TrySpend(Resources.Primary, wallet.Get(Resources.Primary));
         Unit repairer = Spawn(sim, Setups.PlayerA, "repairer", 10, 9);
@@ -166,6 +169,7 @@ public class BuilderTests
         sim.RunUntil(s => repairer.Order.Kind == UnitOrderKind.Idle && repairer.CellX == 16);
         Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), 18, 9, Direction.Right, complete: true);
         drill.Hp = 250;
+        drill.NoSelfRepair();
         sim.RunUntil(s => drill.Hp == drill.MaxHp, 30 * Second);
     }
 

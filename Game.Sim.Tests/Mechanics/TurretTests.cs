@@ -148,7 +148,9 @@ public class TurretTests
             System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "units.json")),
             broken,
             System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "creep_camps.json")),
-            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "rules.json"))));
+            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "rules.json")),
+            "[]", "[]", "[]",
+            System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "abilities.json"))));
         Assert.That(ex!.Message, Does.Contain("turret"));
     }
 

@@ -15,4 +15,7 @@ public enum RejectReason : byte
 
     // factory.md M2: the factory's own stock (filled by belts) cannot pay.
     FactoryStockLow,
+
+    // factions.md: no selected unit has the ability ready.
+    AbilityNotReady,
 }

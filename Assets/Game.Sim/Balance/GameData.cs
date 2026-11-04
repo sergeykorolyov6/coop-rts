@@ -14,10 +14,12 @@ public sealed class GameData
     private readonly List<LegionStats> _legion;
     private readonly List<WaveStats> _waves;
     private readonly List<FactionStats> _factions;
+    private readonly List<AbilityStats> _abilities;
 
     private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps,
-        List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, GameRules rules)
+        List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, List<AbilityStats> abilities, GameRules rules)
     {
+        _abilities = abilities;
         _factions = factions;
         _units = units;
         _buildings = buildings;
@@ -44,17 +46,21 @@ public sealed class GameData
     // factions.csv, sorted by id. Empty in data without players (tests of the core loop).
     public IReadOnlyList<FactionStats> Factions => _factions;
 
+    // abilities.csv, sorted by id.
+    public IReadOnlyList<AbilityStats> Abilities => _abilities;
+
     // Without the Legion tables: matches with no enemy AI (the M1 prototype, most tests).
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson) =>
         Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, "[]", "[]");
 
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
         string legionJson, string wavesJson) =>
-        Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, legionJson, wavesJson, "[]");
+        Parse(unitsJson, buildingsJson, creepCampsJson, rulesJson, legionJson, wavesJson, "[]", "[]");
 
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson,
-        string legionJson, string wavesJson, string factionsJson)
+        string legionJson, string wavesJson, string factionsJson, string abilitiesJson)
     {
+        List<AbilityStats> abilities = ReadTable("abilities.json", abilitiesJson, row => new AbilityStats(row), a => a.Id);
         List<FactionStats> factions = ReadTable("factions.json", factionsJson, row => new FactionStats(row), f => f.Id);
         List<UnitStats> units = ReadTable("units.json", unitsJson, row => new UnitStats(row), u => u.Id);
         List<BuildingStats> buildings = ReadTable("buildings.json", buildingsJson, row => new BuildingStats(row), b => b.Id);
@@ -72,7 +78,7 @@ public sealed class GameData
             throw new FormatException($"rules.json: {e.Message}", e);
         }
 
-        var data = new GameData(units, buildings, camps, legion, waves, factions, rules);
+        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, rules);
         data.Validate();
         return data;
     }
@@ -99,6 +105,11 @@ public sealed class GameData
         TryGetFaction(id, out FactionStats? stats) ? stats! : throw new ArgumentException($"Unknown faction \"{id}\".", nameof(id));
 
     public bool TryGetFaction(string id, out FactionStats? stats) => TryFind(_factions, id, f => f.Id, out stats);
+
+    public AbilityStats Ability(string id) =>
+        TryGetAbility(id, out AbilityStats? stats) ? stats! : throw new ArgumentException($"Unknown ability \"{id}\".", nameof(id));
+
+    public bool TryGetAbility(string id, out AbilityStats? stats) => TryFind(_abilities, id, a => a.Id, out stats);
 
     // The first faction of the role (by id), or null when the data has none.
     public FactionStats? DefaultFaction(FactionRole role)
@@ -220,6 +231,11 @@ public sealed class GameData
         {
             if (u.Hp <= 0)
                 throw new FormatException($"units.json: \"{u.Id}\" has hp {u.Hp}, must be positive.");
+            foreach (string a in u.Abilities)
+            {
+                if (!TryGetAbility(a, out _))
+                    throw new FormatException($"units.json: \"{u.Id}\" has unknown ability \"{a}\".");
+            }
             if (u.ProducedAt.Length > 0 && !TryGetBuilding(u.ProducedAt, out _))
                 throw new FormatException($"units.json: \"{u.Id}\" is produced at unknown building \"{u.ProducedAt}\".");
         }
@@ -253,6 +269,8 @@ public sealed class GameData
                 throw new FormatException($"factions.json: \"{f.Id}\" has builder \"{f.BuilderUnitId}\" that is not a unit tagged builder.");
             if (f.HeadquartersId.Length > 0 && (!TryGetBuilding(f.HeadquartersId, out BuildingStats? hq) || hq!.Behavior != BuildingBehavior.Headquarters))
                 throw new FormatException($"factions.json: \"{f.Id}\" has headquarters \"{f.HeadquartersId}\" that is not a headquarters building.");
+            if (f.OnKillAbilityId.Length > 0 && (!TryGetAbility(f.OnKillAbilityId, out AbilityStats? onKill) || onKill!.Kind != AbilityKind.Boost))
+                throw new FormatException($"factions.json: \"{f.Id}\" has on-kill ability \"{f.OnKillAbilityId}\" that is not a boost.");
             foreach (string b in f.Buildings)
             {
                 if (!TryGetBuilding(b, out _))

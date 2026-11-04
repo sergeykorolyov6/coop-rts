@@ -150,6 +150,8 @@ UNITS = {
     "produced_at": ("produced_at", string),
     "size": ("size_mc", cells_to_milli),
     "tags": ("tags", id_list),
+    # factions.md: ability ids from abilities.csv.
+    "abilities": ("abilities", id_list),
     "reference": None,
     "notes": None,
 }
@@ -180,6 +182,8 @@ BUILDINGS = {
     "supply": ("supply", string),
     # neutral-buildings.md: points of interest nobody can damage (1) or ordinary buildings (0).
     "invulnerable": ("invulnerable", int_),
+    # UI only: "line" — placed by dragging a line, like a conveyor.
+    "placement": ("placement", string),
     "reference": None,
     "notes": None,
 }
@@ -233,6 +237,29 @@ FACTIONS = {
     "headquarters": ("headquarters", string),
     "buildings": ("buildings", id_list),
     "single_headquarters": ("single_headquarters", int_),
+    "builder_respawn_s": ("builder_respawn_ticks", seconds_to_ticks),
+    # Percent of max HP per second, kept as a percentage: the sim runs an exact accumulator.
+    "unit_regen_pct_per_s": ("unit_regen_pct_per_s", int_),
+    "building_regen_pct_per_s": ("building_regen_pct_per_s", int_),
+    "regen_delay_s": ("regen_delay_ticks", seconds_to_ticks),
+    "first_strike_pct": ("first_strike_pct", int_),
+    "first_strike_delay_s": ("first_strike_delay_ticks", seconds_to_ticks),
+    "on_kill_ability": ("on_kill_ability", string),
+    "bounty_pct": ("bounty_pct", int_),
+    "notes": None,
+}
+
+# factions.md: active abilities (blink — jump to a point, boost — a timed buff).
+ABILITIES = {
+    "id": ("id", string),
+    "name_ru": ("name_ru", string),
+    "kind": ("kind", string),
+    "cooldown_s": ("cooldown_ticks", seconds_to_ticks),
+    "range": ("range_mc", cells_to_milli),
+    "duration_s": ("duration_ticks", seconds_to_ticks),
+    "move_speed_pct": ("move_speed_pct", int_),
+    "attack_speed_pct": ("attack_speed_pct", int_),
+    "hp_cost_pct": ("hp_cost_pct", int_),
     "notes": None,
 }
 
@@ -244,6 +271,8 @@ MISSIONS = {
     "players": ("players", int_),
     "legion": ("legion", int_),
     "goal": ("goal", string),
+    # Faction of each start slot in order; a slot past the list gets the default player faction.
+    "factions": ("factions", id_list),
     "notes": None,
 }
 
@@ -256,6 +285,7 @@ TABLES = [
     ("waves.csv", "waves.json", WAVES, "wave"),
     ("missions.csv", "missions.json", MISSIONS, "id"),
     ("factions.csv", "factions.json", FACTIONS, "id"),
+    ("abilities.csv", "abilities.json", ABILITIES, "id"),
 ]
 
 

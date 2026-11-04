@@ -63,6 +63,9 @@ public sealed class Building : Entity
     public int GuardCampIndex { get; internal set; } = -1;
     public int LitForPlayerId { get; internal set; }
 
+    // factions.md: building self-repair (Blue Walls), exact HP accumulator.
+    internal int RegenAccumulator { get; set; }
+
     // Builders or repairers counted so far in the current tick, against MaxBuilders.
     internal int WorkersThisTick { get; set; }
 

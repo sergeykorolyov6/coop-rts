@@ -12,7 +12,30 @@ public sealed class Unit : Entity
         Y = y;
         if (stats.HasTag(UnitTags.Worker))
             Worker = new Worker();
+        _abilityCooldowns = new int[stats.Abilities.Count];
     }
+
+    // factions.md: ticks until each of Stats.Abilities is ready again (0 — ready).
+    internal readonly int[] _abilityCooldowns;
+    public int AbilityCooldown(int index) => _abilityCooldowns[index];
+
+    // factions.md: a running boost (Overdrive, the Legion's frenzy): ticks left and how much
+    // faster the unit moves and attacks meanwhile.
+    public int BoostTicksLeft { get; internal set; }
+    public int BoostMovePercent { get; internal set; }
+    public int BoostAttackPercent { get; internal set; }
+
+    // factions.md, first strike: when the unit last struck.
+    public int LastAttackTick { get; internal set; } = NeverTick;
+
+    // Speed and attack cooldown with the boost applied.
+    public int MoveSpeedMilliPerTick => BoostTicksLeft > 0
+        ? Stats.MoveSpeedMilliPerTick * (100 + BoostMovePercent) / 100
+        : Stats.MoveSpeedMilliPerTick;
+
+    public int AttackCooldownTicks => BoostTicksLeft > 0
+        ? Stats.AttackCooldownTicks * 100 / (100 + BoostAttackPercent)
+        : Stats.AttackCooldownTicks;
 
     public UnitStats Stats { get; }
 

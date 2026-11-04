@@ -21,12 +21,13 @@
       "cave_spitter"
     ],
     "supply": "conveyor",
-    "invulnerable": 1
+    "invulnerable": 1,
+    "placement": ""
   },
   {
     "id": "conveyor",
     "name_ru": "Лента",
-    "faction": "blue_walls",
+    "faction": "common",
     "hp": 50,
     "armor": 0,
     "size_w": 1,
@@ -42,12 +43,13 @@
     "behavior": "conveyor",
     "produces": [],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": "line"
   },
   {
     "id": "conveyor_bridge",
     "name_ru": "Мост",
-    "faction": "blue_walls",
+    "faction": "common",
     "hp": 100,
     "armor": 0,
     "size_w": 1,
@@ -63,12 +65,13 @@
     "behavior": "bridge",
     "produces": [],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "drill",
     "name_ru": "Бур",
-    "faction": "blue_walls",
+    "faction": "common",
     "hp": 300,
     "armor": 0,
     "size_w": 2,
@@ -84,7 +87,8 @@
     "behavior": "drill",
     "produces": [],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "factory",
@@ -112,7 +116,8 @@
       "siege"
     ],
     "supply": "conveyor",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "headquarters",
@@ -133,7 +138,8 @@
     "behavior": "headquarters",
     "produces": [],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "legion_factory",
@@ -159,7 +165,52 @@
       "legion_brute"
     ],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
+  },
+  {
+    "id": "legion_hq",
+    "name_ru": "Цитадель Легиона",
+    "faction": "black_legion",
+    "hp": 2500,
+    "armor": 2,
+    "size_w": 4,
+    "size_h": 4,
+    "cost_primary": 100,
+    "cost_secondary": 0,
+    "build_time_ticks": 1200,
+    "max_builders": 6,
+    "vision_mc": 10000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "headquarters",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "placement": ""
+  },
+  {
+    "id": "legion_turret",
+    "name_ru": "Шип Легиона",
+    "faction": "black_legion",
+    "hp": 450,
+    "armor": 1,
+    "size_w": 2,
+    "size_h": 2,
+    "cost_primary": 40,
+    "cost_secondary": 10,
+    "build_time_ticks": 400,
+    "max_builders": 3,
+    "vision_mc": 9000,
+    "damage": 14,
+    "attack_range_mc": 6000,
+    "attack_cooldown_ticks": 24,
+    "behavior": "",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "lighthouse",
@@ -180,12 +231,84 @@
     "behavior": "lighthouse",
     "produces": [],
     "supply": "",
-    "invulnerable": 1
+    "invulnerable": 1,
+    "placement": ""
+  },
+  {
+    "id": "rl_factory",
+    "name_ru": "Кузня молний",
+    "faction": "red_lightning",
+    "hp": 800,
+    "armor": 0,
+    "size_w": 3,
+    "size_h": 3,
+    "cost_primary": 40,
+    "cost_secondary": 0,
+    "build_time_ticks": 500,
+    "max_builders": 4,
+    "vision_mc": 7000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "",
+    "produces": [
+      "rl_runner",
+      "rl_striker",
+      "rl_lancer",
+      "rl_arc"
+    ],
+    "supply": "conveyor",
+    "invulnerable": 0,
+    "placement": ""
+  },
+  {
+    "id": "rl_hq",
+    "name_ru": "Узел молний",
+    "faction": "red_lightning",
+    "hp": 1400,
+    "armor": 0,
+    "size_w": 4,
+    "size_h": 4,
+    "cost_primary": 80,
+    "cost_secondary": 0,
+    "build_time_ticks": 900,
+    "max_builders": 6,
+    "vision_mc": 10000,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "headquarters",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "placement": ""
+  },
+  {
+    "id": "rl_tesla",
+    "name_ru": "Тесла",
+    "faction": "red_lightning",
+    "hp": 250,
+    "armor": 0,
+    "size_w": 2,
+    "size_h": 2,
+    "cost_primary": 30,
+    "cost_secondary": 5,
+    "build_time_ticks": 240,
+    "max_builders": 3,
+    "vision_mc": 8000,
+    "damage": 8,
+    "attack_range_mc": 5000,
+    "attack_cooldown_ticks": 10,
+    "behavior": "",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "storage",
     "name_ru": "Склад",
-    "faction": "blue_walls",
+    "faction": "common",
     "hp": 600,
     "armor": 1,
     "size_w": 2,
@@ -201,7 +324,8 @@
     "behavior": "storage",
     "produces": [],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
   },
   {
     "id": "turret",
@@ -222,6 +346,29 @@
     "behavior": "",
     "produces": [],
     "supply": "",
-    "invulnerable": 0
+    "invulnerable": 0,
+    "placement": ""
+  },
+  {
+    "id": "wall",
+    "name_ru": "Стена",
+    "faction": "blue_walls",
+    "hp": 400,
+    "armor": 3,
+    "size_w": 1,
+    "size_h": 1,
+    "cost_primary": 4,
+    "cost_secondary": 0,
+    "build_time_ticks": 40,
+    "max_builders": 1,
+    "vision_mc": 0,
+    "damage": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "behavior": "",
+    "produces": [],
+    "supply": "",
+    "invulnerable": 0,
+    "placement": "line"
   }
 ]

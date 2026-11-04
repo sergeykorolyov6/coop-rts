@@ -20,7 +20,8 @@
       "worker",
       "builder",
       "melee"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "cave_beast",
@@ -42,7 +43,8 @@
     "tags": [
       "melee",
       "armored"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "cave_spitter",
@@ -63,7 +65,8 @@
     "size_mc": 800,
     "tags": [
       "ranged"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "creep_big",
@@ -85,7 +88,8 @@
     "tags": [
       "melee",
       "creep"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "creep_boss",
@@ -108,7 +112,8 @@
       "melee",
       "creep",
       "boss"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "creep_small",
@@ -130,7 +135,8 @@
     "tags": [
       "melee",
       "creep"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "heavy",
@@ -152,7 +158,8 @@
     "tags": [
       "ranged",
       "armored"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "infantry",
@@ -173,7 +180,8 @@
     "size_mc": 700,
     "tags": [
       "melee"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "legion_brute",
@@ -195,7 +203,8 @@
     "tags": [
       "melee",
       "armored"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "legion_gunner",
@@ -216,7 +225,8 @@
     "size_mc": 600,
     "tags": [
       "ranged"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "legion_raider",
@@ -238,7 +248,8 @@
     "tags": [
       "melee",
       "fast"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "legion_worker",
@@ -260,7 +271,8 @@
     "tags": [
       "worker",
       "melee"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "repairer",
@@ -281,6 +293,128 @@
     "size_mc": 500,
     "tags": [
       "repairer"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "rl_arc",
+    "name_ru": "Дуговик",
+    "faction": "red_lightning",
+    "hp": 110,
+    "armor": 0,
+    "damage": 12,
+    "damage_vs_buildings": 45,
+    "attack_range_mc": 7000,
+    "attack_cooldown_ticks": 30,
+    "move_speed_mc_per_tick": 130,
+    "vision_mc": 8000,
+    "cost_primary": 35,
+    "cost_secondary": 20,
+    "build_time_ticks": 500,
+    "produced_at": "rl_factory",
+    "size_mc": 900,
+    "tags": [
+      "siege",
+      "ranged"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "rl_builder",
+    "name_ru": "Искра",
+    "faction": "red_lightning",
+    "hp": 140,
+    "armor": 0,
+    "damage": 6,
+    "damage_vs_buildings": 6,
+    "attack_range_mc": 1000,
+    "attack_cooldown_ticks": 16,
+    "move_speed_mc_per_tick": 180,
+    "vision_mc": 8000,
+    "cost_primary": 0,
+    "cost_secondary": 0,
+    "build_time_ticks": 300,
+    "produced_at": "",
+    "size_mc": 600,
+    "tags": [
+      "worker",
+      "builder",
+      "melee"
+    ],
+    "abilities": []
+  },
+  {
+    "id": "rl_lancer",
+    "name_ru": "Копейщик",
+    "faction": "red_lightning",
+    "hp": 240,
+    "armor": 1,
+    "damage": 20,
+    "damage_vs_buildings": 20,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 20,
+    "move_speed_mc_per_tick": 150,
+    "vision_mc": 6000,
+    "cost_primary": 40,
+    "cost_secondary": 10,
+    "build_time_ticks": 440,
+    "produced_at": "rl_factory",
+    "size_mc": 800,
+    "tags": [
+      "melee",
+      "armored"
+    ],
+    "abilities": [
+      "rl_overdrive"
+    ]
+  },
+  {
+    "id": "rl_runner",
+    "name_ru": "Бегун",
+    "faction": "red_lightning",
+    "hp": 70,
+    "armor": 0,
+    "damage": 7,
+    "damage_vs_buildings": 7,
+    "attack_range_mc": 500,
+    "attack_cooldown_ticks": 10,
+    "move_speed_mc_per_tick": 200,
+    "vision_mc": 7000,
+    "cost_primary": 12,
+    "cost_secondary": 0,
+    "build_time_ticks": 160,
+    "produced_at": "rl_factory",
+    "size_mc": 500,
+    "tags": [
+      "melee",
+      "fast"
+    ],
+    "abilities": [
+      "rl_overdrive"
+    ]
+  },
+  {
+    "id": "rl_striker",
+    "name_ru": "Разрядник",
+    "faction": "red_lightning",
+    "hp": 90,
+    "armor": 0,
+    "damage": 10,
+    "damage_vs_buildings": 10,
+    "attack_range_mc": 4500,
+    "attack_cooldown_ticks": 16,
+    "move_speed_mc_per_tick": 160,
+    "vision_mc": 7000,
+    "cost_primary": 25,
+    "cost_secondary": 0,
+    "build_time_ticks": 300,
+    "produced_at": "rl_factory",
+    "size_mc": 600,
+    "tags": [
+      "ranged"
+    ],
+    "abilities": [
+      "rl_blink"
     ]
   },
   {
@@ -303,7 +437,8 @@
     "tags": [
       "scout",
       "ranged"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "shooter",
@@ -324,7 +459,8 @@
     "size_mc": 600,
     "tags": [
       "ranged"
-    ]
+    ],
+    "abilities": []
   },
   {
     "id": "siege",
@@ -346,6 +482,7 @@
     "tags": [
       "siege",
       "ranged"
-    ]
+    ],
+    "abilities": []
   }
 ]

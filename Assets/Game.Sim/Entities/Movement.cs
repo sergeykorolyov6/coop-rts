@@ -102,7 +102,7 @@ internal static class Movement
     {
         long dx = x - unit.X, dy = y - unit.Y;
         long dist = IntMath.Sqrt(dx * dx + dy * dy);
-        int speed = unit.Stats.MoveSpeedMilliPerTick;
+        int speed = unit.MoveSpeedMilliPerTick;
         if (dist <= speed)
         {
             unit.StepX = x - unit.X;

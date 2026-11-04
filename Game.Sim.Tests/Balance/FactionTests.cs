@@ -25,13 +25,16 @@ public class FactionTests
         var factions = Node.Parse(Json("factions.json"))!.AsArray();
         factions.Add(new JsonObject
         {
-            ["id"] = "red_lightning", ["name_ru"] = "Красные Молнии", ["role"] = "player",
+            ["id"] = "test_faction", ["name_ru"] = "Тестовая фракция", ["role"] = "player",
             ["builder"] = "red_builder", ["headquarters"] = "red_hq",
             ["buildings"] = new JsonArray("red_drill", "conveyor"), ["single_headquarters"] = 1,
+            ["builder_respawn_ticks"] = 200, ["unit_regen_pct_per_s"] = 0, ["building_regen_pct_per_s"] = 0,
+            ["regen_delay_ticks"] = 0, ["first_strike_pct"] = 100, ["first_strike_delay_ticks"] = 0,
+            ["on_kill_ability"] = "", ["bounty_pct"] = 0,
         });
         editFactions?.Invoke(factions);
         return GameData.Parse(units.ToJsonString(), buildings.ToJsonString(), Json("creep_camps.json"), Json("rules.json"),
-            Json("legion.json"), Json("waves.json"), factions.ToJsonString());
+            Json("legion.json"), Json("waves.json"), factions.ToJsonString(), Json("abilities.json"));
     }
 
     private static JsonArray Copy(string json, string id, string newId)
@@ -55,7 +58,7 @@ public class FactionTests
     public void EveryPlayer_GetsTheFirstFactionOfItsRole()
     {
         var sim = new Simulation(Setups.WithLegion(new MapSetup(48, 36).Start(Setups.PlayerA, 2, 2)
-            .LegionSlot("headquarters", 38, 24).Rally(28, 22)));
+            .LegionSlot("legion_hq", 38, 24).Rally(28, 22)));
         SimState s = sim.State;
         Assert.That(s.GetPlayer(Setups.PlayerA).Faction!.Id, Is.EqualTo("blue_walls"));
         Assert.That(s.GetPlayer(Setups.EnemyAi).Faction!.Id, Is.EqualTo("black_legion"));
@@ -65,7 +68,7 @@ public class FactionTests
     [Test]
     public void SecondFaction_StartsWithItsOwnHeadquartersAndBuilder_AndGetsThatBuilderBack()
     {
-        var sim = new Simulation(Setup(WithRedLightning(), new PlayerFaction(Setups.PlayerB, "red_lightning")));
+        var sim = new Simulation(Setup(WithRedLightning(), new PlayerFaction(Setups.PlayerB, "test_faction")));
         SimState s = sim.State;
         Assert.That(s.FindHeadquarters(Setups.PlayerB)!.Stats.Id, Is.EqualTo("red_hq"));
         Assert.That(s.FindBuilder(Setups.PlayerB)!.Stats.Id, Is.EqualTo("red_builder"));
@@ -79,7 +82,7 @@ public class FactionTests
     [Test]
     public void SecondFaction_BuildsOnlyItsList_AndItsDrillMinesByItsBehaviour()
     {
-        var sim = new Simulation(Setup(WithRedLightning(), new PlayerFaction(Setups.PlayerB, "red_lightning")));
+        var sim = new Simulation(Setup(WithRedLightning(), new PlayerFaction(Setups.PlayerB, "test_faction")));
         SimState s = sim.State;
         Unit red = s.FindBuilder(Setups.PlayerB)!;
         sim.Order(new BuildCommand(Setups.PlayerB, s.Tick, new[] { red.Id }, "factory", new[] { new BuildSite(24, 8, Direction.Right) }));

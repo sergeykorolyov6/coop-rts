@@ -1,0 +1,4 @@
+id,name_ru,kind,cooldown_s,range,duration_s,move_speed_pct,attack_speed_pct,hp_cost_pct,notes
+rl_blink,Рывок,blink,8,6,0,0,0,0,"factions.md: мгновенный перенос к точке; SC2 Blink (дальн. 8, 7 с)"
+rl_overdrive,Перегрузка,boost,15,0,5,50,50,10,"factions.md: SC2 Stimpack (+50 %, 10 HP, 11 с)"
+legion_frenzy,Жажда,boost,0,0,4,20,40,0,"factions.md: черта Легиона, включается сама за убийство"

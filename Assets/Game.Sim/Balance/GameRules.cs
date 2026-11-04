@@ -14,7 +14,7 @@ public sealed class GameRules
         "manual_mining_rate_ticks_per_unit", "conveyor_item_speed_mc_per_tick", "conveyor_item_spacing_mc",
         "bridge_range", "storage_capacity", "factory_queue", "attack_alarm_cooldown_ticks",
         "ai_think_interval_ticks", "ai_wave_repeat_ticks", "ai_wave_warning_ticks", "ai_defense_calm_ticks",
-        "ai_rebuild_safe_radius_mc", "builder_respawn_ticks", "auto_repair_radius_mc", "factory_stock",
+        "ai_rebuild_safe_radius_mc", "auto_repair_radius_mc", "factory_stock",
         "capture_time_ticks", "capture_radius_mc", "lighthouse_radius_mc", "demolish_time_pct", "demolish_refund_pct",
     };
 
@@ -45,7 +45,6 @@ public sealed class GameRules
         AiWaveWarningTicks = Read(root, "ai_wave_warning_ticks");
         AiDefenseCalmTicks = Read(root, "ai_defense_calm_ticks");
         AiRebuildSafeRadiusMilli = Read(root, "ai_rebuild_safe_radius_mc");
-        BuilderRespawnTicks = Read(root, "builder_respawn_ticks");
         AutoRepairRadiusMilli = Read(root, "auto_repair_radius_mc");
         FactoryStock = Read(root, "factory_stock");
         CaptureTimeTicks = Read(root, "capture_time_ticks");
@@ -92,7 +91,6 @@ public sealed class GameRules
     public int AiRebuildSafeRadiusMilli { get; }
 
     // builder.md.
-    public int BuilderRespawnTicks { get; }
     public int AutoRepairRadiusMilli { get; }
 
     // factory.md M2: each resource of a conveyor-supplied factory's stock.

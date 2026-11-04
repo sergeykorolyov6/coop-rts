@@ -21,6 +21,7 @@ internal static class UnitSystem
             units[i].StepY = 0;
             if (units[i].AttackCooldown > 0)
                 units[i].AttackCooldown--;
+            AbilitySystem.TickTimers(units[i]);
         }
         for (int i = 0; i < count; i++)
         {
@@ -95,7 +96,7 @@ internal static class UnitSystem
         {
             if (other == unit || other.IsDead || other.OwnerId != unit.OwnerId || other.Order.Kind != UnitOrderKind.Idle)
                 continue;
-            long touch = unit.Radius + other.Radius + unit.Stats.MoveSpeedMilliPerTick;
+            long touch = unit.Radius + other.Radius + unit.MoveSpeedMilliPerTick;
             // Only units standing around the point count, not one idling somewhere on the way.
             long nearTarget = (unit.Radius + other.Radius) * GroupArrivalSpread;
             long otherDist2 = Dist2(other.X, other.Y, x, y);

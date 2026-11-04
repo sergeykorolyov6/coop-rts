@@ -1,0 +1,35 @@
+[
+  {
+    "id": "legion_frenzy",
+    "name_ru": "Жажда",
+    "kind": "boost",
+    "cooldown_ticks": 0,
+    "range_mc": 0,
+    "duration_ticks": 80,
+    "move_speed_pct": 20,
+    "attack_speed_pct": 40,
+    "hp_cost_pct": 0
+  },
+  {
+    "id": "rl_blink",
+    "name_ru": "Рывок",
+    "kind": "blink",
+    "cooldown_ticks": 160,
+    "range_mc": 6000,
+    "duration_ticks": 0,
+    "move_speed_pct": 0,
+    "attack_speed_pct": 0,
+    "hp_cost_pct": 0
+  },
+  {
+    "id": "rl_overdrive",
+    "name_ru": "Перегрузка",
+    "kind": "boost",
+    "cooldown_ticks": 300,
+    "range_mc": 0,
+    "duration_ticks": 100,
+    "move_speed_pct": 50,
+    "attack_speed_pct": 50,
+    "hp_cost_pct": 10
+  }
+]

@@ -28,6 +28,7 @@ public sealed class BuildingStats
         Behavior = ParseBehavior(row.GetString("behavior"));
         Supply = row.GetString("supply");
         Invulnerable = row.GetInt("invulnerable") != 0;
+        LinePlacement = row.GetString("placement") == "line";
     }
 
     public string Id { get; }
@@ -70,6 +71,9 @@ public sealed class BuildingStats
 
     // neutral-buildings.md: points of interest nobody can damage.
     public bool Invulnerable { get; }
+
+    // For the UI: placed by dragging a line (conveyors, walls).
+    public bool LinePlacement { get; }
 
     private static BuildingBehavior ParseBehavior(string text)
     {

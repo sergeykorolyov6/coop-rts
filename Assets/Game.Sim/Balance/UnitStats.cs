@@ -6,6 +6,7 @@ namespace Game.Sim;
 public sealed class UnitStats
 {
     private readonly List<string> _tags;
+    private readonly List<string> _abilities;
 
     internal UnitStats(JsonNode row)
     {
@@ -26,6 +27,7 @@ public sealed class UnitStats
         ProducedAt = row.GetString("produced_at");
         SizeMilli = row.GetInt("size_mc");
         _tags = row.GetStringList("tags");
+        _abilities = row.GetStringList("abilities");
     }
 
     public string Id { get; }
@@ -52,4 +54,7 @@ public sealed class UnitStats
     public IReadOnlyList<string> Tags => _tags;
 
     public bool HasTag(string tag) => _tags.Contains(tag);
+
+    // factions.md: ids of abilities.csv the unit can use, in button order.
+    public IReadOnlyList<string> Abilities => _abilities;
 }

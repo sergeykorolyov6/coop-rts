@@ -44,7 +44,7 @@ public class MissionMapTests
 
         LegionAi ai = s.Legion!;
         Assert.That(ai.Slots.All(slot => s.FindBuilding(slot.BuildingId)?.IsComplete == true), Is.True);
-        Assert.That(ai.Slots.Count(slot => slot.Setup.BuildingTypeId == "turret"), Is.EqualTo(3));
+        Assert.That(ai.Slots.Count(slot => slot.Setup.BuildingTypeId == "legion_turret"), Is.EqualTo(3));
         Assert.That(ai.Slots.Count(slot => slot.Setup.BuildingTypeId == "legion_factory"), Is.EqualTo(2));
         Assert.That(s.CreepCamps, Has.Count.EqualTo(3));
     }

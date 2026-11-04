@@ -81,6 +81,7 @@ public sealed class Simulation
         CreepCampSystem.EndTick(State);
         TurretSystem.Tick(State);
         Combat.ApplyHits(State, _events);
+        FactionTraits.Regenerate(State);
         DemolishSystem.Tick(State, _events);
         BuilderSystem.Tick(State, _events);
         FactorySystem.Tick(State, _events);

@@ -25,13 +25,13 @@ public class LegionAiTests
             .OreRect(42, 24, 2, 2, Resources.Primary)
             .OreRect(39, 30, 2, 2, Resources.Primary)
             .Start(Setups.PlayerA, 2, 2)
-            .LegionSlot("headquarters", 38, 24)
+            .LegionSlot("legion_hq", 38, 24)
             .LegionSlot("legion_factory", 32, 26)
             .LegionSlot("legion_factory", 32, 30)
             .LegionSlot("drill", 42, 24)
             .LegionSlot("drill", 39, 30)
             .LegionLine(40, 29, 40, 28)
-            .LegionSlot("turret", 44, 18)
+            .LegionSlot("legion_turret", 44, 18)
             .Rally(28, 22);
         if (twoPlayers)
             map.Start(Setups.PlayerB, 2, 24);

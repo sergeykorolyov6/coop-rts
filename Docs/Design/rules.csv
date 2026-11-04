@@ -19,7 +19,6 @@ ai_wave_repeat,120,s,Повтор последней волны,legion-ai.md (р
 ai_wave_warning,20,s,Предупреждение о волне,legion-ai.md (решение Claude),"Как в совместном режиме SC2"
 ai_defense_calm,10,s,Оборона базы: сколько без урона до отбоя,legion-ai.md (решение Claude),
 ai_rebuild_safe_radius,8,cells,Восстановление: врагов не ближе,legion-ai.md (решение Claude),"Чтобы ИИ не кормил осаду рабочими"
-builder_respawn,15,s,Возрождение строителя,builder.md (решение Claude),"У своего достроенного штаба, иначе у штаба союзника"
 auto_repair_radius,8,cells,Радиус авторемонта ремонтника,builder.md (решение Claude),
 factory_stock,150,int,Склад завода (каждого ресурса),factory.md M2 (решение Claude),"Mindustry unit factory: запас на 2–3 юнита"
 capture_time,10,s,Время захвата нейтрального здания,neutral-buildings.md (решение Claude),

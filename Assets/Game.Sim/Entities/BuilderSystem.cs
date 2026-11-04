@@ -20,7 +20,7 @@ internal static class BuilderSystem
             {
                 if (state.FindBuilder(playerId) == null)
                 {
-                    player.BuilderRespawnTick = state.Tick + state.Rules.BuilderRespawnTicks;
+                    player.BuilderRespawnTick = state.Tick + player.Faction!.BuilderRespawnTicks;
                     events.Add(new BuilderDied(state.Tick, playerId, player.BuilderRespawnTick));
                 }
                 continue;

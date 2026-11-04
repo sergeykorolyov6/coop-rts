@@ -49,6 +49,7 @@ public class ConstructionTests
         var sim = Match();
         Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), 12, 6, Direction.Right, complete: true);
         drill.Hp = 150;
+        drill.NoSelfRepair();
         int a = Wallet(sim, Setups.PlayerA), b = Wallet(sim, Setups.PlayerB);
 
         Unit worker = Worker(sim, Setups.PlayerB);
@@ -88,7 +89,8 @@ public class ConstructionTests
     {
         var sim = Match();
         Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), 12, 6, Direction.Right, complete: true);
-        drill.Hp = 280;  // 20 HP missing = exactly 1 unit (30 × 20 = 600)
+        drill.Hp = 280;
+        drill.NoSelfRepair();  // 20 HP missing = exactly 1 unit (30 × 20 = 600)
         int before = Wallet(sim, Setups.PlayerA);
         sim.Order(Repair(sim, Setups.PlayerA, drill, Worker(sim, Setups.PlayerA)));
         sim.RunUntil(s => drill.Hp == drill.MaxHp);
@@ -101,6 +103,7 @@ public class ConstructionTests
         var sim = Match();
         Building factory = sim.State.PlaceBuilding(Setups.PlayerB, sim.State.Data.Building("factory"), 12, 6, Direction.Right, complete: true);
         factory.Hp = 100;
+        factory.NoSelfRepair();
         var wallet = sim.State.GetPlayer(Setups.PlayerA).Wallet;
         wallet.TrySpend(Resources.Primary, wallet.Get(Resources.Primary) - 2);  // 2 units left
 

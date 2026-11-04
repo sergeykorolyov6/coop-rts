@@ -37,7 +37,11 @@ public static class MissionLauncher
             if (legion)
                 relations.Add(new RelationSetup(a, LegionPlayerId, Relation.Enemy));
         }
+        // factions.md: the mission names the faction of every start slot; the rest get the default.
+        var factions = new List<PlayerFaction>();
+        for (int i = 0; i < humans.Count && i < mission.Factions.Count; i++)
+            factions.Add(new PlayerFaction(humans[i], mission.Factions[i]));
         return new MatchSetup(seed, data, map, ResourceTypeCount, playerIds, relations,
-            CreepPlayerId, legion ? LegionPlayerId : MatchSetup.NoPlayer, NeutralPlayerId, mission.Goal);
+            CreepPlayerId, legion ? LegionPlayerId : MatchSetup.NoPlayer, NeutralPlayerId, mission.Goal, factions);
     }
 }

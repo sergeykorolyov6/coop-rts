@@ -1,5 +1,6 @@
-id,name_ru,role,builder,headquarters,buildings,single_headquarters,notes
-blue_walls,Синие Стены,player,builder,headquarters,drill;conveyor;conveyor_bridge;storage;factory;headquarters;turret,1,"vision.md: прочность прощает ошибки. Порядок buildings — порядок кнопок меню стройки"
-black_legion,Чёрный Легион,legion,,headquarters,headquarters;legion_factory;drill;conveyor;conveyor_bridge;storage;turret,0,"legion-ai.md: строит рабочими (не строителем), штабов может быть несколько (ответ 6)"
-grey_creatures,Серые Существа,creeps,,,,0,"creep-camp.md: ничего не строят"
-neutral,Нейтральные здания,neutral,,,,0,"neutral-buildings.md: владелец пещер, маяков и нейтральных буров до захвата"
+id,name_ru,role,builder,headquarters,buildings,single_headquarters,builder_respawn_s,unit_regen_pct_per_s,building_regen_pct_per_s,regen_delay_s,first_strike_pct,first_strike_delay_s,on_kill_ability,bounty_pct,notes
+blue_walls,Синие Стены,player,builder,headquarters,drill;conveyor;conveyor_bridge;storage;factory;headquarters;turret;wall,1,15,0,1,10,100,0,,0,"vision.md: прочность прощает ошибки. Порядок buildings — порядок кнопок меню стройки (factions.md)"
+red_lightning,Красные Молнии,player,rl_builder,rl_hq,drill;conveyor;conveyor_bridge;storage;rl_factory;rl_hq;rl_tesla,1,10,3,0,4,200,3,,0,"vision.md: скорость и микроконтроль. Первый удар ×2, регенерация юнитов (factions.md)"
+black_legion,Чёрный Легион,legion,,legion_hq,legion_hq;legion_factory;drill;conveyor;conveyor_bridge;storage;legion_turret,0,0,0,0,0,100,0,legion_frenzy,25,"legion-ai.md, factions.md: Жажда за убийство, мародёрство с разрушенных зданий"
+grey_creatures,Серые Существа,creeps,,,,0,0,0,0,0,100,0,,0,"creep-camp.md: ничего не строят"
+neutral,Нейтральные здания,neutral,,,,0,0,0,0,0,100,0,,0,"neutral-buildings.md: владелец пещер, маяков и нейтральных буров до захвата"

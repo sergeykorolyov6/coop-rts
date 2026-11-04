@@ -24,5 +24,6 @@ public static class GameCommands
         codec.Register(CarryTrophyCommand.Id, CarryTrophyCommand.Read);
         codec.Register(SetRallyCommand.Id, SetRallyCommand.Read);
         codec.Register(DemolishCommand.Id, DemolishCommand.Read);
+        codec.Register(UseAbilityCommand.Id, UseAbilityCommand.Read);
     }
 }
