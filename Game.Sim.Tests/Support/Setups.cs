@@ -64,6 +64,26 @@ internal static class Setups
             creepPlayerId: Creeps,
             legionPlayerId: EnemyAi);
 
+    public const int Neutral = 11;
+
+    // The co-op layout plus the neutral owner of the map's neutral buildings (neutral-buildings.md).
+    public static MatchSetup WithNeutral(MapSetup map, int seed = 42, MissionGoal? goal = null) =>
+        new MatchSetup(
+            seed,
+            RepoData.Get(),
+            map,
+            resourceTypeCount: 2,
+            playerIds: new[] { PlayerA, PlayerB, EnemyAi, Creeps, Neutral },
+            relations: new[]
+            {
+                new RelationSetup(PlayerA, PlayerB, Relation.Ally),
+                new RelationSetup(PlayerA, EnemyAi, Relation.Enemy),
+                new RelationSetup(PlayerB, EnemyAi, Relation.Enemy),
+            },
+            creepPlayerId: Creeps,
+            neutralPlayerId: Neutral,
+            goal: goal);
+
     public static MatchSetup Solo(int seed = 42) =>
         new MatchSetup(seed, 16, 16, 2, new[] { 1 }, Array.Empty<RelationSetup>());
 }

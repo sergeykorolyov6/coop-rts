@@ -88,8 +88,7 @@ public sealed class SaveGame
                 throw new InvalidDataException($"Command for tick {command.Tick} at or after the save tick {Tick}.");
             simulation.Enqueue(command);
         }
-        while (simulation.State.Tick < Tick)
-            simulation.Tick();
+        simulation.FastForward(Tick);
         if (simulation.StateHash != StateHash)
             throw new InvalidDataException("Replaying the save gives another match: the game's rules or data changed.");
         return simulation;

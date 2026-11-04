@@ -69,6 +69,10 @@ public sealed class SimState
         }
 
         Fog = new FogOfWar(_players, Map.Width, Map.Height);
+        if (CreepPlayerId != MatchSetup.NoPlayer)
+            Fog.SetBlind(CreepPlayerId);
+        if (NeutralPlayerId != MatchSetup.NoPlayer)
+            Fog.SetBlind(NeutralPlayerId);
         Fog.Update(this);
     }
 

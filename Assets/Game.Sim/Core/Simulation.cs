@@ -52,7 +52,17 @@ public sealed class Simulation
         _log.Add(command);
     }
 
-    public void Tick()
+    public void Tick() => Step(computeHash: true);
+
+    // save-load.md: replays up to the tick without hashing the ticks in between; events of those
+    // ticks are not kept. StateHash is that of the last tick.
+    public void FastForward(int tick)
+    {
+        while (State.Tick < tick)
+            Step(computeHash: State.Tick + 1 == tick);
+    }
+
+    private void Step(bool computeHash)
     {
         _events.Clear();
         int tick = State.Tick;
@@ -84,7 +94,8 @@ public sealed class Simulation
         State.Fog.Update(State);
 
         State.Tick = tick + 1;
-        StateHash = _hasher.Compute(State);
+        if (computeHash)
+            StateHash = _hasher.Compute(State);
     }
 
     private static int ComparePending(PendingCommand a, PendingCommand b)

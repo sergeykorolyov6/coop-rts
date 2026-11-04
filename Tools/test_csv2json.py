@@ -152,11 +152,28 @@ class LegionMapTest(unittest.TestCase):
             c.id_count_list("a:0")
 
 
+class NeutralMapTest(unittest.TestCase):
+    SIZES = {"headquarters": (2, 2), "drill": (2, 2), "cave": (2, 2)}
+
+    def test_neutral_buildings_and_guard(self):
+        text = "map\n......\n..oo..\n..oo..\n......\nend\ncamp g 5 0 creeps 5 0\nneutral drill 2 1\nneutral cave 0 2 guard 1\n"
+        data = c.convert_map(text, "m.txt", {"g": 1}, (1, 1), self.SIZES)
+        self.assertEqual(data["neutral"], [{"building": "drill", "x": 2, "y": 1}, {"building": "cave", "x": 0, "y": 2, "guard": 0}])
+
+    def test_unknown_guard_camp(self):
+        with self.assertRaisesRegex(c.ConvertError, "лагеря номер 2"):
+            c.convert_map("map\n....\n....\nend\nneutral cave 0 0 guard 2\n", "m.txt", {}, (1, 1), self.SIZES)
+
+    def test_neutral_drill_off_ore(self):
+        with self.assertRaisesRegex(c.ConvertError, "руде"):
+            c.convert_map("map\n....\n....\nend\nneutral drill 0 0\n", "m.txt", {}, (1, 1), self.SIZES)
+
+
 class RepoDataTest(unittest.TestCase):
     def test_repo_csv_converts(self):
         outputs = c.build_all()
         names = sorted(p.name for p in outputs)
-        for name in ("units.json", "buildings.json", "creep_camps.json", "rules.json", "legion.json", "waves.json", "prototype.json"):
+        for name in ("units.json", "buildings.json", "creep_camps.json", "rules.json", "legion.json", "waves.json", "missions.json", "prototype.json", "coop.json"):
             self.assertIn(name, names)
 
 

@@ -14,6 +14,10 @@ public sealed class FogOfWar
     private readonly bool[][] _visible;
     private readonly bool[][] _discovered;
 
+    // Players nobody plays against the fog for (the creeps, the neutral owner): their sight is
+    // never used, so the update skips them — on a big map that is most of the fog's cost.
+    private readonly bool[] _blind;
+
     internal FogOfWar(IReadOnlyList<Player> players, int width, int height)
     {
         _players = players;
@@ -22,6 +26,7 @@ public sealed class FogOfWar
         _ownSight = new bool[players.Count][];
         _visible = new bool[players.Count][];
         _discovered = new bool[players.Count][];
+        _blind = new bool[players.Count];
         for (int i = 0; i < players.Count; i++)
         {
             _ownSight[i] = new bool[width * height];
@@ -64,6 +69,8 @@ public sealed class FogOfWar
 
     internal bool[] DiscoveredByIndex(int playerIndex) => _discovered[playerIndex];
 
+    internal void SetBlind(int playerId) => _blind[IndexOf(playerId)] = true;
+
     internal void Update(SimState state)
     {
         for (int i = 0; i < _players.Count; i++)
@@ -92,12 +99,14 @@ public sealed class FogOfWar
 
         for (int i = 0; i < _players.Count; i++)
         {
+            if (_blind[i])
+                continue;
             bool[] visible = _visible[i];
             bool[] discovered = _discovered[i];
             System.Array.Clear(visible, 0, visible.Length);
             for (int j = 0; j < _players.Count; j++)
             {
-                if (!state.Relations.IsAlly(_players[i].Id, _players[j].Id))
+                if (_blind[j] || !state.Relations.IsAlly(_players[i].Id, _players[j].Id))
                     continue;
                 bool[] sight = _ownSight[j];
                 for (int c = 0; c < sight.Length; c++)
@@ -117,7 +126,7 @@ public sealed class FogOfWar
     // Cells whose centers lie within the radius of the point.
     private void Reveal(int playerIndex, int x, int y, int radius)
     {
-        if (radius <= 0)
+        if (radius <= 0 || _blind[playerIndex])
             return;
         bool[] sight = _ownSight[playerIndex];
         long r2 = (long)radius * radius;
