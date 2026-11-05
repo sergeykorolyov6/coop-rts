@@ -147,7 +147,8 @@ namespace Game.Presentation
             {
                 int index = _buttons.Count;
                 var button = new Button(() => { if (index < _abilities.Count) Press(_abilities[index]); });
-                button.style.width = 110;
+                // Wide enough for "Воодушевление (E)" on one line.
+                button.style.width = 140;
                 button.style.height = 52;
                 button.style.whiteSpace = WhiteSpace.Normal;
                 Hud.StyleButton(button);
