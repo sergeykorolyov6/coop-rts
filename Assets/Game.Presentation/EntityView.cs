@@ -46,6 +46,10 @@ namespace Game.Presentation
         [SerializeField] private float _flashSeconds = 0.08f;
         [Tooltip("Degrees per second of a working drill's rotor.")]
         [SerializeField] private float _rotorSpeed = 240f;
+        [Tooltip("Degrees per second a unit model turns to where it goes or what it works on.")]
+        [SerializeField] private float _turnSpeed = 720f;
+        [Tooltip("Cells per tick below which a unit counts as standing: separation nudges do not turn it.")]
+        [SerializeField] private float _minTurnStep = 0.02f;
         [Tooltip("Height of a construction site at zero progress, as a share of the finished height.")]
         [SerializeField, Range(0.05f, 1f)] private float _minSiteHeight = 0.15f;
 
@@ -130,8 +134,12 @@ namespace Game.Presentation
             }
 
             float alpha = _runner!.InterpolationAlpha;
+            float turn = _turnSpeed * Time.deltaTime;
             foreach (UnitVisual visual in _units.Values)
+            {
                 visual.Transform.localPosition = Vector3.LerpUnclamped(visual.From, visual.To, alpha);
+                visual.Transform.localRotation = Quaternion.RotateTowards(visual.Transform.localRotation, visual.Heading, turn);
+            }
 
             for (int i = _flashing.Count - 1; i >= 0; i--)
             {
@@ -170,6 +178,7 @@ namespace Game.Presentation
                 visual.From = visual.To;
                 visual.To = position;
                 visual.Alive = true;
+                Face(state, unit, visual);
                 visual.Transform.gameObject.SetActive(Visibility.UnitShown(state, _localPlayer!.PlayerId, unit));
 
                 // factions.md: a unit under a boost (Overdrive, frenzy) is drawn lighter.
@@ -198,6 +207,24 @@ namespace Game.Presentation
             }
 
             RemoveMissing(_units);
+        }
+
+        // Models are built facing -Z (the camera). A moving unit turns to where it goes; a standing one
+        // to what it fights, builds or repairs; otherwise it keeps its heading.
+        private void Face(SimState state, Unit unit, UnitVisual visual)
+        {
+            Vector3 look = visual.To - visual.From;
+            if (look.sqrMagnitude < _minTurnStep * _minTurnStep)
+            {
+                int targetId = unit.TargetId != 0 ? unit.TargetId : unit.Order.TargetId;
+                Entity? target = targetId != 0 ? state.FindEntity(targetId) : null;
+                look = target is Building b ? CellCentre(b) - visual.To
+                    : target is Unit u ? ToWorld(u.X, u.Y) - visual.To
+                    : Vector3.zero;
+                look.y = 0f;
+            }
+            if (look.sqrMagnitude > 0.0001f)
+                visual.Heading = Quaternion.LookRotation(-look, Vector3.up);
         }
 
         private void SyncBuildings(SimState state)
@@ -491,6 +518,7 @@ namespace Game.Presentation
             public bool Boosted { get; set; }
             public Vector3 From { get; set; }
             public Vector3 To { get; set; }
+            public Quaternion Heading { get; set; } = Quaternion.identity;
         }
 
         private sealed class BuildingVisual : Visual
