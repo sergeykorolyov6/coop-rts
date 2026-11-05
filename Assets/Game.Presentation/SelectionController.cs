@@ -9,8 +9,8 @@ using Grid = Game.Sim.Grid;
 namespace Game.Presentation
 {
     // Which of the local player's units are selected. Left click picks one, dragging a box picks
-    // all inside, Shift adds. A click on an own building with no unit under the cursor selects
-    // the building instead (the factory panel works on it). Groups as in SC2: Ctrl+digit sets, Shift+digit adds, digit recalls,
+    // all inside, Shift adds. A click on a building with no unit under the cursor selects
+    // the building instead (the factory panel works on an own one; someone else's is only read). Groups as in SC2: Ctrl+digit sets, Shift+digit adds, digit recalls,
     // the digit twice centres the camera. Only own units: allies' units are not commandable.
     // A click on someone else's unit (ally, Legion, creep) with none of ours under the cursor
     // inspects it: UnitInfo shows what it is, no orders go to it.
@@ -51,7 +51,8 @@ namespace Game.Presentation
 
         public IReadOnlyList<int> Selected => _selected;
 
-        // Own building selected by a click, 0 when none; exclusive with the unit selection.
+        // Building selected by a click, 0 when none; exclusive with the unit selection. Someone
+        // else's building may be here too: whoever acts on it checks the owner.
         public int SelectedBuildingId { get; private set; }
 
         // Someone else's unit picked to read its numbers, 0 when none; exclusive with the rest.
@@ -104,7 +105,7 @@ namespace Game.Presentation
             if (SelectedBuildingId != 0)
             {
                 Building? building = simulation.State.FindBuilding(SelectedBuildingId);
-                if (building == null || building.IsDead || building.OwnerId != _localPlayer!.PlayerId)
+                if (building == null || building.IsDead || !Visibility.BuildingShown(simulation.State, _localPlayer!.PlayerId, building))
                     SetBuilding(0);
             }
             HandleGroups(simulation.State);
@@ -189,7 +190,7 @@ namespace Game.Presentation
                 }
                 else if (!add && _camera!.GroundPoint(pointer, out Vector3 ground))
                 {
-                    Building? building = OwnBuildingAt(state, playerId, Mathf.FloorToInt(ground.x), Mathf.FloorToInt(ground.z));
+                    Building? building = BuildingAt(state, playerId, Mathf.FloorToInt(ground.x), Mathf.FloorToInt(ground.z));
                     if (building != null)
                     {
                         _selected.Clear();
@@ -333,14 +334,20 @@ namespace Game.Presentation
             Changed?.Invoke();
         }
 
-        private static Building? OwnBuildingAt(SimState state, int playerId, int cellX, int cellY)
+        // Own first (two can share a cell only while one is a belt under a unit's path), then any shown.
+        private static Building? BuildingAt(SimState state, int playerId, int cellX, int cellY)
         {
+            Building? other = null;
             foreach (Building building in state.Buildings)
             {
-                if (!building.IsDead && building.OwnerId == playerId && building.OccupiesCell(cellX, cellY))
+                if (building.IsDead || !building.OccupiesCell(cellX, cellY))
+                    continue;
+                if (building.OwnerId == playerId)
                     return building;
+                if (other == null && Visibility.BuildingShown(state, playerId, building))
+                    other = building;
             }
-            return null;
+            return other;
         }
 
         private void OnPlayerChanged()

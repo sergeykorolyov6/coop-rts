@@ -14,6 +14,16 @@ namespace Game.Presentation
         public static string Unit(string id) =>
             Data != null && Data.TryGetUnit(id, out UnitStats? stats) ? stats!.NameRu : id;
 
+        // "Чёрный Легион — враг" for someone else's unit or building; "" for the viewer's own.
+        public static string Whose(SimState state, int viewerId, int ownerId)
+        {
+            if (ownerId == viewerId)
+                return "";
+            string faction = state.GetPlayer(ownerId).Faction?.NameRu ?? "";
+            string relation = state.Relations.IsAlly(viewerId, ownerId) ? "союзник" : state.Relations.IsEnemy(viewerId, ownerId) ? "враг" : "нейтрал";
+            return faction.Length > 0 ? $"{faction} — {relation}" : relation;
+        }
+
         public static string Clock(int ticks)
         {
             int seconds = System.Math.Max(0, ticks) / Simulation.TicksPerSecond;

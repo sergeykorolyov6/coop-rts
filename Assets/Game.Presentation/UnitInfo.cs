@@ -103,7 +103,7 @@ namespace Game.Presentation
         {
             UnitStats s = first.Stats;
             string head = count > 1 ? $"{s.NameRu} × {count}" : $"{s.NameRu} · {first.Hp} / {first.MaxHp}";
-            string whose = Whose(state, first.OwnerId);
+            string whose = DisplayNames.Whose(state, _localPlayer!.PlayerId, first.OwnerId);
             if (whose.Length > 0)
                 head += $"\n{whose}";
             string text = $"{head}\n{s.Description}\n{StatsLine(s)}";
@@ -114,16 +114,6 @@ namespace Game.Presentation
                 text += $"\nУровень {owner.HeroLevel}, опыт {owner.HeroXp} · {path}";
             }
             return text;
-        }
-
-        private string Whose(SimState state, int ownerId)
-        {
-            int me = _localPlayer!.PlayerId;
-            if (ownerId == me)
-                return "";
-            string faction = state.GetPlayer(ownerId).Faction?.NameRu ?? "";
-            string relation = state.Relations.IsAlly(me, ownerId) ? "союзник" : state.Relations.IsEnemy(me, ownerId) ? "враг" : "нейтрал";
-            return faction.Length > 0 ? $"{faction} — {relation}" : relation;
         }
 
         private static string Cells(int milli) => DisplayNames.Number(milli / (double)Game.Sim.Grid.MilliPerCell, "0.#");
