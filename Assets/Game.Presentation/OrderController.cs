@@ -167,15 +167,15 @@ namespace Game.Presentation
             };
 
             if (intent == Intent.Attack)
-                simulation.Enqueue(new AttackCommand(playerId, tick, Concat(_workers, _others), targetId, queued));
+                _runner!.Submit(new AttackCommand(playerId, tick, Concat(_workers, _others), targetId, queued));
             else if (workerCommand != null)
             {
-                simulation.Enqueue(workerCommand);
+                _runner!.Submit(workerCommand);
                 if (_others.Count > 0)
-                    simulation.Enqueue(new MoveCommand(playerId, tick, _others.ToArray(), milliX, milliY, queued));
+                    _runner!.Submit(new MoveCommand(playerId, tick, _others.ToArray(), milliX, milliY, queued));
             }
             else
-                simulation.Enqueue(new MoveCommand(playerId, tick, Concat(_workers, _others), milliX, milliY, queued));
+                _runner!.Submit(new MoveCommand(playerId, tick, Concat(_workers, _others), milliX, milliY, queued));
         }
 
         // A hint at the cursor for what the right click does, so mining and the rest are discoverable.
@@ -278,7 +278,7 @@ namespace Game.Presentation
             if (!mouse.rightButton.wasPressedThisFrame)
                 return;
             int milliX = Mathf.RoundToInt(ground.x * Grid.MilliPerCell), milliY = Mathf.RoundToInt(ground.z * Grid.MilliPerCell);
-            simulation.Enqueue(new SetRallyCommand(playerId, state.Tick, factory.Id, !onFactory, milliX, milliY));
+            _runner!.Submit(new SetRallyCommand(playerId, state.Tick, factory.Id, !onFactory, milliX, milliY));
         }
 
         private static Building? BuildingAt(SimState state, int cellX, int cellY)

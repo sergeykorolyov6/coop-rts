@@ -345,7 +345,7 @@ namespace Game.Presentation
         private void Order(Simulation simulation, BuildSite[] sites)
         {
             bool queued = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
-            simulation.Enqueue(new BuildCommand(_localPlayer!.PlayerId, simulation.State.Tick, _workers.ToArray(), _stats!.Id, sites, queued));
+            _runner!.Submit(new BuildCommand(_localPlayer!.PlayerId, simulation.State.Tick, _workers.ToArray(), _stats!.Id, sites, queued));
             if (!queued)
             {
                 End();

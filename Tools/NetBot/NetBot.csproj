@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A network guest without Unity (network.md): joins a host, plays its place with simple
+       orders and reports desyncs. For testing co-op alone: host in Unity, the bot joins. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Game.Net.Dotnet/Game.Net.csproj" />
+  </ItemGroup>
+
+</Project>

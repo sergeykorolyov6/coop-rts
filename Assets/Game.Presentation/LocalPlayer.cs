@@ -4,8 +4,8 @@ using UnityEngine.InputSystem;
 
 namespace Game.Presentation
 {
-    // Which player this machine controls. Until the network (M3) one machine can play every
-    // human player in turn: F1–F4 switch, so co-op is testable solo.
+    // Which player this machine controls. In a network game — the place the host gave (network.md);
+    // alone one machine can play every human player in turn: F1–F4 switch, so co-op is testable solo.
     [RequireComponent(typeof(SimRunner))]
     public sealed class LocalPlayer : MonoBehaviour
     {
@@ -19,7 +19,15 @@ namespace Game.Presentation
 
         public event Action? Changed;
 
-        private void Awake() => _runner = GetComponent<SimRunner>();
+        private void Awake()
+        {
+            _runner = GetComponent<SimRunner>();
+            if (GameSession.IsNetworkMatch)
+            {
+                _playerId = GameSession.Net!.Client!.Slot;
+                _hotSeatKeys = false;
+            }
+        }
 
         private void Update()
         {

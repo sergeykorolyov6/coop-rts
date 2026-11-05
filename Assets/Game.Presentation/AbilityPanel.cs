@@ -142,7 +142,7 @@ namespace Game.Presentation
         {
             Simulation? simulation = _runner!.Simulation;
             if (simulation != null)
-                simulation.Enqueue(new ChooseHeroPathCommand(_localPlayer!.PlayerId, simulation.State.Tick, pathId));
+                _runner!.Submit(new ChooseHeroPathCommand(_localPlayer!.PlayerId, simulation.State.Tick, pathId));
         }
 
         private void Issue(Simulation simulation, string abilityId, int x, int y)
@@ -155,7 +155,7 @@ namespace Game.Presentation
                     ids.Add(id);
             }
             if (ids.Count > 0)
-                simulation.Enqueue(new UseAbilityCommand(_localPlayer!.PlayerId, simulation.State.Tick, ids.ToArray(), abilityId, x, y));
+                _runner!.Submit(new UseAbilityCommand(_localPlayer!.PlayerId, simulation.State.Tick, ids.ToArray(), abilityId, x, y));
         }
 
         private void EndTargeting()

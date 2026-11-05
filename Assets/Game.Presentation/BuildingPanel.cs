@@ -115,7 +115,7 @@ namespace Game.Presentation
             Building? b = simulation != null ? Selected(simulation.State) : null;
             if (b == null || b.Stats.Invulnerable)
                 return;
-            simulation!.Enqueue(new DemolishCommand(_localPlayer!.PlayerId, simulation.State.Tick, b.Id));
+            _runner.Submit(new DemolishCommand(_localPlayer!.PlayerId, simulation!.State.Tick, b.Id));
         }
 
         private Building? Selected(SimState state)

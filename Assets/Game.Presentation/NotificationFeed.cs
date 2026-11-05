@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Game.Net;
 using Game.Sim;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,6 +9,7 @@ namespace Game.Presentation
     // Short messages from sim events for the local player, under the wallet: "place taken",
     // "drill attacked", "site frozen", "camp cleared"... Each fades after a few seconds; the same
     // message again while shown counts up (×3) instead of stacking.
+    // network.md: "Игрок N вышел", "Рассинхронизация" and, while the lockstep stands, "Ожидание игроков…".
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class NotificationFeed : MonoBehaviour
     {
@@ -23,6 +25,11 @@ namespace Game.Presentation
         private SimRunner? _runner;
         private LocalPlayer? _localPlayer;
         private VisualElement? _column;
+        private Label? _waiting;
+        private float _waitingSince = -1f;
+
+        // A short stall is normal jitter; say something only when it lasts.
+        private const float WaitingNoticeSeconds = 0.5f;
 
         private void Awake()
         {
@@ -30,9 +37,27 @@ namespace Game.Presentation
             _localPlayer = GetComponent<LocalPlayer>();
         }
 
-        private void OnEnable() => _runner!.TickEvents += OnTickEvents;
+        private void OnEnable()
+        {
+            _runner!.TickEvents += OnTickEvents;
+            _runner.NetNoticed += OnNetNotice;
+        }
 
-        private void OnDisable() => _runner!.TickEvents -= OnTickEvents;
+        private void OnDisable()
+        {
+            _runner!.TickEvents -= OnTickEvents;
+            _runner.NetNoticed -= OnNetNotice;
+        }
+
+        private void OnNetNotice(NetNotice notice)
+        {
+            if (_runner!.Simulation == null)
+                return;
+            if (notice.Kind == NetNoticeKind.PlayerLeft)
+                Show($"Игрок {notice.Slot} вышел — его база остаётся", _alarmColor);
+            else if (notice.Kind == NetNoticeKind.Desync)
+                Show($"Рассинхронизация на {DisplayNames.Clock(notice.Tick)} — игры у вас разошлись", _alarmColor);
+        }
 
         private void Start()
         {
@@ -48,6 +73,7 @@ namespace Game.Presentation
 
         private void Update()
         {
+            ShowWaiting();
             for (int i = _entries.Count - 1; i >= 0; i--)
             {
                 float age = Time.unscaledTime - _entries[i].Shown;
@@ -207,6 +233,32 @@ namespace Game.Presentation
                     return true;
             }
             return false;
+        }
+
+        private void ShowWaiting()
+        {
+            if (_hud?.Root == null)
+                return;
+            bool waiting = _runner!.NetWaiting;
+            if (!waiting)
+                _waitingSince = -1f;
+            else if (_waitingSince < 0f)
+                _waitingSince = Time.unscaledTime;
+            bool show = waiting && Time.unscaledTime - _waitingSince >= WaitingNoticeSeconds;
+            if (show && _waiting == null)
+            {
+                _waiting = new Label("Ожидание игроков…") { pickingMode = PickingMode.Ignore };
+                Hud.Panelise(_waiting);
+                _waiting.style.position = Position.Absolute;
+                _waiting.style.top = 90;
+                _waiting.style.left = Length.Percent(50);
+                _waiting.style.translate = new Translate(Length.Percent(-50), 0);
+                _waiting.style.fontSize = 20;
+                _waiting.style.color = _warningColor;
+                _hud.Root.Add(_waiting);
+            }
+            if (_waiting != null)
+                _waiting.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void Show(string text, Color color)

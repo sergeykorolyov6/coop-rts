@@ -3,6 +3,7 @@
     "rootNamespace": "Game.Presentation",
     "references": [
         "Game.Sim",
+        "Game.Net",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

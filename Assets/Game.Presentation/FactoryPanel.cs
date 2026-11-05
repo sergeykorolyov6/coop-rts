@@ -159,7 +159,7 @@ namespace Game.Presentation
             Simulation? simulation = _runner!.Simulation;
             if (simulation == null || _selection!.SelectedBuildingId == 0)
                 return;
-            simulation.Enqueue(new ProduceCommand(_localPlayer!.PlayerId, simulation.State.Tick, _selection.SelectedBuildingId, unitId));
+            _runner!.Submit(new ProduceCommand(_localPlayer!.PlayerId, simulation.State.Tick, _selection.SelectedBuildingId, unitId));
         }
 
         private void Cancel()
@@ -167,7 +167,7 @@ namespace Game.Presentation
             Simulation? simulation = _runner!.Simulation;
             if (simulation == null || _selection!.SelectedBuildingId == 0)
                 return;
-            simulation.Enqueue(new CancelProductionCommand(_localPlayer!.PlayerId, simulation.State.Tick, _selection.SelectedBuildingId));
+            _runner!.Submit(new CancelProductionCommand(_localPlayer!.PlayerId, simulation.State.Tick, _selection.SelectedBuildingId));
         }
 
         private Building? SelectedFactory(SimState state)

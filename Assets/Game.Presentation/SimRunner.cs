@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Game.Net;
 using Game.Sim;
 using UnityEngine;
 
 namespace Game.Presentation
 {
-    // Drives a local match at Simulation.TicksPerSecond from Unity's frame loop.
-    // One machine, no network; from M3 ticks come from the Game.Net lockstep instead.
+    // Drives a match at Simulation.TicksPerSecond from Unity's frame loop: alone, or in a network
+    // game (network.md) only as far as the lockstep allows. Every command of the local player goes
+    // through Submit. Polls the network session in the lobby too, and starts the match the host started.
     // The match is the mission GameSession names (mission.md): humans 1..N allied, the Legion 9,
     // creeps 10, neutral buildings 11 (MissionLauncher). Without one the main menu shows (GameMenu).
     public sealed class SimRunner : MonoBehaviour
@@ -56,6 +58,18 @@ namespace Game.Presentation
         // The pause menu stops the clock (one machine; with the network the game cannot pause alone).
         public bool Paused { get; set; }
 
+        // network.md: this match runs over the network.
+        public bool IsNetwork => _simulation != null && GameSession.IsNetworkMatch;
+
+        // A network match stands waiting for another player's turn.
+        public bool NetWaiting => IsNetwork && GameSession.Net!.Client!.Waiting;
+
+        // Lobby and match messages for the player (PlayerLeft, Desync, HostLost, Rejected).
+        public event Action<NetNotice>? NetNoticed;
+
+        // network.md, Fail cases: one hash of every text a match depends on, compared in the lobby.
+        public ulong ContentHash { get; private set; }
+
         // The sim clears its events every tick and a frame may run several ticks: views that show
         // events (notifications, minimap pings, "+5") hear them here, tick by tick, none lost.
         public event Action<IReadOnlyList<SimEvent>>? TickEvents;
@@ -90,6 +104,7 @@ namespace Game.Presentation
             });
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;
+            ContentHash = Game.Net.ContentHash.Of(ContentTexts());
 
             if (GameSession.MissionId == null)
                 return;
@@ -101,7 +116,7 @@ namespace Game.Presentation
                 return;
             }
 
-            MatchSetup setup = MissionLauncher.CreateSetup(Data, mission, map.text, GameSession.Seed);
+            MatchSetup setup = MissionLauncher.CreateSetup(Data, mission, map.text, GameSession.Seed, GameSession.Factions);
             SaveGame? save = GameSession.PendingSave;
             try
             {
@@ -124,8 +139,37 @@ namespace Game.Presentation
         public static void Reload() =>
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
 
+        // network.md: no saves of a network game.
         public byte[]? WriteSave() =>
-            _simulation == null || Mission == null ? null : SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write();
+            _simulation == null || Mission == null || IsNetwork ? null : SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write();
+
+        // The local player's command: into the sim, or to the host in a network game.
+        public void Submit(ICommand command)
+        {
+            if (_simulation == null)
+                return;
+            if (IsNetwork)
+                GameSession.Net!.Client!.Submit(command);
+            else
+                _simulation.Enqueue(command);
+        }
+
+        private IEnumerable<string> ContentTexts()
+        {
+            foreach (TextAsset? asset in new[] { _unitsJson, _buildingsJson, _creepCampsJson, _rulesJson, _legionJson, _wavesJson,
+                         _factionsJson, _abilitiesJson, _heroLevelsJson, _heroPathsJson, _missionsJson })
+                yield return asset != null ? asset.text : "";
+            // By name: the hash must not depend on the order of the list in the Inspector.
+            var maps = new List<TextAsset>();
+            foreach (TextAsset asset in _maps)
+            {
+                if (asset != null)
+                    maps.Add(asset);
+            }
+            maps.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+            foreach (TextAsset asset in maps)
+                yield return asset.name + "\n" + asset.text;
+        }
 
         private void FailToMenu(string message)
         {
@@ -145,7 +189,20 @@ namespace Game.Presentation
 
         private void Update()
         {
-            if (_simulation == null || Paused)
+            if (GameSession.Net != null)
+            {
+                PollNetwork();
+                if (_simulation == null || !enabled)
+                    return;
+            }
+            if (_simulation == null)
+                return;
+            if (IsNetwork)
+            {
+                RunNetwork();
+                return;
+            }
+            if (Paused)
                 return;
 
             const float secondsPerTick = 1f / Simulation.TicksPerSecond;
@@ -165,6 +222,60 @@ namespace Game.Presentation
 
             ShowState();
         }
+
+        private void PollNetwork()
+        {
+            NetSession net = GameSession.Net!;
+#if !UNITY_EDITOR
+            // A minimised machine that stops ticking stops everyone's lockstep. Not in the editor:
+            // there it is a project setting.
+            Application.runInBackground = true;
+#endif
+            net.Poll(Time.unscaledDeltaTime);
+            LockstepClient? client = net.Client;
+            if (client != null)
+            {
+                foreach (NetNotice notice in client.TakeNotices())
+                {
+                    if (notice.Kind == NetNoticeKind.Desync)
+                        Debug.LogError($"Network: StateHash differs at tick {notice.Tick} (network.md).", this);
+                    NetNoticed?.Invoke(notice);
+                }
+            }
+            // The host started: every machine reloads into the match (the lobby is the menu scene).
+            if (_simulation == null && client?.Start != null && !client.Disconnected)
+            {
+                GameSession.StartNetworkMatch(client.Start);
+                enabled = false;
+                Reload();
+            }
+        }
+
+        // network.md: real time, but never past the turns the host has sent; a machine that fell
+        // behind (more turns waiting than the delay) catches up, up to MaxTicksPerFrame.
+        private void RunNetwork()
+        {
+            LockstepClient client = GameSession.Net!.Client!;
+            const float secondsPerTick = 1f / Simulation.TicksPerSecond;
+            _accumulatedSeconds += Time.deltaTime;
+            int ticks = 0;
+            while (ticks < MaxTicksPerFrame && (_accumulatedSeconds >= secondsPerTick || client.TurnsAhead > LockstepSettings.DelayTurns + 1))
+            {
+                if (!client.TryStep(_simulation!))
+                {
+                    // Waiting must not bank time for a burst afterwards.
+                    _accumulatedSeconds = Mathf.Min(_accumulatedSeconds, secondsPerTick);
+                    break;
+                }
+                if (_simulation!.Events.Count > 0)
+                    TickEvents?.Invoke(_simulation.Events);
+                _accumulatedSeconds = Mathf.Max(0f, _accumulatedSeconds - secondsPerTick);
+                ticks++;
+            }
+            ShowState();
+        }
+
+        private void OnApplicationQuit() => GameSession.LeaveNetwork();
 
         private void ShowState()
         {
