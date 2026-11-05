@@ -12,6 +12,8 @@ namespace Game.Presentation
     // all inside, Shift adds. A click on a building with no unit under the cursor selects
     // the building instead (the factory panel works on an own one; someone else's is only read). Groups as in SC2: Ctrl+digit sets, Shift+digit adds, digit recalls,
     // the digit twice centres the camera. Only own units: allies' units are not commandable.
+    // F2 or the "Армия" button over the minimap selects the whole army as in SC2 — every own unit
+    // but the builder and the repairers; twice in a row centres the camera on it.
     // A click on someone else's unit (ally, Legion, creep) with none of ours under the cursor
     // inspects it: UnitInfo shows what it is, no orders go to it.
     // Pure Presentation state: the sim never learns what is selected, commands carry the unit ids.
@@ -23,6 +25,7 @@ namespace Game.Presentation
         // The "group" number of the builder hotkey, for the double tap.
         private const int BuilderKey = -2;
         private const int HeroKey = -3;
+        private const int ArmyKey = -4;
 
         [SerializeField] private RtsCamera? _camera;
         [Tooltip("The selection box is drawn on the HUD; clicks on its buttons are not map clicks.")]
@@ -44,6 +47,9 @@ namespace Game.Presentation
         private AbilityPanel? _abilities;
         private Camera? _view;
         private VisualElement? _box;
+        private Button? _armyButton;
+        private Minimap? _minimap;
+        private string _armyShown = "";
         private Vector2 _pressAt;
         private bool _pressing;
         private int _lastGroup = -1;
@@ -66,6 +72,7 @@ namespace Game.Presentation
             _entities = GetComponent<EntityView>();
             _localPlayer = GetComponent<LocalPlayer>();
             _abilities = GetComponent<AbilityPanel>();
+            _minimap = GetComponent<Minimap>();
             for (int i = 0; i < GroupCount; i++)
                 _groups[i] = new List<int>();
             if (_camera != null)
@@ -95,6 +102,7 @@ namespace Game.Presentation
             if (simulation == null || _view == null)
                 return;
 
+            ShowArmyButton(simulation.State);
             DropGone(simulation.State, _selected, notify: true);
             if (InspectedUnitId != 0)
             {
@@ -225,6 +233,9 @@ namespace Game.Presentation
                 SelectUnique(state.FindBuilder(_localPlayer!.PlayerId), BuilderKey);
             if (keyboard.gKey.wasPressedThisFrame)
                 SelectUnique(state.FindHero(_localPlayer!.PlayerId), HeroKey);
+            // Ctrl+F2 belongs to LocalPlayer (switching the player on one machine).
+            if (keyboard.f2Key.wasPressedThisFrame && !ctrl)
+                SelectArmy(state);
 
             for (int group = 0; group < GroupCount; group++)
             {
@@ -270,6 +281,65 @@ namespace Game.Presentation
                     _selected.Add(id);
             }
             Changed?.Invoke();
+        }
+
+        // SC2 F2: the fighting units, not the workers (here: the builder and the repairers).
+        private static bool IsArmy(Unit u, int playerId) =>
+            !u.IsDead && u.OwnerId == playerId && !u.IsBuilder && !u.IsRepairer && u.CampIndex < 0;
+
+        private void SelectArmy(SimState state)
+        {
+            int playerId = _localPlayer!.PlayerId;
+            _scratch.Clear();
+            foreach (Unit u in state.Units)
+            {
+                if (IsArmy(u, playerId))
+                    _scratch.Add(u.Id);
+            }
+            if (_scratch.Count == 0)
+                return;
+            bool again = _lastGroup == ArmyKey && Time.unscaledTime - _lastGroupTime <= _doubleTapSeconds;
+            Select(_scratch, add: false);
+            if (again)
+                CentreCamera();
+            _lastGroup = ArmyKey;
+            _lastGroupTime = Time.unscaledTime;
+        }
+
+        // Made once the minimap has its panel; shows how many fighting units there are.
+        private void ShowArmyButton(SimState state)
+        {
+            if (_armyButton == null)
+            {
+                VisualElement? frame = _minimap != null ? _minimap.Frame : null;
+                if (frame == null)
+                    return;
+                _armyButton = new Button(() =>
+                {
+                    Simulation? simulation = _runner!.Simulation;
+                    if (simulation != null)
+                        SelectArmy(simulation.State);
+                }) { name = "ArmyButton" };
+                Hud.StyleButton(_armyButton);
+                _armyButton.style.height = 34;
+                _armyButton.style.marginBottom = 4;
+                _hud?.AttachTip(_armyButton, () => "Выделить всех боевых юнитов (F2), дважды — камера к армии. Строитель и ремонтники — не армия.");
+                frame.Insert(0, _armyButton);
+            }
+            int count = 0;
+            int playerId = _localPlayer!.PlayerId;
+            foreach (Unit u in state.Units)
+            {
+                if (IsArmy(u, playerId))
+                    count++;
+            }
+            string text = $"Армия: {count} (F2)";
+            if (text != _armyShown)
+            {
+                _armyShown = text;
+                _armyButton.text = text;
+                _armyButton.SetEnabled(count > 0);
+            }
         }
 
         private void SelectUnique(Unit? unit, int key)

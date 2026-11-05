@@ -88,7 +88,7 @@ namespace Game.Presentation
             foreach (MissionStats mission in Missions())
             {
                 MissionStats m = mission;
-                string players = m.Players == 1 ? "1 игрок" : $"{m.Players} игрока (F1/F2 — переключить)";
+                string players = m.Players == 1 ? "1 игрок" : $"{m.Players} игрока (Ctrl+F1/F2 — переключить)";
                 AddButton($"{m.NameRu}\n{players}", () => StartMission(m));
             }
             AddButton("Сетевая игра", ShowNetwork);

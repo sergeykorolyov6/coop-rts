@@ -91,7 +91,7 @@ namespace Game.Presentation
             text += $"\nВремя миссии: {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
             string keys = state.FindHero(me) != null ? "Tab — строитель · G — герой" : "Tab — строитель";
             // network.md: no player switching in a network game.
-            text += state.TeamPlayerIds.Count > 1 && !_runner!.IsNetwork ? $"\n{keys} · F1–F4 — игрок · Esc — меню" : $"\n{keys} · Esc — меню";
+            text += state.TeamPlayerIds.Count > 1 && !_runner!.IsNetwork ? $"\n{keys} · F2 — армия · Ctrl+F1–F4 — игрок · Esc — меню" : $"\n{keys} · F2 — армия · Esc — меню";
             if (text != _shown)
             {
                 _shown = text;

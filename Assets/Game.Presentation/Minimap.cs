@@ -13,6 +13,9 @@ namespace Game.Presentation
     [RequireComponent(typeof(SimRunner), typeof(MapView), typeof(EntityView))]
     public sealed class Minimap : MonoBehaviour
     {
+        // The panel around the map: the army button sits on top of it (SelectionController), as in SC2.
+        public VisualElement? Frame { get; private set; }
+
         private const int PixelsPerCell = 3;
         private const float PingSeconds = 3f;
 
@@ -71,6 +74,7 @@ namespace Game.Presentation
             };
 
             var frame = new VisualElement { name = "Minimap" };
+            Frame = frame;
             Hud.Panelise(frame);
             frame.style.position = Position.Absolute;
             frame.style.right = 12;

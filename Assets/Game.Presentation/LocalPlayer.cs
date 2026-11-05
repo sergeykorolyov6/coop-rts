@@ -5,12 +5,13 @@ using UnityEngine.InputSystem;
 namespace Game.Presentation
 {
     // Which player this machine controls. In a network game — the place the host gave (network.md);
-    // alone one machine can play every human player in turn: F1–F4 switch, so co-op is testable solo.
+    // alone one machine can play every human player in turn: Ctrl+F1–F4 switch, so co-op is testable
+    // solo (F2 alone selects the army, as in SC2).
     [RequireComponent(typeof(SimRunner))]
     public sealed class LocalPlayer : MonoBehaviour
     {
         [SerializeField, Range(1, 4)] private int _playerId = 1;
-        [Tooltip("F1–F4 switch the controlled player. Debug until there is a network.")]
+        [Tooltip("Ctrl+F1–F4 switch the controlled player: co-op on one machine.")]
         [SerializeField] private bool _hotSeatKeys = true;
 
         private SimRunner? _runner;
@@ -33,6 +34,8 @@ namespace Game.Presentation
         {
             Keyboard? keyboard = Keyboard.current;
             if (!_hotSeatKeys || keyboard == null || _runner == null || _runner.Simulation == null)
+                return;
+            if (!(keyboard.ctrlKey.isPressed || keyboard.leftCommandKey.isPressed || keyboard.rightCommandKey.isPressed))
                 return;
 
             if (keyboard.f1Key.wasPressedThisFrame) Switch(1);
