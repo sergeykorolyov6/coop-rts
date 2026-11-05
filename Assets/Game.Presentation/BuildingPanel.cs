@@ -35,6 +35,8 @@ namespace Game.Presentation
             Hud.Panelise(_panel);
             _panel.style.marginRight = 8;
             _info = new Label();
+            _info.style.maxWidth = 340;
+            _info.style.whiteSpace = WhiteSpace.Normal;
             _panel.Add(_info);
             _demolish = new Button(Demolish);
             Hud.StyleButton(_demolish);
@@ -59,7 +61,7 @@ namespace Game.Presentation
                 Demolish();
 
             SimState state = simulation.State;
-            string text = $"{DisplayNames.Building(b.Stats.Id)} · {b.Hp} / {b.MaxHp}";
+            string text = $"{DisplayNames.Building(b.Stats.Id)} · {b.Hp} / {b.MaxHp}\n{b.Stats.Description}";
             bool can = !b.Stats.Invulnerable;
             string button = !can ? "Снести нельзя (точка интереса)"
                 : b.DemolishTicksLeft > 0 ? $"Отменить снос ({DisplayNames.Seconds(b.DemolishTicksLeft)})"

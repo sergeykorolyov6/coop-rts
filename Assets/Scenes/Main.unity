@@ -569,6 +569,7 @@ GameObject:
   - component: {fileID: 1100000025}
   - component: {fileID: 1100000026}
   - component: {fileID: 1100000027}
+  - component: {fileID: 1100000028}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -612,6 +613,7 @@ MonoBehaviour:
   _factionsJson: {fileID: 4900000, guid: 8a39e94ab6a744fa992da83c20a24a5e, type: 3}
   _abilitiesJson: {fileID: 4900000, guid: 81800025404f4ddbab83d429ab017c01, type: 3}
   _heroLevelsJson: {fileID: 4900000, guid: 1ddd1977d26f414f8c0f1a544a042ec1, type: 3}
+  _heroPathsJson: {fileID: 4900000, guid: cb5d7c156b1c4e2692c16721cc7bc8db, type: 3}
   _missionsJson: {fileID: 4900000, guid: 0c7c18b83f79408d9d1772a089393ffa, type: 3}
   _maps:
   - {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
@@ -1106,6 +1108,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.AbilityPanel
   _hud: {fileID: 1637688649}
   _camera: {fileID: 330585548}
+  _ringColor: {r: 0.98, g: 0.85, b: 0.3, a: 1}
+--- !u!114 &1100000028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad32673584ee45d2979b85a06d6d961e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.UnitInfo
+  _hud: {fileID: 1637688649}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

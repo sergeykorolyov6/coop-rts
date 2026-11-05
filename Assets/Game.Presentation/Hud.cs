@@ -16,6 +16,7 @@ namespace Game.Presentation
 
         private Label? _wallet;
         private Label? _tip;
+        private Label? _uiTip;
         private int _shownPrimary = -1, _shownSecondary = -1, _shownPlayer = -1;
         private int _shownIncomePrimary = -1, _shownIncomeSecondary = -1;
 
@@ -55,6 +56,15 @@ namespace Game.Presentation
             Panelise(_tip);
             _tip.style.display = DisplayStyle.None;
             root.Add(_tip);
+
+            // factions.md: what a button's unit, building or ability does, above the button.
+            _uiTip = new Label { name = "ButtonTip", pickingMode = PickingMode.Ignore };
+            _uiTip.style.position = Position.Absolute;
+            Panelise(_uiTip);
+            _uiTip.style.maxWidth = 380;
+            _uiTip.style.whiteSpace = WhiteSpace.Normal;
+            _uiTip.style.display = DisplayStyle.None;
+            root.Add(_uiTip);
         }
 
         private void Update()
@@ -130,6 +140,33 @@ namespace Game.Presentation
             Vector2 panel = RuntimePanelUtils.ScreenToPanel(Root.panel, new Vector2(screen.x, Screen.height - screen.y));
             _tip.style.left = panel.x + 18;
             _tip.style.top = panel.y + 18;
+        }
+
+        // Shows the text above the element while the pointer is over it; text() is asked on every enter,
+        // so it may change (cooldowns, prices).
+        public void AttachTip(VisualElement element, System.Func<string> text)
+        {
+            element.RegisterCallback<PointerEnterEvent>(_ => ShowUiTip(element, text()));
+            element.RegisterCallback<PointerLeaveEvent>(_ => HideUiTip());
+            element.RegisterCallback<DetachFromPanelEvent>(_ => HideUiTip());
+        }
+
+        private void ShowUiTip(VisualElement anchor, string text)
+        {
+            if (_uiTip == null || string.IsNullOrEmpty(text))
+                return;
+            _uiTip.text = text;
+            _uiTip.style.display = DisplayStyle.Flex;
+            Rect box = anchor.worldBound;
+            _uiTip.style.left = box.xMin;
+            _uiTip.style.top = StyleKeyword.Auto;
+            _uiTip.style.bottom = Root != null ? Root.layout.height - box.yMin + 6 : 0;
+        }
+
+        private void HideUiTip()
+        {
+            if (_uiTip != null)
+                _uiTip.style.display = DisplayStyle.None;
         }
 
         public static readonly Color ButtonColor = new Color(0.17f, 0.18f, 0.20f);

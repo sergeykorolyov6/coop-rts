@@ -134,7 +134,9 @@ namespace Game.Presentation
                         Show("Герой вернулся (G — выделить)", _infoColor);
                         break;
                     case HeroLevelUp level when level.PlayerId == me:
-                        Show($"Герой получил уровень {level.Level}", _infoColor);
+                        Show(state.GetPlayer(me).HeroPathId.Length == 0
+                            ? $"Герой получил уровень {level.Level} — выберите путь (G, затем кнопка пути)"
+                            : $"Герой получил уровень {level.Level}", _infoColor);
                         break;
                     case BuildingCaptured captured when state.Relations.IsAlly(me, captured.PlayerId):
                         string who = captured.PlayerId == me ? "" : $" союзником {captured.PlayerId}";

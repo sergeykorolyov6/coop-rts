@@ -1,0 +1,112 @@
+using System.Collections.Generic;
+using Game.Sim;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace Game.Presentation
+{
+    // factions.md UI: what the selection is and does. One kind selected — its name, description
+    // (units.csv "description"), numbers and abilities; several kinds — how many of each.
+    [RequireComponent(typeof(SimRunner), typeof(SelectionController))]
+    public sealed class UnitInfo : MonoBehaviour
+    {
+        [SerializeField] private Hud? _hud;
+
+        private SimRunner? _runner;
+        private SelectionController? _selection;
+        private Label? _label;
+        private string _shown = "";
+
+        private void Awake()
+        {
+            _runner = GetComponent<SimRunner>();
+            _selection = GetComponent<SelectionController>();
+        }
+
+        private void Start()
+        {
+            if (_hud?.BottomBar == null || _runner!.Simulation == null)
+                return;
+            _label = new Label { name = "UnitInfo", pickingMode = PickingMode.Ignore };
+            Hud.Panelise(_label);
+            _label.style.maxWidth = 340;
+            _label.style.whiteSpace = WhiteSpace.Normal;
+            _label.style.marginRight = 8;
+            _label.style.display = DisplayStyle.None;
+            _hud.BottomBar.Insert(0, _label);
+        }
+
+        private void Update()
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (_label == null || simulation == null)
+                return;
+            string text = Describe(simulation.State);
+            if (text == _shown)
+                return;
+            _shown = text;
+            _label.text = text;
+            _label.style.display = text.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        // "HP 220 · броня 1 · урон 12 (здания 12) · дальность 0,5 · скорость 1,9 кл./с"
+        public static string StatsLine(UnitStats s)
+        {
+            string line = $"Прочность {s.Hp} · броня {s.Armor}";
+            if (s.Damage > 0 || s.DamageVsBuildings > 0)
+            {
+                line += $" · урон {s.Damage}";
+                if (s.DamageVsBuildings != s.Damage)
+                    line += $" (по зданиям {s.DamageVsBuildings})";
+                line += $" · дальность {Cells(s.AttackRangeMilli)}";
+            }
+            return line + $" · скорость {Cells(s.MoveSpeedMilliPerTick * Simulation.TicksPerSecond)} кл./с";
+        }
+
+        private string Describe(SimState state)
+        {
+            var counts = new List<(UnitStats Stats, int Count)>();
+            Unit? first = null;
+            foreach (int id in _selection!.Selected)
+            {
+                Unit? u = state.FindUnit(id);
+                if (u == null || u.IsDead)
+                    continue;
+                first ??= u;
+                int i = counts.FindIndex(c => c.Stats == u.Stats);
+                if (i < 0)
+                    counts.Add((u.Stats, 1));
+                else
+                    counts[i] = (u.Stats, counts[i].Count + 1);
+            }
+            if (counts.Count == 0)
+                return "";
+            if (counts.Count > 1)
+            {
+                var parts = new List<string>();
+                foreach ((UnitStats stats, int count) in counts)
+                    parts.Add($"{stats.NameRu} × {count}");
+                return "Выделено: " + string.Join(", ", parts);
+            }
+
+            UnitStats s = counts[0].Stats;
+            string head = counts[0].Count > 1 ? $"{s.NameRu} × {counts[0].Count}" : s.NameRu;
+            string text = $"{head}\n{s.Description}\n{StatsLine(s)}";
+            if (first!.IsHero)
+            {
+                Player owner = state.GetPlayer(first.OwnerId);
+                string path = "путь не выбран";
+                foreach (HeroPathStats p in state.Data.HeroPaths)
+                {
+                    if (p.Id == owner.HeroPathId)
+                        path = p.NameRu;
+                }
+                text += $"\nУровень {owner.HeroLevel}, опыт {owner.HeroXp} · {path}";
+            }
+            return text;
+        }
+
+        private static string Cells(int milli) =>
+            (milli / (float)Game.Sim.Grid.MilliPerCell).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
+    }
+}

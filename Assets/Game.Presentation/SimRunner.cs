@@ -28,6 +28,8 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _abilitiesJson;
         [Tooltip("Assets/Data/hero_levels.json: Yellow Star's hero levels (factions.md).")]
         [SerializeField] private TextAsset? _heroLevelsJson;
+        [Tooltip("Assets/Data/hero_paths.json: the hero's paths — Warrior, Mage, Supporter.")]
+        [SerializeField] private TextAsset? _heroPathsJson;
 
         [Header("Missions (mission.md, save-load.md)")]
         [Tooltip("Assets/Data/missions.json")]
@@ -86,6 +88,7 @@ namespace Game.Presentation
                 Factions = _factionsJson.text,
                 Abilities = _abilitiesJson != null ? _abilitiesJson.text : "[]",
                 HeroLevels = _heroLevelsJson != null ? _heroLevelsJson.text : "[]",
+                HeroPaths = _heroPathsJson != null ? _heroPathsJson.text : "[]",
             });
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;

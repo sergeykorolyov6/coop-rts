@@ -134,6 +134,8 @@ namespace Game.Presentation
                 button.style.height = 52;
                 button.style.whiteSpace = WhiteSpace.Normal;
                 Hud.StyleButton(button);
+                BuildingStats tipStats = stats;
+                _hud!.AttachTip(button, () => $"{tipStats.NameRu}: {tipStats.Description}");
                 _panel!.Add(button);
                 _buttons.Add(button);
                 _affordable.Add(true);
