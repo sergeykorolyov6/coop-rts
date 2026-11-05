@@ -18,6 +18,9 @@ namespace Game.Presentation
         // The network game this machine takes part in (lobby or match); null for a local game.
         public static NetSession? Net { get; set; }
 
+        // save-load.md: the recorded match to watch; null when playing.
+        public static SaveGame? Replay { get; private set; }
+
         // A network match started by the host: every machine reloads into the same mission.
         public static bool IsNetworkMatch => Net?.Client?.Start != null && MissionId != null;
 
@@ -30,19 +33,32 @@ namespace Game.Presentation
             Seed = seed;
             PendingSave = null;
             Factions = null;
+            Replay = null;
         }
 
+        // A save picked by the host is restored on every machine (network.md, save-load.md).
         public static void StartNetworkMatch(MatchStart start)
         {
             MissionId = start.MissionId;
             Seed = start.Seed;
-            PendingSave = null;
+            PendingSave = start.Save != null ? SaveGame.Read(start.Save) : null;
             Factions = start.Factions;
+            Replay = null;
+        }
+
+        public static void StartReplay(SaveGame replay)
+        {
+            MissionId = replay.MissionId;
+            Seed = replay.Seed;
+            PendingSave = null;
+            Factions = replay.FactionsOrNull;
+            Replay = replay;
         }
 
         public static void Load(SaveGame save)
         {
-            Factions = null;
+            Factions = save.FactionsOrNull;
+            Replay = null;
             MissionId = save.MissionId;
             Seed = save.Seed;
             PendingSave = save;
@@ -57,6 +73,7 @@ namespace Game.Presentation
             MissionId = null;
             PendingSave = null;
             Factions = null;
+            Replay = null;
             LeaveNetwork();
         }
 

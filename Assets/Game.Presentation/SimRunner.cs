@@ -9,6 +9,9 @@ namespace Game.Presentation
     // Drives a match at Simulation.TicksPerSecond from Unity's frame loop: alone, or in a network
     // game (network.md) only as far as the lockstep allows. Every command of the local player goes
     // through Submit. Polls the network session in the lobby too, and starts the match the host started.
+    // save-load.md: a save loads by replaying its commands a slice per frame ("Загрузка… N %"); a replay
+    // plays a whole recorded match at the chosen speed without orders; a match's recording is kept as
+    // a replay when it ends or the player leaves it.
     // The match is the mission GameSession names (mission.md): humans 1..N allied, the Legion 9,
     // creeps 10, neutral buildings 11 (MissionLauncher). Without one the main menu shows (GameMenu).
     public sealed class SimRunner : MonoBehaviour
@@ -46,6 +49,16 @@ namespace Game.Presentation
 
         private Simulation? _simulation;
         private float _accumulatedSeconds;
+        private SaveGame? _loading;
+        private SaveGame? _replay;
+        private bool _replayRecorded;
+
+        // Slice of loading per frame: the frame stays alive and the progress moves.
+        private const float LoadBudgetSeconds = 0.03f;
+        private const int LoadSliceTicks = 100;
+
+        // save-load.md: shorter matches are not worth a replay.
+        private const int MinReplayTicks = 30 * Simulation.TicksPerSecond;
 
         // Null while the main menu is shown (GameSession has no mission).
         public Simulation? Simulation => _simulation;
@@ -62,7 +75,20 @@ namespace Game.Presentation
         public bool IsNetwork => _simulation != null && GameSession.IsNetworkMatch;
 
         // A network match stands waiting for another player's turn.
-        public bool NetWaiting => IsNetwork && GameSession.Net!.Client!.Waiting;
+        public bool NetWaiting => IsNetwork && !IsLoading && GameSession.Net!.Client!.Waiting;
+
+        // save-load.md: a save is being replayed up to its tick; nothing else runs meanwhile.
+        public bool IsLoading => _loading != null;
+        public float LoadProgress => _loading == null || _simulation == null || _loading.Tick == 0 ? 1f : _simulation.State.Tick / (float)_loading.Tick;
+
+        // Watching a recorded match: orders do nothing, ReplaySpeed sets the pace (0 — stands).
+        public bool IsReplay => _replay != null;
+        public int ReplayLengthTicks => _replay?.Tick ?? 0;
+        public int ReplaySpeed { get; set; } = 1;
+        public bool ReplayFinished { get; private set; }
+
+        // At the end: the replay came to the recorded StateHash (the same version of the game).
+        public bool ReplayMatched { get; private set; }
 
         // Lobby and match messages for the player (PlayerLeft, Desync, HostLost, Rejected).
         public event Action<NetNotice>? NetNoticed;
@@ -117,10 +143,13 @@ namespace Game.Presentation
             }
 
             MatchSetup setup = MissionLauncher.CreateSetup(Data, mission, map.text, GameSession.Seed, GameSession.Factions);
-            SaveGame? save = GameSession.PendingSave;
+            SaveGame? save = GameSession.PendingSave ?? GameSession.Replay;
             try
             {
-                _simulation = save != null ? save.Restore(setup, Codec) : new Simulation(setup);
+                // A save starts at tick 0 too and is played up to its tick in Update, a slice a frame.
+                _simulation = save != null ? save.BeginReplay(setup, Codec) : new Simulation(setup);
+                _replay = GameSession.Replay;
+                _loading = _replay == null ? GameSession.PendingSave : null;
             }
             catch (Exception e) when (e is System.IO.InvalidDataException || e is System.IO.EndOfStreamException || e is ArgumentException)
             {
@@ -139,14 +168,30 @@ namespace Game.Presentation
         public static void Reload() =>
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
 
-        // network.md: no saves of a network game.
+        // save-load.md: a network game too — every machine's log has everyone's commands.
         public byte[]? WriteSave() =>
-            _simulation == null || Mission == null || IsNetwork ? null : SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write();
+            _simulation == null || Mission == null || IsLoading || IsReplay ? null : SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write();
+
+        // save-load.md: keeps the match as a replay once (at its end, or when the player leaves it).
+        public void RecordReplay()
+        {
+            if (_replayRecorded || _simulation == null || Mission == null || IsLoading || IsReplay || _simulation.State.Tick < MinReplayTicks)
+                return;
+            _replayRecorded = true;
+            try
+            {
+                SaveStore.Write(SaveStore.Kind.Replay, SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write());
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.LogWarning($"SimRunner: the replay was not written: {e.Message}", this);
+            }
+        }
 
         // The local player's command: into the sim, or to the host in a network game.
         public void Submit(ICommand command)
         {
-            if (_simulation == null)
+            if (_simulation == null || IsLoading || IsReplay)
                 return;
             if (IsNetwork)
                 GameSession.Net!.Client!.Submit(command);
@@ -197,6 +242,16 @@ namespace Game.Presentation
             }
             if (_simulation == null)
                 return;
+            if (_loading != null)
+            {
+                LoadSlice();
+                return;
+            }
+            if (_replay != null)
+            {
+                RunReplay();
+                return;
+            }
             if (IsNetwork)
             {
                 RunNetwork();
@@ -212,8 +267,7 @@ namespace Game.Presentation
             while (_accumulatedSeconds >= secondsPerTick && ticks < MaxTicksPerFrame)
             {
                 _simulation.Tick();
-                if (_simulation.Events.Count > 0)
-                    TickEvents?.Invoke(_simulation.Events);
+                AfterTick();
                 _accumulatedSeconds -= secondsPerTick;
                 ticks++;
             }
@@ -267,15 +321,80 @@ namespace Game.Presentation
                     _accumulatedSeconds = Mathf.Min(_accumulatedSeconds, secondsPerTick);
                     break;
                 }
-                if (_simulation!.Events.Count > 0)
-                    TickEvents?.Invoke(_simulation.Events);
+                AfterTick();
                 _accumulatedSeconds = Mathf.Max(0f, _accumulatedSeconds - secondsPerTick);
                 ticks++;
             }
             ShowState();
         }
 
-        private void OnApplicationQuit() => GameSession.LeaveNetwork();
+        private void OnApplicationQuit()
+        {
+            RecordReplay();
+            GameSession.LeaveNetwork();
+        }
+
+        private void AfterTick()
+        {
+            IReadOnlyList<SimEvent> events = _simulation!.Events;
+            if (events.Count == 0)
+                return;
+            TickEvents?.Invoke(events);
+            foreach (SimEvent e in events)
+            {
+                if (e is MissionEnded)
+                    RecordReplay();
+            }
+        }
+
+        // save-load.md: replay a slice of the save per frame; at its tick it must match.
+        private void LoadSlice()
+        {
+            SaveGame save = _loading!;
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            while (_simulation!.State.Tick < save.Tick && clock.Elapsed.TotalSeconds < LoadBudgetSeconds)
+                _simulation.FastForward(Math.Min(save.Tick, _simulation.State.Tick + LoadSliceTicks));
+            ShowState();
+            if (_simulation.State.Tick < save.Tick)
+                return;
+            if (!save.Matches(_simulation))
+            {
+                Debug.LogWarning("SimRunner: the save replays to another StateHash (rules or data changed).", this);
+                FailToMenu("Не удалось загрузить сохранение: оно от другой версии игры или повреждено");
+                enabled = false;
+                Reload();
+                return;
+            }
+            _loading = null;
+            _accumulatedSeconds = 0f;
+        }
+
+        // save-load.md: the recorded match at ReplaySpeed; stops at its last tick and checks it.
+        private void RunReplay()
+        {
+            if (ReplayFinished || Paused || ReplaySpeed <= 0)
+                return;
+            const float secondsPerTick = 1f / Simulation.TicksPerSecond;
+            _accumulatedSeconds += Time.deltaTime * ReplaySpeed;
+            int ticks = 0;
+            while (_accumulatedSeconds >= secondsPerTick && ticks < MaxTicksPerFrame * ReplaySpeed)
+            {
+                _simulation!.Tick();
+                AfterTick();
+                _accumulatedSeconds -= secondsPerTick;
+                ticks++;
+                if (_simulation.State.Tick >= _replay!.Tick)
+                {
+                    ReplayFinished = true;
+                    ReplayMatched = _replay.Matches(_simulation);
+                    _accumulatedSeconds = 0f;
+                    break;
+                }
+            }
+            if (ticks == MaxTicksPerFrame * ReplaySpeed)
+                _accumulatedSeconds = 0f;
+            ShowState();
+        }
 
         private void ShowState()
         {

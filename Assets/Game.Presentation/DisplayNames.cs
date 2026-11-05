@@ -24,6 +24,13 @@ namespace Game.Presentation
             return faction.Length > 0 ? $"{faction} — {relation}" : relation;
         }
 
+        // "Игрок 2 (Красные Молнии)".
+        public static string PlayerName(SimState state, int playerId)
+        {
+            string faction = state.GetPlayer(playerId).Faction?.NameRu ?? "";
+            return faction.Length > 0 ? $"игрок {playerId} ({faction})" : $"игрок {playerId}";
+        }
+
         public static string Clock(int ticks)
         {
             int seconds = System.Math.Max(0, ticks) / Simulation.TicksPerSecond;

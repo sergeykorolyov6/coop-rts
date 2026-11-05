@@ -5,12 +5,17 @@ using UnityEngine;
 
 namespace Game.Presentation
 {
-    // save-load.md: save files in Application.persistentDataPath/saves, newest first.
+    // save-load.md: save files in Application.persistentDataPath/saves, replays in /replays, newest
+    // first. Replays are written by themselves, so only the last MaxReplays are kept.
     public static class SaveStore
     {
-        public const string Extension = ".coopsave";
+        public enum Kind
+        {
+            Save,
+            Replay,
+        }
 
-        public static string Folder => Path.Combine(Application.persistentDataPath, "saves");
+        private const int MaxReplays = 30;
 
         public sealed class Entry
         {
@@ -24,23 +29,42 @@ namespace Game.Presentation
             public DateTime Written { get; }
         }
 
-        public static List<Entry> List()
+        public static string Folder(Kind kind) => Path.Combine(Application.persistentDataPath, kind == Kind.Save ? "saves" : "replays");
+
+        private static string Extension(Kind kind) => kind == Kind.Save ? ".coopsave" : ".cooprep";
+
+        public static List<Entry> List(Kind kind)
         {
             var result = new List<Entry>();
-            if (!Directory.Exists(Folder))
+            string folder = Folder(kind);
+            if (!Directory.Exists(folder))
                 return result;
-            foreach (string path in Directory.GetFiles(Folder, "*" + Extension))
+            foreach (string path in Directory.GetFiles(folder, "*" + Extension(kind)))
                 result.Add(new Entry(path, File.GetLastWriteTime(path)));
             result.Sort((a, b) => b.Written.CompareTo(a.Written));
             return result;
         }
 
-        public static string Write(byte[] bytes)
+        public static string Write(Kind kind, byte[] bytes)
         {
-            Directory.CreateDirectory(Folder);
-            string path = Path.Combine(Folder, $"save_{DateTime.Now:yyyyMMdd_HHmmss}{Extension}");
+            string folder = Folder(kind);
+            Directory.CreateDirectory(folder);
+            string name = kind == Kind.Save ? "save" : "replay";
+            string path = Path.Combine(folder, $"{name}_{DateTime.Now:yyyyMMdd_HHmmss}{Extension(kind)}");
             File.WriteAllBytes(path, bytes);
+            if (kind == Kind.Replay)
+                Prune();
             return path;
+        }
+
+        // Only files of this store: a path from its own listing.
+        public static void Delete(Entry entry) => File.Delete(entry.Path);
+
+        private static void Prune()
+        {
+            List<Entry> replays = List(Kind.Replay);
+            for (int i = MaxReplays; i < replays.Count; i++)
+                File.Delete(replays[i].Path);
         }
     }
 }

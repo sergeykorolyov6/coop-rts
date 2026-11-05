@@ -78,8 +78,10 @@ while (client.Start == null)
 
 MatchStart start = client.Start;
 MissionStats mission = catalog.Find(start.MissionId)!;
-var sim = new Simulation(MissionLauncher.CreateSetup(gameData, mission, Read(Path.Combine("maps", mission.Map + ".json")), start.Seed, start.Factions));
-Console.WriteLine($"Старт: {start.MissionId}, seed {start.Seed}, фракции {string.Join(", ", start.Factions)}");
+MatchSetup setup = MissionLauncher.CreateSetup(gameData, mission, Read(Path.Combine("maps", mission.Map + ".json")), start.Seed, start.Factions);
+// The host may go on from a save: every machine restores it up to its tick (save-load.md).
+var sim = start.Save != null ? SaveGame.Read(start.Save).Restore(setup, GameCommands.CreateCodec()) : new Simulation(setup);
+Console.WriteLine($"Старт: {start.MissionId}, seed {start.Seed}, фракции {string.Join(", ", start.Factions)}, с тика {sim.State.Tick}");
 
 var clock = Stopwatch.StartNew();
 long next = 0;

@@ -355,6 +355,8 @@ MonoBehaviour:
   _maxDistance: 50
   _startDistance: 24
   _zoomStep: 0.12
+  _zoomSmoothing: 8
+  _turnSpeed: 90
   _panSpeed: 24
   _edgePan: 1
   _edgePixels: 10
@@ -570,6 +572,7 @@ GameObject:
   - component: {fileID: 1100000026}
   - component: {fileID: 1100000027}
   - component: {fileID: 1100000028}
+  - component: {fileID: 1100000029}
   m_Layer: 0
   m_Name: SimRunner
   m_TagString: Untagged
@@ -619,7 +622,6 @@ MonoBehaviour:
   - {fileID: 4900000, guid: b6d8f0230818465ab82546d93ff41180, type: 3}
   - {fileID: 4900000, guid: d54005f718bd48c38cab064acbb11375, type: 3}
   - {fileID: 4900000, guid: 81f77b1858424d4883d3ad33ee73b844, type: 3}
-  _seed: 1
   _missionId: 
   _tick: 0
   _stateHash: 
@@ -662,13 +664,20 @@ MonoBehaviour:
   - {r: 0.3, g: 0.8, b: 0.35, a: 1}
   - {r: 0.6, g: 0.4, b: 0.22, a: 1}
   _creepColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
+  _legionColor: {r: 0.22, g: 0.14, b: 0.26, a: 1}
+  _neutralColor: {r: 0.86, g: 0.86, b: 0.82, a: 1}
   _primaryCargoColor: {r: 0.8, g: 0.55, b: 0.25, a: 1}
   _secondaryCargoColor: {r: 0.35, g: 0.7, b: 0.85, a: 1}
   _trophyColor: {r: 0.95, g: 0.8, b: 0.3, a: 1}
   _arrowColor: {r: 0.92, g: 0.94, b: 1, a: 1}
+  _fireColor: {r: 1, g: 0.78, b: 0.3, a: 1}
+  _demolishDarken: 0.5
+  _boostLighten: 0.5
   _flashColor: {r: 1, g: 1, b: 1, a: 1}
   _flashSeconds: 0.08
   _rotorSpeed: 240
+  _turnSpeed: 720
+  _minTurnStep: 0.02
   _minSiteHeight: 0.15
 --- !u!114 &1100000006
 MonoBehaviour:
@@ -683,6 +692,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.SelectionView
   _color: {r: 0.4, g: 1, b: 0.4, a: 1}
+  _inspectColor: {r: 1, g: 0.35, b: 0.3, a: 1}
   _scale: 1.5
 --- !u!114 &1100000007
 MonoBehaviour:
@@ -833,6 +843,8 @@ MonoBehaviour:
   _campColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
   _trophyColor: {r: 0.95, g: 0.8, b: 0.3, a: 1}
   _pingColor: {r: 1, g: 0.25, b: 0.2, a: 1}
+  _viewLineWidth: 1.5
+  _viewColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &1100000015
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -851,6 +863,7 @@ MonoBehaviour:
   _infoColor: {r: 0.9, g: 0.92, b: 0.88, a: 1}
   _warningColor: {r: 0.98, g: 0.82, b: 0.35, a: 1}
   _alarmColor: {r: 1, g: 0.45, b: 0.4, a: 1}
+  _unitAlarmSeconds: 5
 --- !u!114 &1100000016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -871,6 +884,9 @@ MonoBehaviour:
   _frozenColor: {r: 0.55, g: 0.75, b: 0.95, a: 1}
   _bufferColor: {r: 0.45, g: 0.7, b: 0.95, a: 1}
   _stoppedColor: {r: 1, g: 0.55, b: 0.25, a: 1}
+  _captureColor: {r: 0.95, g: 0.95, b: 0.9, a: 1}
+  _demolishColor: {r: 0.95, g: 0.35, b: 0.3, a: 1}
+  _xpColor: {r: 0.98, g: 0.85, b: 0.3, a: 1}
 --- !u!114 &1100000017
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -955,76 +971,6 @@ MonoBehaviour:
   _primaryOreColor: {r: 0.95, g: 0.62, b: 0.25, a: 1}
   _secondaryOreColor: {r: 0.4, g: 0.8, b: 0.95, a: 1}
   _rememberedBrightness: 0.5
---- !u!1 &1637688646
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1637688648}
-  - component: {fileID: 1637688647}
-  - component: {fileID: 1637688649}
-  m_Layer: 0
-  m_Name: HUD
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1637688647
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1637688646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: 1881c72522e9e415a85de000b90496e8, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 0}
-  m_SortingOrder: 0
-  m_Position: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
-  m_PivotReferenceSize: 0
-  m_Pivot: 0
-  m_WorldSpaceCollider: {fileID: 0}
---- !u!4 &1637688648
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1637688646}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1637688649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1637688646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: acddc2a87fbfa436494f7035cee25876, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.Hud
-  _runner: {fileID: 1100000003}
-  _localPlayer: {fileID: 1100000009}
 --- !u!114 &1100000022
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1122,6 +1068,90 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Presentation::Game.Presentation.UnitInfo
   _hud: {fileID: 1637688649}
+--- !u!114 &1100000029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4014a2454db784430b0c17e6204cfd17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.ReplayPanel
+  _hud: {fileID: 1637688649}
+  _activeColor: {r: 0.25, g: 0.45, b: 0.3, a: 1}
+--- !u!1 &1637688646
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1637688648}
+  - component: {fileID: 1637688647}
+  - component: {fileID: 1637688649}
+  m_Layer: 0
+  m_Name: HUD
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1637688647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1637688646}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 1881c72522e9e415a85de000b90496e8, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 0}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!4 &1637688648
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1637688646}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1637688649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1637688646}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acddc2a87fbfa436494f7035cee25876, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::Game.Presentation.Hud
+  _runner: {fileID: 1100000003}
+  _localPlayer: {fileID: 1100000009}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

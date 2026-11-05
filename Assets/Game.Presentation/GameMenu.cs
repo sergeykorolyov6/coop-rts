@@ -15,7 +15,8 @@ namespace Game.Presentation
     // quit). Esc first cancels a placement; the menu opens on the next press.
     // A new mission or a load reloads the scene with GameSession set: every view starts clean.
     // network.md UI: "Сетевая игра" — create (port) or join (address), the lobby (places, factions,
-    // the host's mission and "Начать"); in a network match Esc opens the menu without a pause.
+    // the host's mission or save and "Начать"); in a network match Esc opens the menu without a pause.
+    // save-load.md: "Загрузка… N %" while a save replays, the replays list, "Удалить" in both lists.
     [RequireComponent(typeof(SimRunner))]
     public sealed class GameMenu : MonoBehaviour
     {
@@ -30,6 +31,7 @@ namespace Game.Presentation
         private bool _open;
         private bool _inLobby;
         private string _lobbyShown = "";
+        private Label? _loadingLabel;
 
         private AbilityPanel? _abilities;
 
@@ -63,6 +65,8 @@ namespace Game.Presentation
 
             if (_runner!.Simulation == null)
                 ShowMain();
+            else if (_runner.IsLoading)
+                ShowLoading();
             else
                 Close();
         }
@@ -73,6 +77,16 @@ namespace Game.Presentation
                 RefreshLobby();
             if (_overlay == null || _runner!.Simulation == null)
                 return;
+            if (_loadingLabel != null)
+            {
+                if (_runner.IsLoading)
+                {
+                    _loadingLabel.text = $"Загрузка… {Mathf.FloorToInt(_runner.LoadProgress * 100f)} %";
+                    return;
+                }
+                _loadingLabel = null;
+                Close();
+            }
             Keyboard? keyboard = Keyboard.current;
             if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
                 return;
@@ -93,6 +107,7 @@ namespace Game.Presentation
             }
             AddButton("Сетевая игра", ShowNetwork);
             AddButton("Загрузить", () => ShowLoad(back: ShowMain));
+            AddButton("Реплеи", ShowReplays);
             AddButton("Выйти из игры", Quit);
             if (GameSession.Error != null)
             {
@@ -108,6 +123,17 @@ namespace Game.Presentation
                 // network.md: one player cannot stop the others' game.
                 Begin("Меню — игра идёт");
                 AddButton("Продолжить (Esc)", Close);
+                AddButton("Сохранить", Save);
+                AddButton("Выйти в меню", ToMenu);
+                AddButton("Закрыть игру", Quit);
+                return;
+            }
+            if (_runner.IsReplay)
+            {
+                _runner.Paused = true;
+                Begin("Реплей");
+                AddButton("Продолжить (Esc)", Close);
+                AddButton("Смотреть сначала", () => SimRunner.Reload());
                 AddButton("Выйти в меню", ToMenu);
                 AddButton("Закрыть игру", Quit);
                 return;
@@ -121,10 +147,21 @@ namespace Game.Presentation
             AddButton("Закрыть игру", Quit);
         }
 
-        private static void ToMenu()
+        // The match is kept as a replay on the way out (save-load.md).
+        private void ToMenu()
         {
+            _runner!.RecordReplay();
             GameSession.ToMenu();
             SimRunner.Reload();
+        }
+
+        private void ShowLoading()
+        {
+            Begin("Загрузка");
+            _loadingLabel = new Label("Загрузка… 0 %") { pickingMode = PickingMode.Ignore };
+            _loadingLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _loadingLabel.style.fontSize = 18;
+            _column!.Add(_loadingLabel);
         }
 
         private void ShowNetwork()
@@ -195,7 +232,7 @@ namespace Game.Presentation
                 return;
             }
             LockstepClient? client = net.Client;
-            string key = net.Connecting ? "connecting" : net.Error ?? (client == null ? "" : $"{client.Slot}|{client.MissionId}|{Describe(client.Lobby)}");
+            string key = net.Connecting ? "connecting" : net.Error ?? (client == null ? "" : $"{client.Slot}|{client.MissionId}|{client.LobbySaveTick}|{Describe(client.Lobby)}");
             if (key == _lobbyShown)
                 return;
             _lobbyShown = key;
@@ -223,7 +260,15 @@ namespace Game.Presentation
             }
 
             MissionStats? mission = _runner!.Catalog?.Find(client.MissionId);
-            if (net.IsHost && _runner.Catalog != null)
+            bool fromSave = client.LobbySaveTick >= 0;
+            if (fromSave)
+            {
+                // save-load.md: the match goes on from the save, with its factions.
+                AddLabel($"Продолжаем сохранение: {mission?.NameRu ?? client.MissionId} · {DisplayNames.Clock(client.LobbySaveTick)} в миссии");
+                if (net.IsHost)
+                    AddButton("Новая игра вместо сохранения", () => client.PickSave(Array.Empty<byte>()));
+            }
+            else if (net.IsHost && _runner.Catalog != null)
             {
                 var missions = new List<MissionStats>(Missions());
                 var names = missions.ConvertAll(m => $"{m.NameRu} ({m.Players} игр.)");
@@ -231,6 +276,7 @@ namespace Game.Presentation
                 var pick = new DropdownField("Миссия", names, index);
                 pick.RegisterValueChangedCallback(e => client.PickMission(missions[names.IndexOf(e.newValue)].Id));
                 AddDropdown(pick);
+                AddButton("Продолжить сохранение…", () => ShowLobbySaves(client));
             }
             else
             {
@@ -242,7 +288,7 @@ namespace Game.Presentation
             foreach (LobbyEntry entry in client.Lobby)
             {
                 string factionName = factions.Find(f => f.Id == entry.FactionId)?.NameRu ?? entry.FactionId;
-                if (entry.Slot == client.Slot)
+                if (entry.Slot == client.Slot && !fromSave)
                 {
                     var pick = new DropdownField($"{entry.Slot}. {entry.Name} (вы)", factionNames, Math.Max(0, factionNames.IndexOf(factionName)));
                     pick.RegisterValueChangedCallback(e => client.PickFaction(factions[factionNames.IndexOf(e.newValue)].Id));
@@ -250,7 +296,7 @@ namespace Game.Presentation
                 }
                 else
                 {
-                    AddLabel($"{entry.Slot}. {entry.Name} — {factionName}");
+                    AddLabel($"{entry.Slot}. {entry.Name}{(entry.Slot == client.Slot ? " (вы)" : "")} — {factionName}");
                 }
             }
 
@@ -269,6 +315,29 @@ namespace Game.Presentation
                 AddLabel("Ждём, пока хост начнёт");
             }
             AddButton("Выйти", () => { LeaveLobby(); ShowMain(); });
+        }
+
+        // The host picks a save to go on from; the lobby comes back with it.
+        private void ShowLobbySaves(LockstepClient client)
+        {
+            _inLobby = false;
+            Begin("Продолжить сохранение");
+            List<SaveStore.Entry> saves = SaveStore.List(SaveStore.Kind.Save);
+            if (saves.Count == 0)
+                Say("Сохранений пока нет");
+            for (int i = 0; i < saves.Count && i < _maxSavesListed; i++)
+            {
+                SaveStore.Entry entry = saves[i];
+                AddButton(Describe(entry, SaveStore.Kind.Save), () =>
+                {
+                    SaveGame? save = ReadFile(entry);
+                    if (save == null)
+                        return;
+                    client.PickSave(save.Write());
+                    ShowLobby();
+                });
+            }
+            AddButton("Назад", ShowLobby);
         }
 
         private void LeaveLobby()
@@ -350,29 +419,109 @@ namespace Game.Presentation
         private void ShowLoad(Action back)
         {
             Begin("Загрузить");
-            List<SaveStore.Entry> saves = SaveStore.List();
-            if (saves.Count == 0)
-                Say("Сохранений пока нет");
-            for (int i = 0; i < saves.Count && i < _maxSavesListed; i++)
-            {
-                SaveStore.Entry entry = saves[i];
-                AddButton(Describe(entry), () => Load(entry));
-            }
+            ShowFiles(SaveStore.Kind.Save, "Сохранений пока нет", Load, () => ShowLoad(back));
             AddButton("Назад", back);
         }
 
-        private string Describe(SaveStore.Entry entry)
+        private void ShowReplays()
+        {
+            Begin("Реплеи");
+            ShowFiles(SaveStore.Kind.Replay, "Реплеев пока нет: запись матча сохраняется сама, когда он кончается или вы выходите", Watch, ShowReplays);
+            AddButton("Назад", ShowMain);
+        }
+
+        // One row per file: open it, or delete it (the first click asks, the second deletes).
+        private void ShowFiles(SaveStore.Kind kind, string empty, Action<SaveStore.Entry> open, Action refresh)
+        {
+            List<SaveStore.Entry> files = SaveStore.List(kind);
+            if (files.Count == 0)
+                Say(empty);
+            for (int i = 0; i < files.Count && i < _maxSavesListed; i++)
+            {
+                SaveStore.Entry entry = files[i];
+                var row = new VisualElement();
+                row.style.flexDirection = FlexDirection.Row;
+                var openButton = new Button(() => open(entry)) { text = Describe(entry, kind) };
+                StyleMenuButton(openButton);
+                openButton.style.flexGrow = 1;
+                Button? delete = null;
+                delete = new Button(() =>
+                {
+                    if (delete!.userData == null)
+                    {
+                        delete.userData = true;
+                        delete.text = "Точно?";
+                        return;
+                    }
+                    try
+                    {
+                        SaveStore.Delete(entry);
+                    }
+                    catch (IOException e)
+                    {
+                        Say($"Не удалось удалить: {e.Message}");
+                        return;
+                    }
+                    refresh();
+                }) { text = "Удалить" };
+                StyleMenuButton(delete);
+                delete.style.width = 96;
+                delete.style.marginLeft = 4;
+                row.Add(openButton);
+                row.Add(delete);
+                _column!.Add(row);
+                KeepMessageLast();
+            }
+        }
+
+        private string Describe(SaveStore.Entry entry, SaveStore.Kind kind)
         {
             try
             {
                 SaveGame save = SaveGame.Read(File.ReadAllBytes(entry.Path));
                 string name = _runner!.Catalog?.Find(save.MissionId)?.NameRu ?? save.MissionId;
-                return $"{name} · {DisplayNames.Clock(save.Tick)} в миссии\n{entry.Written:dd.MM.yyyy HH:mm}";
+                string time = kind == SaveStore.Kind.Save ? $"{DisplayNames.Clock(save.Tick)} в миссии" : $"длина {DisplayNames.Clock(save.Tick)}";
+                string factions = save.Factions.Count > 0 ? " · " + FactionNames(save.Factions) : "";
+                return $"{name} · {time}{factions}\n{entry.Written:dd.MM.yyyy HH:mm}";
             }
             catch (Exception e) when (e is IOException || e is InvalidDataException)
             {
                 return $"Повреждено: {Path.GetFileName(entry.Path)}";
             }
+        }
+
+        private string FactionNames(IReadOnlyList<string> ids)
+        {
+            var names = new List<string>();
+            foreach (string id in ids)
+                names.Add(_runner!.Data != null && _runner.Data.TryGetFaction(id, out FactionStats? f) ? f!.NameRu : id);
+            return string.Join(", ", names);
+        }
+
+        private void Watch(SaveStore.Entry entry)
+        {
+            SaveGame? replay = ReadFile(entry);
+            if (replay == null)
+                return;
+            GameSession.StartReplay(replay);
+            SimRunner.Reload();
+        }
+
+        // A readable file of a mission this game has, or null and the reason said.
+        private SaveGame? ReadFile(SaveStore.Entry entry)
+        {
+            try
+            {
+                SaveGame save = SaveGame.Read(File.ReadAllBytes(entry.Path));
+                if (_runner!.Catalog?.Find(save.MissionId) != null)
+                    return save;
+                Say("Миссия из файла не найдена");
+            }
+            catch (Exception e) when (e is IOException || e is InvalidDataException)
+            {
+                Say("Не удалось открыть: файл повреждён или от другой версии игры");
+            }
+            return null;
         }
 
         private void StartMission(MissionStats mission)
@@ -388,7 +537,7 @@ namespace Game.Presentation
                 return;
             try
             {
-                SaveStore.Write(bytes);
+                SaveStore.Write(SaveStore.Kind.Save, bytes);
                 Say("Сохранено");
             }
             catch (IOException e)
@@ -399,22 +548,13 @@ namespace Game.Presentation
 
         private void Load(SaveStore.Entry entry)
         {
-            try
-            {
-                SaveGame save = SaveGame.Read(File.ReadAllBytes(entry.Path));
-                if (_runner!.Catalog?.Find(save.MissionId) == null)
-                {
-                    Say("Миссия из сохранения не найдена");
-                    return;
-                }
-                Say("Загрузка…");
-                GameSession.Load(save);
-                SimRunner.Reload();
-            }
-            catch (Exception e) when (e is IOException || e is InvalidDataException)
-            {
-                Say("Не удалось загрузить: файл повреждён или от другой версии игры");
-            }
+            SaveGame? save = ReadFile(entry);
+            if (save == null)
+                return;
+            // Loading a save leaves a network game: it goes on alone (Ctrl+F1–F4 for the others).
+            GameSession.LeaveNetwork();
+            GameSession.Load(save);
+            SimRunner.Reload();
         }
 
         private static void Quit()
