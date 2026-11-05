@@ -25,7 +25,7 @@ case "$file" in
 esac
 
 case "$file" in
-  */Assets/Game.Sim/*|*/Game.Sim.Tests/*|*/Game.Sim.Dotnet/*) ;;
+  */Assets/Game.Sim/*|*/Game.Sim.Tests/*|*/Game.Sim.Dotnet/*|*/Assets/Game.Net/*|*/Game.Net.Dotnet/*) ;;
   *) exit 0 ;;
 esac
 sim="$root/Assets/Game.Sim"

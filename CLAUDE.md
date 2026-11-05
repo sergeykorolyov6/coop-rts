@@ -16,7 +16,7 @@
 
 - `Game.Sim` — **чистый C#, без `using UnityEngine`**. Вся игровая логика: карта, юниты, здания, ресурсы, точки интереса, бой, pathfinding, ИИ врага. Детерминированная, покрыта тестами.
 - `Game.Presentation` — Unity: рендер, камера, ввод, UI (UI Toolkit). Читает состояние `Game.Sim`, никогда не мутирует его напрямую.
-- `Game.Net` — сеть: сбор команд игроков, lockstep, рассылка. Зависит от `Game.Sim`, не от `Game.Presentation`.
+- `Game.Net` — сеть: сбор команд игроков, lockstep, рассылка (`mechanics/network.md`). Чистый C# (`noEngineReferences`), зависит от `Game.Sim`, не от `Game.Presentation`; собирается для `dotnet` через `Game.Net.Dotnet/Game.Net.csproj`, тесты — в `Game.Sim.Tests/Net`. Presentation отдаёт команды только через `SimRunner.Submit`.
 
 Правила симуляции:
 - Фиксированный тик: 20 тиков/сек. Симуляция продвигается только через `Simulation.Tick()` (класс не называется `Sim`, чтобы не конфликтовать с пространством имён `Game.Sim`).
@@ -102,6 +102,7 @@
 | Жёлтая Звезда: герой (Звёздный рыцарь), опыт, уровень, аура, Звездопад, Воодушевление; Подмастерье, Оруженосец, Лучник, Послушник, Катапульта; Святилище, Казарма, Сторожевая башня | тег `hero`, `ys_hero`, `HeroSystem`, `Player.HeroXp`/`HeroLevel`/`HeroRespawnTick`, `hero_levels.csv`, события `HeroDied`/`HeroRespawned`/`HeroLevelUp`; `ys_nova` (nova), `ys_inspire` (inspire); `ys_builder`, `ys_squire`, `ys_archer`, `ys_acolyte`, `ys_catapult`; `ys_hq`, `ys_barracks`, `ys_tower` |
 | путь героя (Воин, Маг, Покровитель); способность сработала; описание, снаряд, эффект | `HeroPathStats` (`hero_paths.csv`), `ChooseHeroPathCommand`, `Player.HeroPathId`; событие `AbilityUsed`; колонки `description`, `projectile` (юниты, здания), `effect` (способности) — только для UI |
 | источники данных для загрузки | `GameDataSources` → `GameData.Parse` |
+| сетевой кооп: хост, игрок, ход, задержка ввода, лобби, место, рассинхронизация (`network.md`) | `Relay` (хост: лобби, сбор ходов, сверка хешей), `LockstepClient`, `LockstepSettings` (`TurnTicks`, `DelayTurns`), `LobbyEntry`, `MatchStart`, `NetNotice` (`Desync`, `PlayerLeft`, `HostLost`); транспорт `IConnection` (`TcpConnection`, `LoopbackConnection`), `TcpServer`, `TcpConnector`; в Presentation `NetSession`, `SimRunner.Submit` |
 | играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (все четыре есть) |
 | неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
 

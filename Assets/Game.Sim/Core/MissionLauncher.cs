@@ -14,7 +14,8 @@ public static class MissionLauncher
     // Primary and secondary ore.
     public const int ResourceTypeCount = Resources.Secondary + 1;
 
-    public static MatchSetup CreateSetup(GameData data, MissionStats mission, string mapJson, int seed)
+    // factions: one per start slot, chosen in the network lobby (network.md); null — the mission's own.
+    public static MatchSetup CreateSetup(GameData data, MissionStats mission, string mapJson, int seed, IReadOnlyList<string>? factions = null)
     {
         var humans = new List<int>();
         for (int id = 1; id <= mission.Players; id++)
@@ -38,10 +39,11 @@ public static class MissionLauncher
                 relations.Add(new RelationSetup(a, LegionPlayerId, Relation.Enemy));
         }
         // factions.md: the mission names the faction of every start slot; the rest get the default.
-        var factions = new List<PlayerFaction>();
-        for (int i = 0; i < humans.Count && i < mission.Factions.Count; i++)
-            factions.Add(new PlayerFaction(humans[i], mission.Factions[i]));
+        IReadOnlyList<string> chosen = factions ?? mission.Factions;
+        var slots = new List<PlayerFaction>();
+        for (int i = 0; i < humans.Count && i < chosen.Count; i++)
+            slots.Add(new PlayerFaction(humans[i], chosen[i]));
         return new MatchSetup(seed, data, map, ResourceTypeCount, playerIds, relations,
-            CreepPlayerId, legion ? LegionPlayerId : MatchSetup.NoPlayer, NeutralPlayerId, mission.Goal, factions);
+            CreepPlayerId, legion ? LegionPlayerId : MatchSetup.NoPlayer, NeutralPlayerId, mission.Goal, slots);
     }
 }

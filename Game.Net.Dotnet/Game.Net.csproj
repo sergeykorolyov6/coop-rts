@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Builds the Unity-side sources of Game.Net as a plain .NET library, so the lockstep is tested
+       without Unity (network.md). netstandard2.1 matches the API surface Unity exposes. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Game.Net</AssemblyName>
+    <RootNamespace>Game.Net</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../Assets/Game.Net/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Game.Sim.Dotnet/Game.Sim.csproj" />
+  </ItemGroup>
+
+</Project>

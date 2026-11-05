@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Game.Sim.Dotnet/Game.Sim.csproj" />
+    <ProjectReference Include="../Game.Net.Dotnet/Game.Net.csproj" />
   </ItemGroup>
 
 </Project>

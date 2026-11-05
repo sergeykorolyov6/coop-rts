@@ -39,6 +39,34 @@ public sealed class CommandCodec
         int typeId = reader.ReadInt32();
         int playerId = reader.ReadInt32();
         int tick = reader.ReadInt32();
+        return ReadBody(reader, typeId, playerId, tick);
+    }
+
+    // network.md: one encoded command (as Write made it), executed as playerId on tick whatever
+    // its header says — the lockstep host decides who sent it and on which tick it runs.
+    public ICommand ReadAs(byte[] encoded, int playerId, int tick)
+    {
+        using var stream = new MemoryStream(encoded, writable: false);
+        using var reader = new BinaryReader(stream);
+        int typeId = reader.ReadInt32();
+        reader.ReadInt32();
+        reader.ReadInt32();
+        ICommand command = ReadBody(reader, typeId, playerId, tick);
+        if (stream.Position != stream.Length)
+            throw new InvalidDataException($"Command type {typeId}: trailing bytes.");
+        return command;
+    }
+
+    public byte[] Encode(ICommand command)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+            Write(writer, command);
+        return stream.ToArray();
+    }
+
+    private ICommand ReadBody(BinaryReader reader, int typeId, int playerId, int tick)
+    {
         int payloadLength = reader.ReadInt32();
         if (payloadLength < 0)
             throw new InvalidDataException($"Negative payload length {payloadLength}.");
