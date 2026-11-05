@@ -322,21 +322,14 @@ namespace Game.Presentation
         {
             _inLobby = false;
             Begin("Продолжить сохранение");
-            List<SaveStore.Entry> saves = SaveStore.List(SaveStore.Kind.Save);
-            if (saves.Count == 0)
-                Say("Сохранений пока нет");
-            for (int i = 0; i < saves.Count && i < _maxSavesListed; i++)
+            ShowFiles(SaveStore.Kind.Save, "Сохранений пока нет", entry =>
             {
-                SaveStore.Entry entry = saves[i];
-                AddButton(Describe(entry, SaveStore.Kind.Save), () =>
-                {
-                    SaveGame? save = ReadFile(entry);
-                    if (save == null)
-                        return;
-                    client.PickSave(save.Write());
-                    ShowLobby();
-                });
-            }
+                SaveGame? save = ReadFile(entry);
+                if (save == null)
+                    return;
+                client.PickSave(save.Write());
+                ShowLobby();
+            });
             AddButton("Назад", ShowLobby);
         }
 
@@ -430,8 +423,9 @@ namespace Game.Presentation
             AddButton("Назад", ShowMain);
         }
 
-        // One row per file: open it, or delete it (the first click asks, the second deletes).
-        private void ShowFiles(SaveStore.Kind kind, string empty, Action<SaveStore.Entry> open, Action refresh)
+        // One row per file: open it, or delete it (the first click asks, the second deletes);
+        // without refresh — no deleting (picking a save in the lobby).
+        private void ShowFiles(SaveStore.Kind kind, string empty, Action<SaveStore.Entry> open, Action? refresh = null)
         {
             List<SaveStore.Entry> files = SaveStore.List(kind);
             if (files.Count == 0)
@@ -444,6 +438,11 @@ namespace Game.Presentation
                 var openButton = new Button(() => open(entry)) { text = Describe(entry, kind) };
                 StyleMenuButton(openButton);
                 openButton.style.flexGrow = 1;
+                row.Add(openButton);
+                _column!.Add(row);
+                KeepMessageLast();
+                if (refresh == null)
+                    continue;
                 Button? delete = null;
                 delete = new Button(() =>
                 {
@@ -467,10 +466,7 @@ namespace Game.Presentation
                 StyleMenuButton(delete);
                 delete.style.width = 96;
                 delete.style.marginLeft = 4;
-                row.Add(openButton);
                 row.Add(delete);
-                _column!.Add(row);
-                KeepMessageLast();
             }
         }
 

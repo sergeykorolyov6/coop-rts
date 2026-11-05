@@ -21,13 +21,10 @@ while (!File.Exists(Path.Combine(root, "PLAN.md")))
 string data = Path.Combine(root, "Assets", "Data");
 string Read(string name) => File.ReadAllText(Path.Combine(data, name));
 
-// The same texts in the same order as SimRunner.ContentTexts.
-string[] tables = { "units", "buildings", "creep_camps", "rules", "legion", "waves", "factions", "abilities", "hero_levels", "hero_paths", "missions" };
-var texts = tables.Select(t => Read(t + ".json")).ToList();
-var maps = Directory.GetFiles(Path.Combine(data, "maps"), "*.json").Select(Path.GetFileNameWithoutExtension).ToList();
-maps.Sort(string.CompareOrdinal);
-texts.AddRange(maps.Select(m => m + "\n" + Read(Path.Combine("maps", m + ".json"))));
-ulong content = ContentHash.Of(texts);
+// The files SimRunner.ContentFiles hashes: every table and map of Assets/Data, by name.
+var files = Directory.GetFiles(data, "*.json").Select(p => (Path.GetFileName(p), File.ReadAllText(p)))
+    .Concat(Directory.GetFiles(Path.Combine(data, "maps"), "*.json").Select(p => ("maps/" + Path.GetFileName(p), File.ReadAllText(p))));
+ulong content = ContentHash.Of(files);
 
 GameData gameData = GameData.Parse(new GameDataSources
 {

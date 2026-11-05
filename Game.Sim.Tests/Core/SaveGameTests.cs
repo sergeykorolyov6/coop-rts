@@ -9,11 +9,8 @@ public class SaveGameTests
 {
     private const int Second = Simulation.TicksPerSecond;
 
-    private static MatchSetup Setup(string missionId, int seed)
-    {
-        MissionStats mission = CoopMissionTests.Catalog().Find(missionId)!;
-        return MissionLauncher.CreateSetup(RepoData.Get(), mission, CoopMissionTests.MapJson(mission.Map), seed);
-    }
+    private static MatchSetup Setup(string missionId, int seed, System.Collections.Generic.IReadOnlyList<string>? factions = null) =>
+        RepoData.Setup(missionId, seed, factions);
 
     // Two minutes of a player who builds, mines and orders units around, on the M2 mission.
     private static Simulation Played(int seed = 7)
@@ -71,12 +68,6 @@ public class SaveGameTests
         SaveGame good = SaveGame.Read(file);
         var wrongHash = new SaveGame(good.MissionId, good.Seed, good.Tick, good.StateHash ^ 1, good.CommandLog);
         Assert.Throws<InvalidDataException>(() => wrongHash.Restore(Setup("m2", 7), GameCommands.CreateCodec()));
-    }
-
-    private static MatchSetup Setup(string missionId, int seed, System.Collections.Generic.IReadOnlyList<string>? factions)
-    {
-        MissionStats mission = CoopMissionTests.Catalog().Find(missionId)!;
-        return MissionLauncher.CreateSetup(RepoData.Get(), mission, CoopMissionTests.MapJson(mission.Map), seed, factions);
     }
 
     [Test]

@@ -141,7 +141,7 @@ public class FactionMechanicsTests
     [Test]
     public void GWT9_CoopMission_BlueWallsAndRedLightning()
     {
-        Simulation sim = CoopMissionTests.Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         SimState s = sim.State;
         Assert.That(s.GetPlayer(1).Faction!.Id, Is.EqualTo("blue_walls"));
         Assert.That(s.GetPlayer(2).Faction!.Id, Is.EqualTo("red_lightning"));
@@ -153,7 +153,7 @@ public class FactionMechanicsTests
     [Test]
     public void GWT10_LegionMission_ForRedLightning_SameLegionBase()
     {
-        Simulation blue = CoopMissionTests.Launch("m2"), red = CoopMissionTests.Launch("m2_red");
+        Simulation blue = RepoData.Launch("m2"), red = RepoData.Launch("m2_red");
         Assert.That(red.State.GetPlayer(1).Faction!.Id, Is.EqualTo("red_lightning"));
         Assert.That(red.State.GetPlayer(MissionLauncher.LegionPlayerId).Faction!.Id, Is.EqualTo("black_legion"));
         Assert.That(red.State.Buildings.Count(b => b.OwnerId == MissionLauncher.LegionPlayerId),

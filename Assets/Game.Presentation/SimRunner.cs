@@ -130,7 +130,7 @@ namespace Game.Presentation
             });
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;
-            ContentHash = Game.Net.ContentHash.Of(ContentTexts());
+            ContentHash = Game.Net.ContentHash.Of(ContentFiles());
 
             if (GameSession.MissionId == null)
                 return;
@@ -199,21 +199,20 @@ namespace Game.Presentation
                 _simulation.Enqueue(command);
         }
 
-        private IEnumerable<string> ContentTexts()
+        // Named as the files in Assets/Data (Tools/NetBot reads them from there).
+        private IEnumerable<(string Name, string Text)> ContentFiles()
         {
             foreach (TextAsset? asset in new[] { _unitsJson, _buildingsJson, _creepCampsJson, _rulesJson, _legionJson, _wavesJson,
                          _factionsJson, _abilitiesJson, _heroLevelsJson, _heroPathsJson, _missionsJson })
-                yield return asset != null ? asset.text : "";
-            // By name: the hash must not depend on the order of the list in the Inspector.
-            var maps = new List<TextAsset>();
+            {
+                if (asset != null)
+                    yield return (asset.name + ".json", asset.text);
+            }
             foreach (TextAsset asset in _maps)
             {
                 if (asset != null)
-                    maps.Add(asset);
+                    yield return ("maps/" + asset.name + ".json", asset.text);
             }
-            maps.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
-            foreach (TextAsset asset in maps)
-                yield return asset.name + "\n" + asset.text;
         }
 
         private void FailToMenu(string message)
@@ -240,7 +239,8 @@ namespace Game.Presentation
                 if (_simulation == null || !enabled)
                     return;
             }
-            if (_simulation == null)
+            Simulation? simulation = _simulation;
+            if (simulation == null)
                 return;
             if (_loading != null)
             {
@@ -249,31 +249,48 @@ namespace Game.Presentation
             }
             if (_replay != null)
             {
-                RunReplay();
+                if (!Paused && ReplaySpeed > 0 && !ReplayFinished)
+                    Advance(ReplaySpeed, ReplayTick);
                 return;
             }
             if (IsNetwork)
             {
-                RunNetwork();
+                // network.md: never past the turns the host has sent; a machine that fell behind
+                // (more turns waiting than the delay) catches up.
+                LockstepClient client = GameSession.Net!.Client!;
+                Advance(1, () => client.TryStep(simulation), () => client.TurnsAhead > LockstepSettings.DelayTurns + 1);
                 return;
             }
-            if (Paused)
-                return;
+            if (!Paused)
+                Advance(1, () =>
+                {
+                    simulation.Tick();
+                    return true;
+                });
+        }
 
+        // Real time × speed, at most MaxTicksPerFrame × speed ticks a frame. A tick that cannot run
+        // (the lockstep waits, the replay ended) banks no time for a burst afterwards; behind lets
+        // ticks run ahead of the clock.
+        private void Advance(int speed, Func<bool> tryTick, Func<bool>? behind = null)
+        {
             const float secondsPerTick = 1f / Simulation.TicksPerSecond;
-            _accumulatedSeconds += Time.deltaTime;
-
-            int ticks = 0;
-            while (_accumulatedSeconds >= secondsPerTick && ticks < MaxTicksPerFrame)
+            _accumulatedSeconds += Time.deltaTime * speed;
+            int max = MaxTicksPerFrame * speed, ticks = 0;
+            while (ticks < max && (_accumulatedSeconds >= secondsPerTick || (behind?.Invoke() ?? false)))
             {
-                _simulation.Tick();
+                if (!tryTick())
+                {
+                    _accumulatedSeconds = Mathf.Min(_accumulatedSeconds, secondsPerTick);
+                    break;
+                }
                 AfterTick();
-                _accumulatedSeconds -= secondsPerTick;
+                _accumulatedSeconds = Mathf.Max(0f, _accumulatedSeconds - secondsPerTick);
                 ticks++;
             }
-            if (ticks == MaxTicksPerFrame)
+            // A long frame (breakpoint, alt-tab) is not made up in a storm of ticks.
+            if (ticks == max)
                 _accumulatedSeconds = 0f;
-
             ShowState();
         }
 
@@ -303,29 +320,6 @@ namespace Game.Presentation
                 enabled = false;
                 Reload();
             }
-        }
-
-        // network.md: real time, but never past the turns the host has sent; a machine that fell
-        // behind (more turns waiting than the delay) catches up, up to MaxTicksPerFrame.
-        private void RunNetwork()
-        {
-            LockstepClient client = GameSession.Net!.Client!;
-            const float secondsPerTick = 1f / Simulation.TicksPerSecond;
-            _accumulatedSeconds += Time.deltaTime;
-            int ticks = 0;
-            while (ticks < MaxTicksPerFrame && (_accumulatedSeconds >= secondsPerTick || client.TurnsAhead > LockstepSettings.DelayTurns + 1))
-            {
-                if (!client.TryStep(_simulation!))
-                {
-                    // Waiting must not bank time for a burst afterwards.
-                    _accumulatedSeconds = Mathf.Min(_accumulatedSeconds, secondsPerTick);
-                    break;
-                }
-                AfterTick();
-                _accumulatedSeconds = Mathf.Max(0f, _accumulatedSeconds - secondsPerTick);
-                ticks++;
-            }
-            ShowState();
         }
 
         private void OnApplicationQuit()
@@ -369,31 +363,18 @@ namespace Game.Presentation
             _accumulatedSeconds = 0f;
         }
 
-        // save-load.md: the recorded match at ReplaySpeed; stops at its last tick and checks it.
-        private void RunReplay()
+        // save-load.md: one tick of the recorded match; at its last tick it stops and is checked.
+        private bool ReplayTick()
         {
-            if (ReplayFinished || Paused || ReplaySpeed <= 0)
-                return;
-            const float secondsPerTick = 1f / Simulation.TicksPerSecond;
-            _accumulatedSeconds += Time.deltaTime * ReplaySpeed;
-            int ticks = 0;
-            while (_accumulatedSeconds >= secondsPerTick && ticks < MaxTicksPerFrame * ReplaySpeed)
+            if (ReplayFinished)
+                return false;
+            _simulation!.Tick();
+            if (_simulation.State.Tick >= _replay!.Tick)
             {
-                _simulation!.Tick();
-                AfterTick();
-                _accumulatedSeconds -= secondsPerTick;
-                ticks++;
-                if (_simulation.State.Tick >= _replay!.Tick)
-                {
-                    ReplayFinished = true;
-                    ReplayMatched = _replay.Matches(_simulation);
-                    _accumulatedSeconds = 0f;
-                    break;
-                }
+                ReplayFinished = true;
+                ReplayMatched = _replay.Matches(_simulation);
             }
-            if (ticks == MaxTicksPerFrame * ReplaySpeed)
-                _accumulatedSeconds = 0f;
-            ShowState();
+            return true;
         }
 
         private void ShowState()

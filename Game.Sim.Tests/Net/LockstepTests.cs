@@ -23,7 +23,7 @@ public class LockstepTests
 
         public Match(string missionId = "coop", int players = 2, ulong? joinContent = null)
         {
-            Relay = new Relay(RepoData.Get(), CoopMissionTests.Catalog(), Content, missionId);
+            Relay = new Relay(RepoData.Get(), RepoData.Catalog(), Content, missionId);
             for (int i = 0; i < players; i++)
                 Join(i == 0 ? Content : joinContent ?? Content);
             Pump();
@@ -59,8 +59,7 @@ public class LockstepTests
         // As SimRunner does: a new match, or the save restored up to its tick.
         public static Simulation Launch(MatchStart start)
         {
-            MissionStats mission = CoopMissionTests.Catalog().Find(start.MissionId)!;
-            MatchSetup setup = MissionLauncher.CreateSetup(RepoData.Get(), mission, CoopMissionTests.MapJson(mission.Map), start.Seed, start.Factions);
+            MatchSetup setup = RepoData.Setup(start.MissionId, start.Seed, start.Factions);
             return start.Save != null ? SaveGame.Read(start.Save).Restore(setup, GameCommands.CreateCodec()) : new Simulation(setup);
         }
 
@@ -117,8 +116,7 @@ public class LockstepTests
     {
         var m = new Match();
         m.Start(seed: 5);
-        var offline = new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), CoopMissionTests.Catalog().Find("coop")!,
-            CoopMissionTests.MapJson("coop"), 5, m.Clients[0].Start!.Factions));
+        Simulation offline = RepoData.Launch("coop", 5, m.Clients[0].Start!.Factions);
         Unit b1 = offline.State.FindBuilder(1)!, b2 = offline.State.FindBuilder(2)!;
 
         for (int tick = 0; tick < 300; tick++)
@@ -263,7 +261,7 @@ public class LockstepTests
     public void GWT11_RealTcpOnLoopback_HashesEqual()
     {
         using var server = new TcpServer(0);
-        var relay = new Relay(RepoData.Get(), CoopMissionTests.Catalog(), Content, "coop");
+        var relay = new Relay(RepoData.Get(), RepoData.Catalog(), Content, "coop");
         (LoopbackConnection hostSide, LoopbackConnection hostPlayer) = LoopbackConnection.CreatePair();
         relay.Add(hostSide);
         var host = new LockstepClient(hostPlayer, "Host", Content, GameCommands.CreateCodec());
@@ -293,9 +291,7 @@ public class LockstepTests
         while (guest.Start == null && watch.ElapsedMilliseconds < 5000)
             Pump();
         Assert.That(guest.Start, Is.Not.Null, "start did not arrive over TCP");
-        MissionStats coop = CoopMissionTests.Catalog().Find("coop")!;
-        Simulation[] sims = clients.Select(c => new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), coop,
-            CoopMissionTests.MapJson("coop"), c.Start!.Seed, c.Start.Factions))).ToArray();
+        Simulation[] sims = clients.Select(c => Match.Launch(c.Start!)).ToArray();
         Unit b2 = sims[1].State.FindBuilder(2)!;
         int startX = b2.X;
         guest.Submit(new MoveCommand(2, 0, new[] { b2.Id }, b2.X + 4000, b2.Y));
@@ -319,8 +315,7 @@ public class LockstepTests
     // A coop match of 501 ticks (not a whole turn: the resume must handle it), saved.
     private static (SaveGame Save, Simulation Original) SavedCoop()
     {
-        var sim = new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), CoopMissionTests.Catalog().Find("coop")!,
-            CoopMissionTests.MapJson("coop"), 21, new[] { "red_lightning", "yellow_star" }));
+        Simulation sim = RepoData.Launch("coop", 21, new[] { "red_lightning", "yellow_star" });
         Unit b1 = sim.State.FindBuilder(1)!;
         sim.Enqueue(new MoveCommand(1, 10, new[] { b1.Id }, b1.X + 4000, b1.Y));
         sim.Enqueue(new ChooseHeroPathCommand(2, 30, "ys_warrior"));

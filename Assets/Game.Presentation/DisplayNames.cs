@@ -28,7 +28,7 @@ namespace Game.Presentation
         public static string PlayerName(SimState state, int playerId)
         {
             string faction = state.GetPlayer(playerId).Faction?.NameRu ?? "";
-            return faction.Length > 0 ? $"игрок {playerId} ({faction})" : $"игрок {playerId}";
+            return faction.Length > 0 ? $"Игрок {playerId} ({faction})" : $"Игрок {playerId}";
         }
 
         public static string Clock(int ticks)

@@ -36,11 +36,8 @@ namespace Game.Presentation
                 return;
             var bar = new VisualElement { name = "ReplayPanel" };
             Hud.Panelise(bar);
-            bar.style.position = Position.Absolute;
             // Under the wallet line, so the two never overlap in a narrow window.
-            bar.style.top = 36;
-            bar.style.left = Length.Percent(50);
-            bar.style.translate = new Translate(Length.Percent(-50), 0);
+            Hud.PinTopCentre(bar, 36);
             bar.style.flexDirection = FlexDirection.Row;
             bar.style.alignItems = Align.Center;
 

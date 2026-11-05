@@ -87,12 +87,12 @@ public class ScavengerAndHeroTests
     [Test]
     public void GWT15_YellowMission_BuilderAndLevelOneHero()
     {
-        Simulation sim = CoopMissionTests.Launch("m2_yellow");
+        Simulation sim = RepoData.Launch("m2_yellow");
         Assert.That(sim.State.FindBuilder(1)!.Stats.Id, Is.EqualTo("ys_builder"));
         Unit hero = sim.State.FindHero(1)!;
         Assert.That(hero.Stats.Id, Is.EqualTo("ys_hero"));
         Assert.That(sim.State.GetPlayer(1).HeroLevel, Is.EqualTo(1));
-        Assert.That(CoopMissionTests.Launch("m2_brown").State.FindHeadquarters(1)!.Stats.Id, Is.EqualTo("bs_hq"));
+        Assert.That(RepoData.Launch("m2_brown").State.FindHeadquarters(1)!.Stats.Id, Is.EqualTo("bs_hq"));
     }
 
     [Test]

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 
@@ -29,6 +30,23 @@ internal static class RepoData
             HeroPaths = Read("hero_paths.json"),
         });
     }
+
+    // Assets/Data/missions.json and maps: missions as the game launches them (MissionLauncher).
+    public static MissionCatalog Catalog() =>
+        MissionCatalog.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "Assets", "Data", "missions.json")));
+
+    public static string MapJson(string map) =>
+        File.ReadAllText(Path.Combine(RepoRoot(), "Assets", "Data", "maps", map + ".json"));
+
+    // factions: one per start slot as a lobby or a save gives them; null — the mission's own.
+    public static MatchSetup Setup(string missionId, int seed = 42, IReadOnlyList<string>? factions = null)
+    {
+        MissionStats mission = Catalog().Find(missionId)!;
+        return MissionLauncher.CreateSetup(Get(), mission, MapJson(mission.Map), seed, factions);
+    }
+
+    public static Simulation Launch(string missionId, int seed = 42, IReadOnlyList<string>? factions = null) =>
+        new Simulation(Setup(missionId, seed, factions));
 
     public static string RepoRoot()
     {

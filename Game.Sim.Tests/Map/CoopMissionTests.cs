@@ -12,26 +12,12 @@ public class CoopMissionTests
     private const int Second = Simulation.TicksPerSecond;
     private const int Minute = 60 * Second;
 
-    internal static MissionCatalog Catalog() =>
-        MissionCatalog.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "Assets", "Data", "missions.json")));
-
-    internal static string MapJson(string map) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "Assets", "Data", "maps", map + ".json"));
-
-    private static string RepoRoot() => RepoData.RepoRoot();
-
-    internal static Simulation Launch(string missionId, int seed = 42)
-    {
-        MissionStats mission = Catalog().Find(missionId)!;
-        return new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), mission, MapJson(mission.Map), seed));
-    }
-
     private static Unit Boss(Simulation sim) => sim.State.Units.Single(u => u.Stats.HasTag(UnitTags.Boss));
 
     [Test]
     public void Catalog_HasBothMissions()
     {
-        MissionCatalog catalog = Catalog();
+        MissionCatalog catalog = RepoData.Catalog();
         Assert.That(catalog.Missions.Select(m => m.Id), Is.EquivalentTo(new[] { "m2", "m2_red", "m2_brown", "m2_yellow", "coop" }));
         Assert.That(catalog.Find("m2")!.Goal, Is.EqualTo(MissionGoal.DestroyLegion));
         Assert.That(catalog.Find("coop")!.Goal, Is.EqualTo(MissionGoal.KillBoss));
@@ -44,7 +30,7 @@ public class CoopMissionTests
     [Test]
     public void C1_Start_TwoPlayersWithBuilders_NoLegion_OneBoss_BigMap()
     {
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         SimState s = sim.State;
         Assert.That((s.Map.Width, s.Map.Height), Is.EqualTo((128, 128)));
         Assert.That(s.TeamPlayerIds, Is.EqualTo(new[] { 1, 2 }));
@@ -66,7 +52,7 @@ public class CoopMissionTests
     [Test]
     public void TheLairAndEveryNeutralBuilding_AreReachableFromTheStarts()
     {
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         SimState s = sim.State;
         Unit builder = s.UnitsOf(1).Single();
         Unit boss = Boss(sim);
@@ -83,7 +69,7 @@ public class CoopMissionTests
     [Test]
     public void C2_OtherCreepsDead_BossAlive_GoesOn()
     {
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         foreach (Unit u in sim.State.Units.Where(u => u.OwnerId == MissionLauncher.CreepPlayerId && !u.Stats.HasTag(UnitTags.Boss)).ToList())
             Kill(u);
         sim.Run(2);
@@ -93,7 +79,7 @@ public class CoopMissionTests
     [Test]
     public void C3_BossKilled_Victory()
     {
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         Kill(Boss(sim));
         var ended = sim.RunCollecting<MissionEnded>(3);
         Assert.That(ended.Single().Outcome, Is.EqualTo(MissionOutcome.Victory));
@@ -102,7 +88,7 @@ public class CoopMissionTests
     [Test]
     public void C4_NoFinishedHeadquarters_LastBuilderDies_Defeat()
     {
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         foreach (int p in sim.State.TeamPlayerIds)
             Kill(sim.State.FindHeadquarters(p)!);
         sim.Tick();
@@ -116,7 +102,7 @@ public class CoopMissionTests
     [Test]
     public void C5_NoHeadquartersOfA_ItsBuilderAlive_GoesOn()
     {
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         Kill(sim.State.FindHeadquarters(1)!);
         Kill(sim.State.FindHeadquarters(2)!);
         sim.Run(60);
@@ -127,7 +113,7 @@ public class CoopMissionTests
     public void IdleTeam_IsNotAttackedByCreeps_InTenMinutes()
     {
         // Camps stand away from the starts: a passive team is not punished by creeps (only the boss is the goal).
-        Simulation sim = Launch("coop");
+        Simulation sim = RepoData.Launch("coop");
         var attacked = sim.RunCollecting<BuildingAttacked>(10 * Minute);
         Assert.That(attacked, Is.Empty);
         Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.InProgress));
@@ -139,7 +125,7 @@ public class CoopMissionTests
     [TestCase("m2_yellow")]
     public void LegionMission_PassivePlayerOfAnyFaction_Loses(string missionId)
     {
-        Simulation sim = Launch(missionId);
+        Simulation sim = RepoData.Launch(missionId);
         sim.RunUntil(s => s.State.Outcome != MissionOutcome.InProgress, 20 * Minute);
         Assert.That(sim.State.Outcome, Is.EqualTo(MissionOutcome.Defeat));
     }
@@ -148,8 +134,8 @@ public class CoopMissionTests
     public void Determinism_FiveMinutes_SameHashEveryTick()
     {
         var hashes = new List<ulong>();
-        Launch("coop").Run(5 * Minute, s => hashes.Add(s.StateHash));
+        RepoData.Launch("coop").Run(5 * Minute, s => hashes.Add(s.StateHash));
         int i = 0;
-        Launch("coop").Run(5 * Minute, s => Assert.That(s.StateHash, Is.EqualTo(hashes[i++])));
+        RepoData.Launch("coop").Run(5 * Minute, s => Assert.That(s.StateHash, Is.EqualTo(hashes[i++])));
     }
 }

@@ -107,8 +107,8 @@ public class StateHashCompletenessTests
     // The M2 mission a few minutes in, plus one of each building and a worker with cargo.
     private static Simulation RichMatch()
     {
-        MissionStats mission = CoopMissionTests.Catalog().Find("m2")!;
-        var map = MapLoader.Parse(CoopMissionTests.MapJson("m2"), new[] { 1 })
+        MissionStats mission = RepoData.Catalog().Find("m2")!;
+        var map = MapLoader.Parse(RepoData.MapJson("m2"), new[] { 1 })
             .Neutral("cave", 30, 40);
         var setup = new MatchSetup(1, RepoData.Get(), map, MissionLauncher.ResourceTypeCount,
             new[] { 1, MissionLauncher.LegionPlayerId, MissionLauncher.CreepPlayerId, MissionLauncher.NeutralPlayerId },

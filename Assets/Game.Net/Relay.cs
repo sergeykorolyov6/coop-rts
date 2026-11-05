@@ -65,11 +65,8 @@ public sealed class Relay
         get
         {
             int n = 0;
-            foreach (Peer p in _peers)
-            {
-                if (p.Greeted && !p.Gone)
-                    n++;
-            }
+            foreach (Peer _ in Playing())
+                n++;
             return n;
         }
     }

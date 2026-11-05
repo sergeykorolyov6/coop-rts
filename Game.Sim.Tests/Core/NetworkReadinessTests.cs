@@ -32,10 +32,7 @@ public class NetworkReadinessTests
     [Test]
     public void CreateSetup_LobbyFactions_OverrideMission()
     {
-        MissionStats coop = CoopMissionTests.Catalog().Find("coop")!;
-        var setup = MissionLauncher.CreateSetup(RepoData.Get(), coop, CoopMissionTests.MapJson(coop.Map), 7,
-            new[] { "yellow_star", "brown_scavengers" });
-        var sim = new Simulation(setup);
+        Simulation sim = RepoData.Launch("coop", 7, new[] { "yellow_star", "brown_scavengers" });
 
         Assert.That(sim.State.GetPlayer(1).Faction!.Id, Is.EqualTo("yellow_star"));
         Assert.That(sim.State.GetPlayer(2).Faction!.Id, Is.EqualTo("brown_scavengers"));
@@ -52,8 +49,8 @@ public class NetworkReadinessTests
             try
             {
                 CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture = new CultureInfo(culture);
-                MissionStats coop = CoopMissionTests.Catalog().Find("coop")!;
-                var sim = new Simulation(MissionLauncher.CreateSetup(RepoData.Load(), coop, CoopMissionTests.MapJson(coop.Map), 11,
+                MissionStats coop = RepoData.Catalog().Find("coop")!;
+                var sim = new Simulation(MissionLauncher.CreateSetup(RepoData.Load(), coop, RepoData.MapJson(coop.Map), 11,
                     new[] { "red_lightning", "yellow_star" }));
                 Unit builder = sim.State.FindBuilder(1)!;
                 Unit hero = sim.State.FindHero(2)!;

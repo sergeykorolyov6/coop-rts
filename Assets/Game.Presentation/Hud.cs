@@ -96,8 +96,7 @@ namespace Game.Presentation
             _shownPlayer = playerId;
             _shownIncomePrimary = incomePrimary;
             _shownIncomeSecondary = incomeSecondary;
-            string faction = simulation.State.GetPlayer(playerId).Faction?.NameRu ?? "";
-            _wallet.text = $"Игрок {playerId} ({faction})    Основной ресурс: {primary} (+{incomePrimary}/мин)    Второй: {secondary} (+{incomeSecondary}/мин)";
+            _wallet.text = $"{DisplayNames.PlayerName(simulation.State, playerId)}    Основной ресурс: {primary} (+{incomePrimary}/мин)    Второй: {secondary} (+{incomeSecondary}/мин)";
         }
 
         private void SampleIncome(int tick, int playerId, Wallet wallet, bool hasSecondary)
@@ -183,6 +182,15 @@ namespace Game.Presentation
             button.style.borderTopColor = button.style.borderBottomColor = new Color(0.35f, 0.37f, 0.40f);
             button.style.borderLeftColor = button.style.borderRightColor = new Color(0.35f, 0.37f, 0.40f);
             button.style.fontSize = 14;
+        }
+
+        // A plate pinned to the screen's top centre, its own width wide.
+        public static void PinTopCentre(VisualElement element, float top)
+        {
+            element.style.position = Position.Absolute;
+            element.style.top = top;
+            element.style.left = Length.Percent(50);
+            element.style.translate = new Translate(Length.Percent(-50), 0);
         }
 
         // Near-opaque dark plate with light text: readable over any part of the map.

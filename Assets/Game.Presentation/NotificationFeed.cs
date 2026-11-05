@@ -249,10 +249,7 @@ namespace Game.Presentation
             {
                 _waiting = new Label("Ожидание игроков…") { pickingMode = PickingMode.Ignore };
                 Hud.Panelise(_waiting);
-                _waiting.style.position = Position.Absolute;
-                _waiting.style.top = 90;
-                _waiting.style.left = Length.Percent(50);
-                _waiting.style.translate = new Translate(Length.Percent(-50), 0);
+                Hud.PinTopCentre(_waiting, 90);
                 _waiting.style.fontSize = 20;
                 _waiting.style.color = _warningColor;
                 _hud.Root.Add(_waiting);

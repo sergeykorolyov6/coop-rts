@@ -29,7 +29,7 @@ namespace Game.Presentation
             public DateTime Written { get; }
         }
 
-        public static string Folder(Kind kind) => Path.Combine(Application.persistentDataPath, kind == Kind.Save ? "saves" : "replays");
+        private static string Folder(Kind kind) => Path.Combine(Application.persistentDataPath, kind == Kind.Save ? "saves" : "replays");
 
         private static string Extension(Kind kind) => kind == Kind.Save ? ".coopsave" : ".cooprep";
 

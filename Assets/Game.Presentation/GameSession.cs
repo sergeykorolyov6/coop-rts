@@ -27,42 +27,15 @@ namespace Game.Presentation
         // Shown once by the main menu (a save that could not be loaded, and why).
         public static string? Error { get; set; }
 
-        public static void StartMission(string missionId, int seed)
-        {
-            MissionId = missionId;
-            Seed = seed;
-            PendingSave = null;
-            Factions = null;
-            Replay = null;
-        }
+        public static void StartMission(string missionId, int seed) => Set(missionId, seed, null, null, null);
 
         // A save picked by the host is restored on every machine (network.md, save-load.md).
-        public static void StartNetworkMatch(MatchStart start)
-        {
-            MissionId = start.MissionId;
-            Seed = start.Seed;
-            PendingSave = start.Save != null ? SaveGame.Read(start.Save) : null;
-            Factions = start.Factions;
-            Replay = null;
-        }
+        public static void StartNetworkMatch(MatchStart start) =>
+            Set(start.MissionId, start.Seed, start.Save != null ? SaveGame.Read(start.Save) : null, start.Factions, null);
 
-        public static void StartReplay(SaveGame replay)
-        {
-            MissionId = replay.MissionId;
-            Seed = replay.Seed;
-            PendingSave = null;
-            Factions = replay.FactionsOrNull;
-            Replay = replay;
-        }
+        public static void StartReplay(SaveGame replay) => Set(replay.MissionId, replay.Seed, null, replay.FactionsOrNull, replay);
 
-        public static void Load(SaveGame save)
-        {
-            Factions = save.FactionsOrNull;
-            Replay = null;
-            MissionId = save.MissionId;
-            Seed = save.Seed;
-            PendingSave = save;
-        }
+        public static void Load(SaveGame save) => Set(save.MissionId, save.Seed, save, save.FactionsOrNull, null);
 
         // The save has been replayed: a later scene reload starts the mission afresh, not the save.
         public static void SaveConsumed() => PendingSave = null;
@@ -70,11 +43,17 @@ namespace Game.Presentation
         // Leaves a network game too: the menu is never part of one.
         public static void ToMenu()
         {
-            MissionId = null;
-            PendingSave = null;
-            Factions = null;
-            Replay = null;
+            Set(null, Seed, null, null, null);
             LeaveNetwork();
+        }
+
+        private static void Set(string? missionId, int seed, SaveGame? save, IReadOnlyList<string>? factions, SaveGame? replay)
+        {
+            MissionId = missionId;
+            Seed = seed;
+            PendingSave = save;
+            Factions = factions;
+            Replay = replay;
         }
 
         public static void LeaveNetwork()
