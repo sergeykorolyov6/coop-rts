@@ -63,6 +63,9 @@ namespace Game.Presentation
                 return;
             _panel = new VisualElement { name = "BuildMenu" };
             _panel.style.flexDirection = FlexDirection.Row;
+            // Wider than the bar (many buildings, a narrow window): the buttons wrap into two rows.
+            _panel.style.flexWrap = Wrap.Wrap;
+            _panel.style.flexShrink = 1;
             Hud.Panelise(_panel);
             _normalColor = Hud.ButtonColor;
             _hud.BottomBar.Add(_panel);
@@ -131,7 +134,8 @@ namespace Game.Presentation
                     text = $"{DisplayNames.Building(id)}\n{price}" + (key != Key.None ? $" · {key}" : ""),
                     userData = stats,
                 };
-                button.style.width = 92;
+                // Wide enough for the longest name on one line ("Мастерская", "Сторожевая").
+                button.style.width = 108;
                 button.style.height = 52;
                 button.style.whiteSpace = WhiteSpace.Normal;
                 Hud.StyleButton(button);

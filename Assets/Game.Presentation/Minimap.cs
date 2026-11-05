@@ -24,6 +24,9 @@ namespace Game.Presentation
         [SerializeField] private Color _campColor = new Color(0.60f, 0.60f, 0.60f);
         [SerializeField] private Color _trophyColor = new Color(0.95f, 0.80f, 0.30f);
         [SerializeField] private Color _pingColor = new Color(1.00f, 0.25f, 0.20f);
+        [Tooltip("Width of the camera-view frame in panel pixels.")]
+        [SerializeField] private float _viewLineWidth = 1.5f;
+        [SerializeField] private Color _viewColor = Color.white;
 
         private readonly List<Ping> _pings = new List<Ping>();
 
@@ -31,6 +34,10 @@ namespace Game.Presentation
         private MapView? _map;
         private EntityView? _entities;
         private VisualElement? _view;
+        private VisualElement? _viewFrame;
+        // Where the screen's corners hit the ground, in cells; drawn as a vector line over the texture.
+        private readonly Vector2[] _viewCorners = new Vector2[4];
+        private bool _hasView;
         private Texture2D? _texture;
         private Color32[] _pixels = new Color32[0];
         private int _width, _height;
@@ -74,17 +81,32 @@ namespace Game.Presentation
             _view.style.width = _size;
             _view.style.height = _size * aspect;
             _view.style.backgroundImage = Background.FromTexture2D(_texture);
+            _view.style.overflow = Overflow.Hidden;
+            // The camera's view is a vector line over the texture: a 1-pixel line drawn into the
+            // texture loses rows when the texture is scaled down to the panel and breaks into dashes.
+            _viewFrame = new VisualElement { pickingMode = PickingMode.Ignore };
+            _viewFrame.style.position = Position.Absolute;
+            _viewFrame.style.left = _viewFrame.style.top = _viewFrame.style.right = _viewFrame.style.bottom = 0;
+            _viewFrame.generateVisualContent += DrawViewFrame;
+            _view.Add(_viewFrame);
             _view.RegisterCallback<PointerDownEvent>(OnPointerDown);
             _view.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             _view.RegisterCallback<PointerUpEvent>(OnPointerUp);
             frame.Add(_view);
             _hud.Root.Add(frame);
+            // The bottom bar stops left of the minimap: frame margin + view + padding + a gap.
+            if (_hud.BottomBar != null)
+                _hud.BottomBar.style.right = 12 + _size + 8 + 12;
         }
 
         private void LateUpdate()
         {
             Simulation? simulation = _runner!.Simulation;
-            if (simulation == null || _texture == null || Time.unscaledTime < _nextRedraw)
+            if (simulation == null || _texture == null)
+                return;
+            // The view frame follows the camera every frame; the texture only every _redrawSeconds.
+            UpdateCameraView();
+            if (Time.unscaledTime < _nextRedraw)
                 return;
             _nextRedraw = Time.unscaledTime + _redrawSeconds;
             Redraw(simulation.State);
@@ -141,7 +163,6 @@ namespace Game.Presentation
                     Ring(_pings[i].X, _pings[i].Y, 4, _pingColor);
             }
 
-            DrawCameraView();
             _texture!.SetPixels32(_pixels);
             _texture.Apply();
         }
@@ -188,21 +209,50 @@ namespace Game.Presentation
             }
         }
 
-        // The ground the screen shows: lines between where its corners hit the ground.
-        private void DrawCameraView()
+        // The ground the screen shows: where its corners hit the ground, in cells.
+        private void UpdateCameraView()
         {
-            if (_camera == null)
+            if (_camera == null || _viewFrame == null)
                 return;
-            var corners = new Vector2[] { new Vector2(0, 0), new Vector2(Screen.width, 0), new Vector2(Screen.width, Screen.height), new Vector2(0, Screen.height) };
-            var points = new Vector2Int[4];
+            bool had = _hasView;
+            _hasView = true;
             for (int i = 0; i < 4; i++)
             {
-                if (!_camera.GroundPoint(corners[i], out Vector3 ground))
-                    return;
-                points[i] = new Vector2Int(Mathf.RoundToInt(ground.x * PixelsPerCell), Mathf.RoundToInt(ground.z * PixelsPerCell));
+                var screen = new Vector2(i == 1 || i == 2 ? Screen.width : 0, i >= 2 ? Screen.height : 0);
+                if (!_camera.GroundPoint(screen, out Vector3 ground))
+                {
+                    _hasView = false;
+                    break;
+                }
+                _viewCorners[i] = new Vector2(ground.x, ground.z);
             }
+            if (_hasView || had)
+                _viewFrame.MarkDirtyRepaint();
+        }
+
+        // Cells to the element: the top-left is the map's north-west corner, y grows down on the panel.
+        private void DrawViewFrame(MeshGenerationContext context)
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (!_hasView || simulation == null || _viewFrame == null)
+                return;
+            Rect rect = _viewFrame.contentRect;
+            float sx = rect.width / simulation.State.Map.Width, sy = rect.height / simulation.State.Map.Height;
+            Painter2D painter = context.painter2D;
+            painter.strokeColor = _viewColor;
+            painter.lineWidth = _viewLineWidth;
+            painter.lineJoin = LineJoin.Miter;
+            painter.BeginPath();
             for (int i = 0; i < 4; i++)
-                Line(points[i], points[(i + 1) % 4], new Color32(255, 255, 255, 255));
+            {
+                var point = new Vector2(_viewCorners[i].x * sx, rect.height - _viewCorners[i].y * sy);
+                if (i == 0)
+                    painter.MoveTo(point);
+                else
+                    painter.LineTo(point);
+            }
+            painter.ClosePath();
+            painter.Stroke();
         }
 
         private void OnPointerDown(PointerDownEvent evt)
@@ -261,23 +311,6 @@ namespace Game.Presentation
                 Set(cx + d, cy + radius, color);
                 Set(cx - radius, cy + d, color);
                 Set(cx + radius, cy + d, color);
-            }
-        }
-
-        private void Line(Vector2Int a, Vector2Int b, Color32 color)
-        {
-            int dx = Mathf.Abs(b.x - a.x), dy = -Mathf.Abs(b.y - a.y);
-            int sx = a.x < b.x ? 1 : -1, sy = a.y < b.y ? 1 : -1;
-            int error = dx + dy;
-            int x = a.x, y = a.y;
-            for (int guard = 0; guard < 4096; guard++)
-            {
-                Set(x, y, color);
-                if (x == b.x && y == b.y)
-                    return;
-                int e2 = 2 * error;
-                if (e2 >= dy) { error += dy; x += sx; }
-                if (e2 <= dx) { error += dx; y += sy; }
             }
         }
 

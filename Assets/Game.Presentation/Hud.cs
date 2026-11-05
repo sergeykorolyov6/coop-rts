@@ -49,6 +49,9 @@ namespace Game.Presentation
             BottomBar.style.bottom = 12;
             BottomBar.style.flexDirection = FlexDirection.Row;
             BottomBar.style.alignItems = Align.FlexEnd;
+            // A narrow window: panels that do not fit go to a row above, never under the minimap
+            // (Minimap sets the bar's right edge).
+            BottomBar.style.flexWrap = Wrap.WrapReverse;
             root.Add(BottomBar);
 
             _tip = new Label { name = "CursorTip", pickingMode = PickingMode.Ignore };

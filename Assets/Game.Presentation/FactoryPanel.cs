@@ -142,7 +142,7 @@ namespace Game.Presentation
                     text = $"{DisplayNames.Unit(id)}\n{price} · {DisplayNames.Seconds(stats.BuildTimeTicks)}",
                     userData = stats,
                 };
-                button.style.width = 104;
+                button.style.width = 108;
                 button.style.height = 52;
                 Hud.StyleButton(button);
                 UnitStats tipStats = stats;
