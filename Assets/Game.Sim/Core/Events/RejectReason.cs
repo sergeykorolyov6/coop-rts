@@ -18,4 +18,7 @@ public enum RejectReason : byte
 
     // factions.md: no selected unit has the ability ready.
     AbilityNotReady,
+
+    // factions.md: the hero's path is chosen once a mission.
+    HeroPathChosen,
 }

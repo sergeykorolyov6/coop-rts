@@ -26,6 +26,7 @@ internal static class RepoData
             Factions = Read("factions.json"),
             Abilities = Read("abilities.json"),
             HeroLevels = Read("hero_levels.json"),
+            HeroPaths = Read("hero_paths.json"),
         });
     }
 

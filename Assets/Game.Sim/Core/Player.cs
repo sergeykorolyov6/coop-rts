@@ -28,4 +28,7 @@ public sealed class Player
     public int HeroRespawnTick { get; internal set; } = Entity.NeverTick;
     public int HeroXp { get; internal set; }
     public int HeroLevel { get; internal set; } = 1;
+
+    // hero_paths.csv: the path chosen this mission, "" until the player picks one.
+    public string HeroPathId { get; internal set; } = "";
 }

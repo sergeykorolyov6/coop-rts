@@ -29,6 +29,8 @@ public class FactionBalanceProbe
     private static readonly (string Id, int Count)[] Wave4 = { ("legion_raider", 2), ("legion_gunner", 4), ("legion_brute", 1) };
     private static readonly (string Id, int Count)[] Wave6 = { ("legion_raider", 3), ("legion_gunner", 5), ("legion_brute", 2) };
 
+    private static readonly (string Name, string Id)[] Paths = { ("Воин", "ys_warrior"), ("Маг", "ys_mage"), ("Покровитель", "ys_support") };
+
     [Test, Explicit("balance probe, run by hand")]
     public void Probe()
     {
@@ -40,7 +42,8 @@ public class FactionBalanceProbe
             rows.Add($"{name}, ≈ 270 ед.: Молнии с микро       {Fight("red_lightning", Red, wave, micro: true)}");
             rows.Add($"{name}, ≈ 270 ед.: Мусорщики            {Fight("brown_scavengers", Brown, wave, micro: false)}");
             rows.Add($"{name}, ≈ 270 ед.: Жёлтая Звезда, ур. 1 {Fight("yellow_star", Yellow, wave, micro: false)}");
-            rows.Add($"{name}, ≈ 270 ед.: Жёлтая Звезда, ур. 3 {Fight("yellow_star", Yellow, wave, micro: true, heroLevel: 3)}");
+            foreach ((string pathName, string path) in Paths)
+                rows.Add($"{name}, ≈ 270 ед.: Жёлтая, ур. 3, {pathName,-11} {Fight("yellow_star", Yellow, wave, micro: true, heroLevel: 3, heroPath: path)}");
         }
         foreach ((string name, var wave) in new[] { ("волна 4", Wave4), ("волна 6", Wave6) })
         {
@@ -49,7 +52,8 @@ public class FactionBalanceProbe
             rows.Add($"{name}, ≈ 135 ед.: Молнии с микро       {Fight("red_lightning", RedHalf, wave, micro: true)}");
             rows.Add($"{name}, ≈ 135 ед.: Мусорщики            {Fight("brown_scavengers", BrownHalf, wave, micro: false)}");
             rows.Add($"{name}, ≈ 135 ед.: Жёлтая Звезда, ур. 1 {Fight("yellow_star", YellowHalf, wave, micro: false)}");
-            rows.Add($"{name}, ≈ 135 ед.: Жёлтая Звезда, ур. 3 {Fight("yellow_star", YellowHalf, wave, micro: true, heroLevel: 3)}");
+            foreach ((string pathName, string path) in Paths)
+                rows.Add($"{name}, ≈ 135 ед.: Жёлтая, ур. 3, {pathName,-11} {Fight("yellow_star", YellowHalf, wave, micro: true, heroLevel: 3, heroPath: path)}");
         }
         // Defence: 100 resources of the faction's turrets in a row; the wave comes at them.
         foreach ((string name, var wave) in new[] { ("волна 4", Wave4), ("волна 6", Wave6) })
@@ -62,7 +66,7 @@ public class FactionBalanceProbe
     }
 
     // Returns "won/lost, left: price of the survivors, time".
-    internal static string Fight(string faction, (string Id, int Count)[] army, (string Id, int Count)[] wave, bool micro, int heroLevel = 1)
+    internal static string Fight(string faction, (string Id, int Count)[] army, (string Id, int Count)[] wave, bool micro, int heroLevel = 1, string heroPath = "")
     {
         var map = new MapSetup(40, 24);
         var sim = new Simulation(new MatchSetup(7, RepoData.Get(), map, 2, new[] { Player, Legion, 10 },
@@ -71,6 +75,8 @@ public class FactionBalanceProbe
         List<Unit> mine = Line(sim, Player, army, 8);
         List<Unit> theirs = Line(sim, Legion, wave, 30);
         Unit? hero = mine.FirstOrDefault(u => u.IsHero);
+        if (hero != null && heroPath.Length > 0)
+            sim.State.GetPlayer(Player).HeroPathId = heroPath;
         if (hero != null && heroLevel > 1)
         {
             sim.State.GetPlayer(Player).HeroLevel = heroLevel;
@@ -148,9 +154,15 @@ public class FactionBalanceProbe
                 AbilityStats a = s.Data.Ability(u.Stats.Abilities[i]);
                 if (a.Kind == AbilityKind.Boost && d < Cells(5) && !hurt)
                     sim.Enqueue(new UseAbilityCommand(Player, s.Tick, new[] { u.Id }, a.Id, 0, 0));
-                if ((a.Kind == AbilityKind.Nova && d < Cells(3)) || (a.Kind == AbilityKind.Inspire && d < Cells(6)))
-                    sim.Enqueue(new UseAbilityCommand(Player, s.Tick, new[] { u.Id }, a.Id, 0, 0));
-                if (a.Kind == AbilityKind.Blink && hurt)
+                // Hero spells: at the nearest enemy when it is in reach, buffs and heals once the fight is on.
+                bool reach = d <= a.RangeMilli + a.RadiusMilli;
+                if ((a.Kind == AbilityKind.DamageArea || a.Kind == AbilityKind.Strike) && (a.AtPoint ? reach : d < a.RadiusMilli))
+                    sim.Enqueue(new UseAbilityCommand(Player, s.Tick, new[] { u.Id }, a.Id, enemy.X, enemy.Y));
+                if ((a.Kind == AbilityKind.BoostArea || a.Kind == AbilityKind.HealArea) && d < Cells(6))
+                    sim.Enqueue(new UseAbilityCommand(Player, s.Tick, new[] { u.Id }, a.Id, u.X, u.Y));
+                if (a.Kind == AbilityKind.Blink && a.Damage > 0 && reach && !hurt)
+                    sim.Enqueue(new UseAbilityCommand(Player, s.Tick, new[] { u.Id }, a.Id, enemy.X, enemy.Y));
+                if (a.Kind == AbilityKind.Blink && a.Damage == 0 && hurt)
                     sim.Enqueue(new UseAbilityCommand(Player, s.Tick, new[] { u.Id }, a.Id, u.X - (int)((enemy.X - u.X) * Cells(6) / System.Math.Max(1, d)), u.Y));
             }
             // Pulling the wounded back pays off only for factions that heal by themselves.

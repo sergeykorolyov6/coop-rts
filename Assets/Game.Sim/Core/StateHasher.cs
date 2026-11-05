@@ -35,6 +35,7 @@ internal sealed class StateHasher
             _writer.Write(player.HeroRespawnTick);
             _writer.Write(player.HeroXp);
             _writer.Write(player.HeroLevel);
+            _writer.Write(player.HeroPathId);
             for (int type = 0; type < player.Wallet.ResourceTypeCount; type++)
             {
                 _writer.Write(player.Wallet.Get(type));

@@ -1,6 +1,13 @@
-id,name_ru,kind,cooldown_s,range,duration_s,move_speed_pct,attack_speed_pct,hp_cost_pct,damage,min_level,notes
-rl_blink,Рывок,blink,8,6,0,0,0,0,0,1,"factions.md: мгновенный перенос к точке; SC2 Blink (дальн. 8, 7 с)"
-rl_overdrive,Перегрузка,boost,15,0,5,50,50,10,0,1,"factions.md: SC2 Stimpack (+50 %, 10 HP, 11 с)"
-legion_frenzy,Жажда,boost,0,0,4,20,40,0,0,1,"factions.md: черта Легиона, включается сама за убийство"
-ys_nova,Звездопад,nova,12,3,0,0,0,0,60,2,factions.md: урон всем врагам вокруг героя; WC3 Thunder Clap
-ys_inspire,Воодушевление,inspire,25,7,6,20,30,0,0,4,factions.md: усиление своим юнитам вокруг героя; WC3 Roar
+id,name_ru,kind,target,cooldown_s,range,radius,duration_s,move_speed_pct,attack_speed_pct,hp_cost_pct,damage,heal,min_level,effect,description,notes
+rl_blink,Рывок,blink,point,8,6,0,0,0,0,0,0,0,1,flash,"Мгновенный прыжок до 6 клеток к точке. Перезарядка 8 с.","factions.md; SC2 Blink"
+rl_overdrive,Перегрузка,boost,self,15,0,0,5,50,50,10,0,0,1,sparks,"На 5 с темп атаки и скорость +50 % за 10 % прочности. Перезарядка 15 с.","factions.md; SC2 Stimpack"
+legion_frenzy,Жажда,boost,self,0,0,0,4,20,40,0,0,0,1,,"Черта Легиона: убийца на 4 с бьёт и бегает быстрее.","factions.md: включается сама"
+ys_charge,Натиск,blink,point,10,6,1.5,0,0,0,0,40,0,1,charge,"Воин. Рывок до 6 клеток и 40 урона всем врагам в 1,5 клетки от места приземления. Перезарядка 10 с.","factions.md: путь Воин"
+ys_whirlwind,Вихрь,damage_area,self,10,0,2.5,0,0,0,0,50,0,3,whirl,"Воин. 50 урона всем врагам в 2,5 клетки вокруг героя. Перезарядка 10 с.","WC3 Bladestorm в малом"
+ys_battlecry,Боевой клич,boost_area,self,30,0,6,8,25,50,0,0,0,5,ring,"Воин. Своим юнитам в 6 клетках на 8 с темп атаки +50 %, скорость +25 %. Перезарядка 30 с.","WC3 Roar"
+ys_bolt,Звёздная стрела,strike,point,6,8,1.5,0,0,0,0,90,0,1,bolt,"Маг. 90 урона ближайшему врагу у выбранной точки, до 8 клеток. Перезарядка 6 с.","WC3 Storm Bolt"
+ys_starfall,Звездопад,damage_area,point,14,8,3,0,0,0,0,70,0,3,starfall,"Маг. Звёзды падают на область 3 клетки: 70 урона каждому врагу. До 8 клеток. Перезарядка 14 с.","WC3 Blizzard/Starfall"
+ys_meteor,Метеор,damage_area,point,45,9,4,0,0,0,0,200,0,5,meteor,"Маг. Метеор в точку до 9 клеток: 200 урона всем врагам в 4 клетках. Перезарядка 45 с.","WC3 Inferno"
+ys_heal,Исцеление,heal_area,point,10,7,3,0,0,0,0,0,80,1,heal,"Покровитель. +80 прочности своим и союзным юнитам в 3 клетках от точки, до 7 клеток. Перезарядка 10 с.","WC3 Holy Light по области"
+ys_inspire,Воодушевление,boost_area,self,25,0,7,6,20,30,0,0,0,3,ring,"Покровитель. Своим юнитам в 7 клетках на 6 с темп атаки +30 %, скорость +20 %. Перезарядка 25 с.","WC3 Roar"
+ys_grace,Благодать,heal_area,self,50,0,9,0,0,0,0,0,250,5,grace,"Покровитель. +250 прочности своим и союзным юнитам в 9 клетках вокруг. Перезарядка 50 с.","WC3 Tranquility"

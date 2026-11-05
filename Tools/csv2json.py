@@ -152,6 +152,9 @@ UNITS = {
     "tags": ("tags", id_list),
     # factions.md: ability ids from abilities.csv.
     "abilities": ("abilities", id_list),
+    # UI only: what flies at the target (arrow, shell, stone, bolt, spit; empty — a short streak).
+    "projectile": ("projectile", string),
+    "description": ("description", string),
     "reference": None,
     "notes": None,
 }
@@ -188,6 +191,9 @@ BUILDINGS = {
     "boost_pct": ("boost_pct", int_),
     # UI only: "line" — placed by dragging a line, like a conveyor.
     "placement": ("placement", string),
+    # UI only: what flies at the target (arrow, shell, stone, bolt, spit; empty — a short streak).
+    "projectile": ("projectile", string),
+    "description": ("description", string),
     "reference": None,
     "notes": None,
 }
@@ -265,16 +271,24 @@ FACTIONS = {
 ABILITIES = {
     "id": ("id", string),
     "name_ru": ("name_ru", string),
+    # blink, boost, damage_area, boost_area, heal_area, strike.
     "kind": ("kind", string),
+    # self — around the user; point — at a point within range.
+    "target": ("target", string),
     "cooldown_s": ("cooldown_ticks", seconds_to_ticks),
     "range": ("range_mc", cells_to_milli),
+    "radius": ("radius_mc", cells_to_milli),
     "duration_s": ("duration_ticks", seconds_to_ticks),
     "move_speed_pct": ("move_speed_pct", int_),
     "attack_speed_pct": ("attack_speed_pct", int_),
     "hp_cost_pct": ("hp_cost_pct", int_),
-    # nova: damage to every enemy in range; min_level: the hero's level it opens at (1 for everyone else).
     "damage": ("damage", int_),
+    "heal": ("heal", int_),
+    # The hero's level the ability opens at (1 for everyone else).
     "min_level": ("min_level", int_),
+    # UI only: which visual effect plays (starfall, meteor, whirl, heal, grace, ring, flash, charge, bolt, sparks).
+    "effect": ("effect", string),
+    "description": ("description", string),
     "notes": None,
 }
 
@@ -284,6 +298,19 @@ HERO_LEVELS = {
     "xp": ("xp", int_),
     "hp_pct": ("hp_pct", int_),
     "damage_pct": ("damage_pct", int_),
+    "notes": None,
+}
+
+# factions.md: the hero's paths (Warrior, Mage, Supporter).
+HERO_PATHS = {
+    "id": ("id", string),
+    "name_ru": ("name_ru", string),
+    "hero": ("hero", string),
+    "abilities": ("abilities", id_list),
+    "level_hp_pct": ("level_hp_pct", int_),
+    "level_damage_pct": ("level_damage_pct", int_),
+    "aura_damage_pct": ("aura_damage_pct", int_),
+    "description": ("description", string),
     "notes": None,
 }
 
@@ -313,6 +340,7 @@ TABLES = [
     ("factions.csv", "factions.json", FACTIONS, "id"),
     ("abilities.csv", "abilities.json", ABILITIES, "id"),
     ("hero_levels.csv", "hero_levels.json", HERO_LEVELS, "level"),
+    ("hero_paths.csv", "hero_paths.json", HERO_PATHS, "id"),
 ]
 
 

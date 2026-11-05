@@ -10,18 +10,18 @@ public class GameDataTests
       {""id"": ""worker"", ""name_ru"": ""Рабочий"", ""faction"": ""blue_walls"", ""hp"": 60, ""armor"": 0,
        ""damage"": 4, ""damage_vs_buildings"": 4, ""attack_range_mc"": 500, ""attack_cooldown_ticks"": 20,
        ""move_speed_mc_per_tick"": 120, ""vision_mc"": 5000, ""cost_primary"": 10, ""cost_secondary"": 0,
-       ""build_time_ticks"": 240, ""produced_at"": ""factory"", ""size_mc"": 500, ""tags"": [""worker"", ""melee""], ""abilities"": []},
+       ""build_time_ticks"": 240, ""produced_at"": ""factory"", ""size_mc"": 500, ""tags"": [""worker"", ""melee""], ""abilities"": [], ""projectile"": """", ""description"": """"},
       {""id"": ""creep_small"", ""name_ru"": ""Малый крип"", ""faction"": ""grey_creatures"", ""hp"": 80, ""armor"": 0,
        ""damage"": 6, ""damage_vs_buildings"": 6, ""attack_range_mc"": 500, ""attack_cooldown_ticks"": 20,
        ""move_speed_mc_per_tick"": 110, ""vision_mc"": 5000, ""cost_primary"": 0, ""cost_secondary"": 0,
-       ""build_time_ticks"": 0, ""produced_at"": """", ""size_mc"": 600, ""tags"": [""melee"", ""creep""], ""abilities"": []}
+       ""build_time_ticks"": 0, ""produced_at"": """", ""size_mc"": 600, ""tags"": [""melee"", ""creep""], ""abilities"": [], ""projectile"": """", ""description"": """"}
     ]";
 
     private const string Buildings = @"[
       {""id"": ""factory"", ""name_ru"": ""Завод"", ""faction"": ""blue_walls"", ""hp"": 1200, ""armor"": 1,
        ""size_w"": 3, ""size_h"": 3, ""cost_primary"": 50, ""cost_secondary"": 0, ""build_time_ticks"": 700,
        ""max_builders"": 4, ""vision_mc"": 7000, ""damage"": 0, ""attack_range_mc"": 0,
-       ""attack_cooldown_ticks"": 0, ""behavior"": """", ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0, ""placement"": """", ""ammo"": 0, ""boost_pct"": 0}
+       ""attack_cooldown_ticks"": 0, ""behavior"": """", ""produces"": [""worker""], ""supply"": ""conveyor"", ""invulnerable"": 0, ""placement"": """", ""ammo"": 0, ""boost_pct"": 0, ""projectile"": """", ""description"": """"}
     ]";
 
     private const string Camps = @"[

@@ -11,6 +11,8 @@ public sealed class BuildingStats
     {
         Id = row.GetString("id");
         NameRu = row.GetString("name_ru");
+        Projectile = row.GetString("projectile");
+        Description = row.GetString("description");
         Faction = row.GetString("faction");
         Hp = row.GetInt("hp");
         Armor = row.GetInt("armor");
@@ -35,8 +37,10 @@ public sealed class BuildingStats
 
     public string Id { get; }
 
-    // For the UI; the sim never reads it.
+    // For the UI; the sim never reads them: the name, what flies at the target, what it does.
     public string NameRu { get; }
+    public string Projectile { get; }
+    public string Description { get; }
     public string Faction { get; }
     public int Hp { get; }
     public int Armor { get; }

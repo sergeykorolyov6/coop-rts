@@ -1,0 +1,4 @@
+id,name_ru,hero,abilities,level_hp_pct,level_damage_pct,aura_damage_pct,description,notes
+ys_warrior,Воин,ys_hero,ys_charge;ys_whirlwind;ys_battlecry,10,5,0,"В гуще боя: крепче и сильнее с каждым уровнем, врывается в толпу и бьёт всех вокруг.","factions.md: +10 % прочности и +5 % урона за уровень сверх общих"
+ys_mage,Маг,ys_hero,ys_bolt;ys_starfall;ys_meteor,0,0,0,"Урон издалека: стрела, звездопад и метеор. Сам хрупче — держите за армией.","factions.md"
+ys_support,Покровитель,ys_hero,ys_heal;ys_inspire;ys_grace,0,0,10,"Армия живёт дольше: лечение, усиление и аура сильнее (+30 % урона вместо +20 %).","factions.md"

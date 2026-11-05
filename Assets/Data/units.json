@@ -21,7 +21,9 @@
       "builder",
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Строитель Мусорщиков."
   },
   {
     "id": "bs_mortar",
@@ -44,7 +46,9 @@
       "siege",
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "stone",
+    "description": "Мортира: бьёт только здания, зато с 8 клеток и вдвое дешевле осадного."
   },
   {
     "id": "bs_repairbot",
@@ -66,7 +70,9 @@
     "tags": [
       "repairer"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Дешёвый ремонтник: сам чинит здания и юнитов рядом."
   },
   {
     "id": "bs_scrapper",
@@ -88,7 +94,9 @@
     "tags": [
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Дешёвый ближний боец: берёт числом."
   },
   {
     "id": "bs_shotgun",
@@ -110,7 +118,9 @@
     "tags": [
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "shell",
+    "description": "Дробовик: сильно бьёт юнитов вблизи, по зданиям почти бесполезен."
   },
   {
     "id": "builder",
@@ -134,7 +144,9 @@
       "builder",
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Строитель — сам игрок: строит всё, копает руду вручную, носит трофеи, чинит по приказу. Один; погиб — вернётся у штаба через 15 с. Tab — выделить."
   },
   {
     "id": "cave_beast",
@@ -157,7 +169,9 @@
       "melee",
       "armored"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Прирученный зверь из пещеры: крепче тяжёлого, бьёт вблизи как осадный."
   },
   {
     "id": "cave_spitter",
@@ -179,7 +193,9 @@
     "tags": [
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "spit",
+    "description": "Плевун из пещеры: вдвое сильнее стрелка, плюётся на 5 клеток."
   },
   {
     "id": "creep_big",
@@ -202,7 +218,9 @@
       "melee",
       "creep"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Большой крип: страж лагеря, крепкий и больно бьёт."
   },
   {
     "id": "creep_boss",
@@ -226,7 +244,9 @@
       "creep",
       "boss"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Вожак Серых Существ — цель миссии «Логово». Очень крепкий, рядом два больших крипа."
   },
   {
     "id": "creep_small",
@@ -249,7 +269,9 @@
       "melee",
       "creep"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Малый крип Серых Существ: охраняет лагерь, нападает на всё рядом."
   },
   {
     "id": "heavy",
@@ -272,7 +294,9 @@
       "ranged",
       "armored"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "shell",
+    "description": "Танк: броня 2 срезает урон стрелков почти вдвое, бьёт тяжёлым снарядом. Дорогой, стоит второй ресурс."
   },
   {
     "id": "infantry",
@@ -294,7 +318,9 @@
     "tags": [
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Ближний бой, держит удар. Стоит впереди стрелков и принимает урон на себя."
   },
   {
     "id": "legion_brute",
@@ -317,7 +343,9 @@
       "melee",
       "armored"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Громила Легиона: крепкий, ломает оборону, по зданиям урон вдвое."
   },
   {
     "id": "legion_gunner",
@@ -339,7 +367,9 @@
     "tags": [
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "arrow",
+    "description": "Стрелок Легиона — основа волны."
   },
   {
     "id": "legion_raider",
@@ -362,7 +392,9 @@
       "melee",
       "fast"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Быстрый и дешёвый: режет буры и ленты, пока армия игрока далеко."
   },
   {
     "id": "legion_worker",
@@ -385,7 +417,9 @@
       "worker",
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Рабочий Легиона: отстраивает разрушенную базу и ставит буры."
   },
   {
     "id": "repairer",
@@ -407,7 +441,9 @@
     "tags": [
       "repairer"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Сам ищет повреждённые свои и союзные здания и юнитов в 8 клетках и чинит их за ресурсы владельца. Не строит и не воюет."
   },
   {
     "id": "rl_arc",
@@ -430,7 +466,9 @@
       "siege",
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "bolt",
+    "description": "Осада Молний: бьёт здания разрядом с 7 клеток — дальше турели Легиона. Хрупкий, прикрывайте."
   },
   {
     "id": "rl_builder",
@@ -454,7 +492,9 @@
       "builder",
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Строитель Молний: быстрее и слабее строителя Синих Стен, возвращается через 10 с."
   },
   {
     "id": "rl_lancer",
@@ -479,7 +519,9 @@
     ],
     "abilities": [
       "rl_overdrive"
-    ]
+    ],
+    "projectile": "",
+    "description": "Передний край Молний: крепкий ближний боец с Перегрузкой (Q). Вдвое быстрее тяжёлого Синих, вдвое слабее его."
   },
   {
     "id": "rl_runner",
@@ -504,7 +546,9 @@
     ],
     "abilities": [
       "rl_overdrive"
-    ]
+    ],
+    "projectile": "",
+    "description": "Дешёвый быстрый боец ближнего боя. Перегрузка (Q): 5 с вдвое злее и быстрее за 10 % прочности. Сильны стаей, а раненых отводите — они лечатся сами."
   },
   {
     "id": "rl_striker",
@@ -528,7 +572,9 @@
     ],
     "abilities": [
       "rl_blink"
-    ]
+    ],
+    "projectile": "bolt",
+    "description": "Стрелок с Рывком (Q): прыжок до 6 клеток. Уводите раненого из-под удара и возвращайте — первый удар после паузы двойной."
   },
   {
     "id": "scout",
@@ -551,7 +597,9 @@
       "scout",
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Самый быстрый, видит дальше всех. Ищет месторождения, лагеря и базу врага; воевать не должен."
   },
   {
     "id": "shooter",
@@ -573,7 +621,9 @@
     "tags": [
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "arrow",
+    "description": "Основной стрелок: бьёт с 4 клеток. За пехотой и турелями сильнее всего."
   },
   {
     "id": "siege",
@@ -596,7 +646,9 @@
       "siege",
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "stone",
+    "description": "Осада: по зданиям урон втрое, бьёт с 8 клеток — дальше турели. Против юнитов слаб, его надо прикрывать."
   },
   {
     "id": "ys_acolyte",
@@ -618,7 +670,9 @@
     "tags": [
       "repairer"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Послушник: сам лечит юнитов и чинит здания рядом."
   },
   {
     "id": "ys_archer",
@@ -640,7 +694,9 @@
     "tags": [
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "arrow",
+    "description": "Лучник: бьёт с 5 клеток стрелами. Рядом с героем бьёт сильнее."
   },
   {
     "id": "ys_builder",
@@ -664,7 +720,9 @@
       "builder",
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Строитель Жёлтой Звезды."
   },
   {
     "id": "ys_catapult",
@@ -687,7 +745,9 @@
       "siege",
       "ranged"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "stone",
+    "description": "Катапульта: камни по зданиям с 8 клеток."
   },
   {
     "id": "ys_hero",
@@ -711,9 +771,18 @@
       "hero"
     ],
     "abilities": [
-      "ys_nova",
-      "ys_inspire"
-    ]
+      "ys_charge",
+      "ys_whirlwind",
+      "ys_battlecry",
+      "ys_bolt",
+      "ys_starfall",
+      "ys_meteor",
+      "ys_heal",
+      "ys_inspire",
+      "ys_grace"
+    ],
+    "projectile": "",
+    "description": "Герой — один, сильнее любого юнита. Растёт в уровнях за опыт с врагов рядом; погиб — вернётся через 30 с с уровнем. Выберите путь — Воин, Маг или Покровитель. Свои юниты рядом бьют сильнее. G — выделить."
   },
   {
     "id": "ys_squire",
@@ -735,6 +804,8 @@
     "tags": [
       "melee"
     ],
-    "abilities": []
+    "abilities": [],
+    "projectile": "",
+    "description": "Средний ближний боец. Рядом с героем бьёт сильнее."
   }
 ]

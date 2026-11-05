@@ -38,7 +38,7 @@ public class FactionTests
         {
             Units = units.ToJsonString(), Buildings = buildings.ToJsonString(), CreepCamps = Json("creep_camps.json"),
             Rules = Json("rules.json"), Legion = Json("legion.json"), Waves = Json("waves.json"),
-            Factions = factions.ToJsonString(), Abilities = Json("abilities.json"), HeroLevels = Json("hero_levels.json"),
+            Factions = factions.ToJsonString(), Abilities = Json("abilities.json"), HeroLevels = Json("hero_levels.json"), HeroPaths = Json("hero_paths.json"),
         });
     }
 

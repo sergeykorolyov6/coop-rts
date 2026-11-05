@@ -21,7 +21,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Малый бур 1×1: на одиночную клетку руды, куда большой не встанет."
   },
   {
     "id": "bs_factory",
@@ -50,7 +52,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Мастерская: делает юнитов Мусорщиков; склад — с лент."
   },
   {
     "id": "bs_hq",
@@ -74,7 +78,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Свалка: штаб Мусорщиков, дешевле обычного."
   },
   {
     "id": "bs_pump",
@@ -98,7 +104,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 100,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Смазчик: соседние буры добывают вдвое быстрее. Один на 2–4 бура."
   },
   {
     "id": "bs_scrap_gun",
@@ -122,7 +130,9 @@
     "invulnerable": 0,
     "ammo": 1,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "shell",
+    "description": "Ломомёт: дешёвая сильная турель, но каждый выстрел — 1 ед. ресурса с её склада. Подведите ленту, иначе молчит."
   },
   {
     "id": "cave",
@@ -149,7 +159,9 @@
     "invulnerable": 1,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Пещера Серых Существ: победите стражей и постойте рядом 10 с — будет нанимать зверей и плевунов."
   },
   {
     "id": "conveyor",
@@ -173,7 +185,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": "line"
+    "placement": "line",
+    "projectile": "",
+    "description": "Лента: везёт ресурс к штабу, складу или заводу. Протягивается мышью."
   },
   {
     "id": "conveyor_bridge",
@@ -197,7 +211,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Мост: переносит ресурс над препятствием до 4 клеток. Ставится двумя концами."
   },
   {
     "id": "drill",
@@ -221,7 +237,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Бур 2×2 на руде: добывает сам и отдаёт в ленты рядом. Чем больше руды под ним, тем быстрее."
   },
   {
     "id": "factory",
@@ -252,7 +270,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Завод: делает юнитов. Платит из своего склада — подведите к нему ленту от бура или склада."
   },
   {
     "id": "headquarters",
@@ -276,7 +296,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Штаб: принимает ресурс с лент и рук строителя и зачисляет вам. Один; у него возвращается строитель."
   },
   {
     "id": "legion_factory",
@@ -305,7 +327,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Завод Легиона: делает его армию. Уничтожьте все заводы и штабы — победа."
   },
   {
     "id": "legion_hq",
@@ -329,7 +353,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Цитадель Легиона: его штаб. Уничтожьте — и все его заводы — для победы."
   },
   {
     "id": "legion_turret",
@@ -353,7 +379,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "shell",
+    "description": "Шип Легиона: крепкая турель, бьёт сильно и редко."
   },
   {
     "id": "lighthouse",
@@ -377,7 +405,9 @@
     "invulnerable": 1,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Маяк: пока рядом ваш юнит, открывает обзор на 24 клетки вокруг."
   },
   {
     "id": "rl_factory",
@@ -406,7 +436,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Кузня молний: делает юнитов Молний; склад — с лент."
   },
   {
     "id": "rl_hq",
@@ -430,7 +462,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Штаб Молний: дешевле и слабее штаба Синих."
   },
   {
     "id": "rl_tesla",
@@ -454,7 +488,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "bolt",
+    "description": "Тесла: бьёт часто и больно на 5 клеток, но хрупкая."
   },
   {
     "id": "storage",
@@ -478,7 +514,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Склад: копит до 100 ед. и сводит несколько лент в одну."
   },
   {
     "id": "turret",
@@ -502,7 +540,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "shell",
+    "description": "Турель: сама бьёт врагов в 6 клетках. Стоит второй ресурс."
   },
   {
     "id": "wall",
@@ -526,7 +566,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": "line"
+    "placement": "line",
+    "projectile": "",
+    "description": "Стена: дешёвая и прочная преграда. Задерживает врага под огнём турелей. Протягивается мышью."
   },
   {
     "id": "ys_barracks",
@@ -555,7 +597,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Казарма: делает юнитов Жёлтой Звезды; склад — с лент."
   },
   {
     "id": "ys_hq",
@@ -579,7 +623,9 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "",
+    "description": "Святилище: штаб Жёлтой Звезды. У него возвращаются строитель и герой."
   },
   {
     "id": "ys_tower",
@@ -603,6 +649,8 @@
     "invulnerable": 0,
     "ammo": 0,
     "boost_pct": 0,
-    "placement": ""
+    "placement": "",
+    "projectile": "arrow",
+    "description": "Сторожевая башня: стреляет на 6 клеток."
   }
 ]

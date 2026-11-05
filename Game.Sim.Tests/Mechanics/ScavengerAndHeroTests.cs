@@ -13,7 +13,7 @@ public class ScavengerAndHeroTests
     private const int Legion = Setups.EnemyAi;
 
     // Scavengers at (2,2), Yellow Star at (2,14); ore at (20..23, 2..3) and (30, 2).
-    private static Simulation Match()
+    internal static Simulation Match()
     {
         var map = new MapSetup(48, 24).Start(Brown, 2, 2).Start(Yellow, 2, 14)
             .OreRect(20, 2, 4, 2, Resources.Primary).Ore(30, 2, Resources.Primary).Ore(34, 2, Resources.Primary);
@@ -35,7 +35,7 @@ public class ScavengerAndHeroTests
     private static Building Place(Simulation sim, int owner, string type, int x, int y) =>
         sim.State.PlaceBuilding(owner, sim.State.Data.Building(type), x, y, Direction.Right, complete: true);
 
-    private static Unit Hero(Simulation sim) => sim.State.FindHero(Yellow)!;
+    internal static Unit Hero(Simulation sim) => sim.State.FindHero(Yellow)!;
 
     [Test]
     public void GWT11_SmallDrillOnOneCell_OneUnitInEightSeconds()
@@ -110,11 +110,10 @@ public class ScavengerAndHeroTests
     }
 
     [Test]
-    public void GWT17_HundredXp_LevelTwo_MoreHpAndDamage_StarfallOpens()
+    public void GWT17_HundredXp_LevelTwo_MoreHpAndDamage()
     {
         var sim = Match();
         Unit hero = Hero(sim);
-        Assert.That(TryNova(sim, hero), Is.False, "Starfall is closed on level 1");
         var events = new System.Collections.Generic.List<SimEvent>();
         GainXp(sim, hero, 100, events);
         Assert.That(sim.State.GetPlayer(Yellow).HeroLevel, Is.EqualTo(2));
@@ -122,7 +121,6 @@ public class ScavengerAndHeroTests
         Assert.That(hero.MaxHp, Is.EqualTo(483));
         Assert.That(hero.Hp, Is.EqualTo(483), "a full hero stays full");
         Assert.That(HeroSystem.DamageBonusPercent(sim.State, hero), Is.EqualTo(15));
-        Assert.That(TryNova(sim, hero), Is.True);
     }
 
     [Test]
@@ -137,23 +135,6 @@ public class ScavengerAndHeroTests
         Unit back = Hero(sim);
         Assert.That(sim.State.GetPlayer(Yellow).HeroLevel, Is.EqualTo(2));
         Assert.That((back.Hp, back.MaxHp), Is.EqualTo((483, 483)));
-    }
-
-    [Test]
-    public void GWT19_Starfall_HitsEveryEnemyAround_NotTheAlly()
-    {
-        var sim = Match();
-        Unit hero = Hero(sim);
-        GainXp(sim, hero, 100, new System.Collections.Generic.List<SimEvent>());
-        hero.X = Center(30);
-        hero.Y = Center(14);
-        Unit[] enemies = { Spawn(sim, Legion, "legion_brute", 32, 14), Spawn(sim, Legion, "legion_brute", 30, 16), Spawn(sim, Legion, "legion_brute", 28, 14) };
-        Unit ally = Spawn(sim, Brown, "bs_scrapper", 31, 14);
-        sim.Order(new UseAbilityCommand(Yellow, sim.State.Tick, new[] { hero.Id }, "ys_nova", 0, 0));
-        var hits = sim.RunCollecting<HitLanded>(1).Where(h => h.AttackerId == hero.Id).ToList();
-        // 60 − armor 2 each; the ally standing among them is not touched by the hero.
-        Assert.That(hits.Where(h => h.Damage == 58).Select(h => h.TargetId), Is.EquivalentTo(enemies.Select(e => e.Id)));
-        Assert.That(hits.Any(h => h.TargetId == ally.Id), Is.False);
     }
 
     [Test]
@@ -245,11 +226,8 @@ public class ScavengerAndHeroTests
         Assert.That(Play(), Is.EqualTo(Play()));
     }
 
-    private static bool TryNova(Simulation sim, Unit hero) =>
-        AbilitySystem.TryUse(sim.State, hero, sim.State.Data.Ability("ys_nova"), 0, 0);
-
     // As if enemies with that much HP × 5 died next to the hero.
-    private static void GainXp(Simulation sim, Unit hero, int xp, System.Collections.Generic.List<SimEvent> events)
+    internal static void GainXp(Simulation sim, Unit hero, int xp, System.Collections.Generic.List<SimEvent> events)
     {
         while (sim.State.GetPlayer(Yellow).HeroXp < xp)
         {

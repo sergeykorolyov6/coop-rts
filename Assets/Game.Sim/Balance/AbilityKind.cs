@@ -3,15 +3,21 @@ namespace Game.Sim;
 // abilities.csv, "kind" (factions.md).
 public enum AbilityKind : byte
 {
-    // Instantly to a point within range.
+    // To a point within range; with damage, it lands hitting enemies within radius (Charge).
     Blink,
 
-    // A timed buff to movement and attack speed, maybe paid with HP.
+    // A timed buff to the user's movement and attack speed, maybe paid with HP.
     Boost,
 
-    // Damage to every enemy within range of the user (Yellow Star's Starfall).
-    Nova,
+    // Damage to every enemy unit within radius of the user or of the point.
+    DamageArea,
 
-    // A boost to every own unit within range of the user (Yellow Star's Inspire).
-    Inspire,
+    // The boost to every own unit within radius of the user or of the point.
+    BoostArea,
+
+    // Heal to every own and allied unit within radius of the user or of the point.
+    HealArea,
+
+    // Damage to the one enemy unit nearest to the point, within radius of it.
+    Strike,
 }

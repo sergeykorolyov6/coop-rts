@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ys_mage",
+    "name_ru": "Маг",
+    "hero": "ys_hero",
+    "abilities": [
+      "ys_bolt",
+      "ys_starfall",
+      "ys_meteor"
+    ],
+    "level_hp_pct": 0,
+    "level_damage_pct": 0,
+    "aura_damage_pct": 0,
+    "description": "Урон издалека: стрела, звездопад и метеор. Сам хрупче — держите за армией."
+  },
+  {
+    "id": "ys_support",
+    "name_ru": "Покровитель",
+    "hero": "ys_hero",
+    "abilities": [
+      "ys_heal",
+      "ys_inspire",
+      "ys_grace"
+    ],
+    "level_hp_pct": 0,
+    "level_damage_pct": 0,
+    "aura_damage_pct": 10,
+    "description": "Армия живёт дольше: лечение, усиление и аура сильнее (+30 % урона вместо +20 %)."
+  },
+  {
+    "id": "ys_warrior",
+    "name_ru": "Воин",
+    "hero": "ys_hero",
+    "abilities": [
+      "ys_charge",
+      "ys_whirlwind",
+      "ys_battlecry"
+    ],
+    "level_hp_pct": 10,
+    "level_damage_pct": 5,
+    "aura_damage_pct": 0,
+    "description": "В гуще боя: крепче и сильнее с каждым уровнем, врывается в толпу и бьёт всех вокруг."
+  }
+]

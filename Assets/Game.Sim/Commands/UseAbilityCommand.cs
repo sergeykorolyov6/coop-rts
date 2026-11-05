@@ -49,7 +49,7 @@ public sealed class UseAbilityCommand : ICommand
         }
         bool any = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
-            any |= AbilitySystem.TryUse(state, unit, ability!, X, Y);
+            any |= AbilitySystem.TryUse(state, unit, ability!, X, Y, events);
         if (!any)
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.AbilityNotReady));
     }

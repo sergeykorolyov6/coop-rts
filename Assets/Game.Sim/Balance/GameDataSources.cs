@@ -13,4 +13,5 @@ public sealed class GameDataSources
     public string Factions { get; set; } = "[]";
     public string Abilities { get; set; } = "[]";
     public string HeroLevels { get; set; } = "[]";
+    public string HeroPaths { get; set; } = "[]";
 }

@@ -16,11 +16,13 @@ public sealed class GameData
     private readonly List<FactionStats> _factions;
     private readonly List<AbilityStats> _abilities;
     private readonly List<HeroLevelStats> _heroLevels;
+    private readonly List<HeroPathStats> _heroPaths;
 
     private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps,
         List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, List<AbilityStats> abilities,
-        List<HeroLevelStats> heroLevels, GameRules rules)
+        List<HeroLevelStats> heroLevels, List<HeroPathStats> heroPaths, GameRules rules)
     {
+        _heroPaths = heroPaths;
         _heroLevels = heroLevels;
         _abilities = abilities;
         _factions = factions;
@@ -55,6 +57,11 @@ public sealed class GameData
     // hero_levels.csv: level 1, 2, … in order (factions.md, Yellow Star).
     public IReadOnlyList<HeroLevelStats> HeroLevels => _heroLevels;
 
+    // hero_paths.csv, sorted by id.
+    public IReadOnlyList<HeroPathStats> HeroPaths => _heroPaths;
+
+    public bool TryGetHeroPath(string id, out HeroPathStats? stats) => TryFind(_heroPaths, id, p => p.Id, out stats);
+
     // Without the Legion tables: matches with no enemy AI (the M1 prototype, most tests).
     public static GameData Parse(string unitsJson, string buildingsJson, string creepCampsJson, string rulesJson) =>
         Parse(new GameDataSources { Units = unitsJson, Buildings = buildingsJson, CreepCamps = creepCampsJson, Rules = rulesJson });
@@ -68,6 +75,7 @@ public sealed class GameData
         List<WaveStats> waves = ReadNumbered("waves.json", sources.Waves, row => new WaveStats(row), w => w.Wave);
         List<FactionStats> factions = ReadTable("factions.json", sources.Factions, row => new FactionStats(row), f => f.Id);
         List<AbilityStats> abilities = ReadTable("abilities.json", sources.Abilities, row => new AbilityStats(row), a => a.Id);
+        List<HeroPathStats> heroPaths = ReadTable("hero_paths.json", sources.HeroPaths, row => new HeroPathStats(row), p => p.Id);
         List<HeroLevelStats> heroLevels = ReadNumbered("hero_levels.json", sources.HeroLevels, row => new HeroLevelStats(row), l => l.Level);
 
         GameRules rules;
@@ -80,7 +88,7 @@ public sealed class GameData
             throw new FormatException($"rules.json: {e.Message}", e);
         }
 
-        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, heroLevels, rules);
+        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, heroLevels, heroPaths, rules);
         data.Validate();
         return data;
     }
@@ -226,6 +234,16 @@ public sealed class GameData
         return false;
     }
 
+    private static bool ContainsId(IReadOnlyList<string> list, string id)
+    {
+        foreach (string s in list)
+        {
+            if (s == id)
+                return true;
+        }
+        return false;
+    }
+
     // Catches typos in the design tables at load time instead of mid-match.
     private void Validate()
     {
@@ -283,6 +301,17 @@ public sealed class GameData
             {
                 if (!TryGetBuilding(b, out _))
                     throw new FormatException($"factions.json: \"{f.Id}\" builds unknown building \"{b}\".");
+            }
+        }
+
+        foreach (HeroPathStats p in _heroPaths)
+        {
+            if (!TryGetUnit(p.HeroUnitId, out UnitStats? hero) || !hero!.HasTag(UnitTags.Hero))
+                throw new FormatException($"hero_paths.json: \"{p.Id}\" is for \"{p.HeroUnitId}\" that is not a unit tagged hero.");
+            foreach (string a in p.Abilities)
+            {
+                if (!ContainsId(hero.Abilities, a))
+                    throw new FormatException($"hero_paths.json: \"{p.Id}\" has \"{a}\" that \"{p.HeroUnitId}\" lacks in its abilities column.");
             }
         }
 
