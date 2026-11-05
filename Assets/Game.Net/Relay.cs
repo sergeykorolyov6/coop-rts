@@ -8,7 +8,8 @@ namespace Game.Net;
 // network.md: the host's side. Gives places in the lobby, starts the match, closes every turn
 // once it has every playing player's commands for it and sends that turn to all, compares
 // StateHash. The host's own player is an ordinary LockstepClient connected to it in memory,
-// so the host plays by exactly the same rules as everyone else.
+// so the host plays by exactly the same rules as everyone else. The host may pick a save instead
+// of a mission: then everyone restores it and the match goes on from its tick with its factions.
 public sealed class Relay
 {
     private sealed class Peer
@@ -39,6 +40,8 @@ public sealed class Relay
     private readonly SortedDictionary<int, SortedDictionary<int, ulong>> _hashes = new SortedDictionary<int, SortedDictionary<int, ulong>>();
     private int _lastClosedTurn = LockstepSettings.DelayTurns - 1;
     private bool _desyncSent;
+    private SaveGame? _save;
+    private byte[]? _saveBytes;
 
     public Relay(GameData data, MissionCatalog catalog, ulong contentHash, string missionId)
     {
@@ -50,6 +53,9 @@ public sealed class Relay
 
     public string MissionId { get; private set; }
     public bool Started { get; private set; }
+
+    // The save the match will go on from; null for a new match.
+    public SaveGame? Save => _save;
 
     // The host's own player left (its connection closed): the match is over for everyone.
     public bool Closed { get; private set; }
@@ -111,6 +117,9 @@ public sealed class Relay
                 case MessageType.PickMission:
                     PickMission(peer, reader.ReadString());
                     break;
+                case MessageType.PickSave:
+                    PickSave(peer, Message.ReadBytes(reader));
+                    break;
                 case MessageType.StartRequest:
                     StartMatch(peer, reader.ReadInt32());
                     break;
@@ -153,7 +162,8 @@ public sealed class Relay
 
     private void PickFaction(Peer peer, string factionId)
     {
-        if (Started || !_data.TryGetFaction(factionId, out FactionStats? f) || f!.Role != FactionRole.Player)
+        // A save fixes the factions: the bases on the map are already theirs.
+        if (Started || _save != null || !_data.TryGetFaction(factionId, out FactionStats? f) || f!.Role != FactionRole.Player)
             return;
         peer.FactionId = factionId;
         BroadcastLobby();
@@ -164,11 +174,43 @@ public sealed class Relay
         if (Started || peer.Slot != 1 || _catalog.Find(missionId) == null)
             return;
         MissionId = missionId;
+        _save = null;
+        _saveBytes = null;
         foreach (Peer p in _peers)
         {
             if (p.Greeted && !p.Gone)
                 p.FactionId = DefaultFaction(p.Slot);
         }
+        BroadcastLobby();
+    }
+
+    // save-load.md + network.md: a save of a mission whose places the lobby can fill; empty — back
+    // to a new match of the mission.
+    private void PickSave(Peer peer, byte[] bytes)
+    {
+        if (Started || peer.Slot != 1)
+            return;
+        if (bytes.Length == 0)
+        {
+            PickMission(peer, MissionId);
+            return;
+        }
+        SaveGame save;
+        try
+        {
+            save = SaveGame.Read(bytes);
+        }
+        catch (InvalidDataException)
+        {
+            return;
+        }
+        if (_catalog.Find(save.MissionId) == null)
+            return;
+        _save = save;
+        _saveBytes = bytes;
+        MissionId = save.MissionId;
+        foreach (Peer p in Playing())
+            p.FactionId = DefaultFaction(p.Slot);
         BroadcastLobby();
     }
 
@@ -182,13 +224,19 @@ public sealed class Relay
         var factions = new List<string>();
         foreach (Peer p in Playing())
             factions.Add(p.FactionId);
+        int startTick = _save?.Tick ?? 0;
+        int matchSeed = _save?.Seed ?? seed;
+        byte[] saveBytes = _saveBytes ?? Array.Empty<byte>();
+        _lastClosedTurn = LockstepSettings.FirstTurn(startTick) + LockstepSettings.DelayTurns - 1;
         Broadcast(Message.Build(MessageType.Start, w =>
         {
             w.Write(MissionId);
-            w.Write(seed);
+            w.Write(matchSeed);
             w.Write(factions.Count);
             foreach (string f in factions)
                 w.Write(f);
+            w.Write(startTick);
+            Message.WriteBytes(w, saveBytes);
         }));
     }
 
@@ -344,6 +392,8 @@ public sealed class Relay
 
     private string DefaultFaction(int slot)
     {
+        if (_save != null && slot - 1 < _save.Factions.Count && _save.Factions[slot - 1].Length > 0)
+            return _save.Factions[slot - 1];
         MissionStats? mission = _catalog.Find(MissionId);
         if (mission != null && slot - 1 < mission.Factions.Count)
             return mission.Factions[slot - 1];
@@ -355,10 +405,12 @@ public sealed class Relay
         foreach (Peer peer in Playing())
         {
             int you = peer.Slot;
+            int saveTick = _save?.Tick ?? -1;
             peer.Connection.Send(Message.Build(MessageType.Lobby, w =>
             {
                 w.Write(you);
                 w.Write(MissionId);
+                w.Write(saveTick);
                 var playing = new List<Peer>(Playing());
                 w.Write(playing.Count);
                 foreach (Peer p in playing)

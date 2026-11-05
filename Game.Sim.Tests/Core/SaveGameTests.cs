@@ -73,6 +73,108 @@ public class SaveGameTests
         Assert.Throws<InvalidDataException>(() => wrongHash.Restore(Setup("m2", 7), GameCommands.CreateCodec()));
     }
 
+    private static MatchSetup Setup(string missionId, int seed, System.Collections.Generic.IReadOnlyList<string>? factions)
+    {
+        MissionStats mission = CoopMissionTests.Catalog().Find(missionId)!;
+        return MissionLauncher.CreateSetup(RepoData.Get(), mission, CoopMissionTests.MapJson(mission.Map), seed, factions);
+    }
+
+    [Test]
+    public void GWT4_LobbyFactions_SavedAndRestored()
+    {
+        var factions = new[] { "yellow_star", "brown_scavengers" };
+        var sim = new Simulation(Setup("coop", 3, factions));
+        sim.Enqueue(new ChooseHeroPathCommand(1, 5, "ys_mage"));
+        sim.Run(30 * Second);
+        CommandCodec codec = GameCommands.CreateCodec();
+
+        SaveGame save = SaveGame.Read(SaveGame.Capture(sim, "coop", 3, codec).Write());
+        Assert.That(save.Factions, Is.EqualTo(factions));
+        Simulation loaded = save.Restore(Setup(save.MissionId, save.Seed, save.FactionsOrNull), codec);
+        Assert.That(loaded.StateHash, Is.EqualTo(sim.StateHash));
+        Assert.That(loaded.State.GetPlayer(2).Faction!.Id, Is.EqualTo("brown_scavengers"));
+        Assert.That(loaded.State.GetPlayer(1).HeroPathId, Is.EqualTo("ys_mage"));
+    }
+
+    [Test]
+    public void GWT5_FormatOneFile_Loads_FactionsFromMission()
+    {
+        Simulation sim = Played();
+        CommandCodec codec = GameCommands.CreateCodec();
+        byte[] log = codec.WriteLog(sim.CommandLog);
+        // Format 1 as it was written before factions: no faction list after the seed.
+        using var stream = new MemoryStream();
+        using (var w = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            w.Write(System.Text.Encoding.ASCII.GetBytes("COOPSAVE"));
+            w.Write(1);
+            w.Write("m2");
+            w.Write(7);
+            w.Write(sim.State.Tick);
+            w.Write(sim.StateHash);
+            w.Write(log.Length);
+            w.Write(log);
+        }
+
+        SaveGame save = SaveGame.Read(stream.ToArray());
+        Assert.That(save.Factions, Is.Empty);
+        Assert.That(save.FactionsOrNull, Is.Null);
+        Assert.That(save.Restore(Setup("m2", 7, save.FactionsOrNull), codec).StateHash, Is.EqualTo(sim.StateHash));
+    }
+
+    [Test]
+    public void GWT6_Replay_SameHashEveryTick_AndMatchesAtTheEnd()
+    {
+        var original = new Simulation(Setup("m2", 7));
+        Unit builder = original.State.UnitsOf(1).Single();
+        original.Enqueue(new BuildCommand(1, 0, new[] { builder.Id }, "drill", new[] { new BuildSite(12, 19, Direction.Right) }));
+        var hashes = new System.Collections.Generic.List<ulong>();
+        for (int t = 0; t < 40 * Second; t++)
+        {
+            if (t == 20 * Second)
+                original.Enqueue(new MoveCommand(1, t, new[] { builder.Id }, builder.X + 3000, builder.Y));
+            original.Tick();
+            hashes.Add(original.StateHash);
+        }
+        CommandCodec codec = GameCommands.CreateCodec();
+        SaveGame record = SaveGame.Read(SaveGame.Capture(original, "m2", 7, codec).Write());
+
+        Simulation replay = record.BeginReplay(Setup("m2", 7), codec);
+        Assert.That(replay.State.Tick, Is.Zero);
+        for (int t = 0; t < hashes.Count; t++)
+        {
+            Assert.That(record.Matches(replay), Is.False);
+            replay.Tick();
+            Assert.That(replay.StateHash, Is.EqualTo(hashes[t]), $"tick {t + 1}");
+        }
+        Assert.That(record.Matches(replay), Is.True);
+    }
+
+    [Test]
+    public void GWT7_ReplayOnOtherData_DoesNotMatchAtTheEnd()
+    {
+        Simulation sim = Played();
+        CommandCodec codec = GameCommands.CreateCodec();
+        SaveGame record = SaveGame.Capture(sim, "m2", 7, codec);
+
+        Simulation replay = record.BeginReplay(Setup("m2", 8), codec);
+        replay.FastForward(record.Tick);
+        Assert.That(record.Matches(replay), Is.False);
+    }
+
+    [Test]
+    public void Edge_LoadInParts_SameAsAtOnce()
+    {
+        Simulation sim = Played();
+        CommandCodec codec = GameCommands.CreateCodec();
+        SaveGame save = SaveGame.Capture(sim, "m2", 7, codec);
+
+        Simulation parts = save.BeginReplay(Setup("m2", 7), codec);
+        while (parts.State.Tick < save.Tick)
+            parts.FastForward(System.Math.Min(save.Tick, parts.State.Tick + 333));
+        Assert.That(save.Matches(parts), Is.True);
+    }
+
     [Test]
     public void Edge_AnotherSeed_DoesNotMatchTheHash()
     {

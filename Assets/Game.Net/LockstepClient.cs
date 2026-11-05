@@ -32,6 +32,9 @@ public sealed class LockstepClient
     // 0 until the host gives a place.
     public int Slot { get; private set; }
     public string MissionId { get; private set; } = "";
+
+    // The tick of the save the host picked, -1 for a new match.
+    public int LobbySaveTick { get; private set; } = -1;
     public IReadOnlyList<LobbyEntry> Lobby => _lobby;
 
     // Set once the host starts the match.
@@ -49,6 +52,9 @@ public sealed class LockstepClient
     public void PickFaction(string factionId) => _connection.Send(Message.Build(MessageType.PickFaction, w => w.Write(factionId)));
 
     public void PickMission(string missionId) => _connection.Send(Message.Build(MessageType.PickMission, w => w.Write(missionId)));
+
+    // Slot 1: go on from this save (SaveGame.Write bytes); empty — a new match again.
+    public void PickSave(byte[] save) => _connection.Send(Message.Build(MessageType.PickSave, w => Message.WriteBytes(w, save)));
 
     public void RequestStart(int seed) => _connection.Send(Message.Build(MessageType.StartRequest, w => w.Write(seed)));
 
@@ -91,15 +97,16 @@ public sealed class LockstepClient
     public void Submit(ICommand command) => _outgoing.Add(_codec.Encode(command));
 
     // One tick of the match if the lockstep allows it. At a turn's first tick: the turn must have
-    // come (the first DelayTurns turns are empty by agreement); its commands go into the sim, and
-    // the local commands leave for the turn DelayTurns ahead.
+    // come (the first DelayTurns turns from the start are empty by agreement); its commands go into
+    // the sim, and the local commands leave for the turn DelayTurns ahead. A match restored from a
+    // save starts at its tick (MatchStart.StartTick).
     public bool TryStep(Simulation sim)
     {
         int tick = sim.State.Tick;
         if (tick % LockstepSettings.TurnTicks == 0)
         {
             int turn = tick / LockstepSettings.TurnTicks;
-            if (turn >= LockstepSettings.DelayTurns)
+            if (turn >= LockstepSettings.FirstTurn(Start?.StartTick ?? 0) + LockstepSettings.DelayTurns)
             {
                 if (!_turns.TryGetValue(turn, out List<(int Slot, byte[] Command)>? commands))
                 {
@@ -153,6 +160,7 @@ public sealed class LockstepClient
             case MessageType.Lobby:
                 Slot = reader.ReadInt32();
                 MissionId = reader.ReadString();
+                LobbySaveTick = reader.ReadInt32();
                 _lobby.Clear();
                 int count = reader.ReadInt32();
                 for (int i = 0; i < count; i++)
@@ -165,7 +173,9 @@ public sealed class LockstepClient
                 int n = reader.ReadInt32();
                 for (int i = 0; i < n; i++)
                     factions.Add(reader.ReadString());
-                Start = new MatchStart(missionId, seed, factions);
+                int startTick = reader.ReadInt32();
+                byte[] save = Message.ReadBytes(reader);
+                Start = new MatchStart(missionId, seed, factions, startTick, save.Length > 0 ? save : null);
                 break;
             case MessageType.Turn:
                 int turn = reader.ReadInt32();

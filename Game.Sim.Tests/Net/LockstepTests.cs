@@ -53,11 +53,15 @@ public class LockstepTests
             Clients[0].RequestStart(seed);
             Pump();
             foreach (LockstepClient c in Clients)
-            {
-                MatchStart start = c.Start!;
-                MissionStats mission = CoopMissionTests.Catalog().Find(start.MissionId)!;
-                Sims.Add(new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), mission, CoopMissionTests.MapJson(mission.Map), start.Seed, start.Factions)));
-            }
+                Sims.Add(Launch(c.Start!));
+        }
+
+        // As SimRunner does: a new match, or the save restored up to its tick.
+        public static Simulation Launch(MatchStart start)
+        {
+            MissionStats mission = CoopMissionTests.Catalog().Find(start.MissionId)!;
+            MatchSetup setup = MissionLauncher.CreateSetup(RepoData.Get(), mission, CoopMissionTests.MapJson(mission.Map), start.Seed, start.Factions);
+            return start.Save != null ? SaveGame.Read(start.Save).Restore(setup, GameCommands.CreateCodec()) : new Simulation(setup);
         }
 
         // Every machine tries one tick, then the messages travel.
@@ -310,6 +314,93 @@ public class LockstepTests
         Assert.That(sims[0].StateHash, Is.EqualTo(sims[1].StateHash));
         Assert.That(sims[0].State.FindBuilder(2)!.X, Is.Not.EqualTo(startX));
         server.Dispose();
+    }
+
+    // A coop match of 501 ticks (not a whole turn: the resume must handle it), saved.
+    private static (SaveGame Save, Simulation Original) SavedCoop()
+    {
+        var sim = new Simulation(MissionLauncher.CreateSetup(RepoData.Get(), CoopMissionTests.Catalog().Find("coop")!,
+            CoopMissionTests.MapJson("coop"), 21, new[] { "red_lightning", "yellow_star" }));
+        Unit b1 = sim.State.FindBuilder(1)!;
+        sim.Enqueue(new MoveCommand(1, 10, new[] { b1.Id }, b1.X + 4000, b1.Y));
+        sim.Enqueue(new ChooseHeroPathCommand(2, 30, "ys_warrior"));
+        sim.Run(501);
+        return (SaveGame.Read(SaveGame.Capture(sim, "coop", 21, GameCommands.CreateCodec()).Write()), sim);
+    }
+
+    [Test]
+    public void SaveGWT8_HostPicksSave_EveryoneRestoresIt_AndGoesOnInStep()
+    {
+        (SaveGame save, Simulation original) = SavedCoop();
+        var m = new Match();
+        m.Clients[0].PickSave(save.Write());
+        m.Pump();
+        Assert.That(m.Clients[1].LobbySaveTick, Is.EqualTo(501));
+        m.Start(seed: 999);
+
+        foreach (Simulation s in m.Sims)
+        {
+            Assert.That(s.State.Tick, Is.EqualTo(501));
+            Assert.That(s.StateHash, Is.EqualTo(save.StateHash));
+            Assert.That(s.State.GetPlayer(2).HeroPathId, Is.EqualTo("ys_warrior"));
+        }
+        Assert.That(m.Clients[1].Start!.Seed, Is.EqualTo(21), "the save's seed, not the host's new one");
+
+        Unit b2 = m.Sims[1].State.FindBuilder(2)!;
+        int firstTurn = LockstepSettings.FirstTurn(501);
+        int runAt = (firstTurn + Delay) * TurnTicks;
+        var command = new MoveCommand(2, runAt, new[] { b2.Id }, b2.X - 3000, b2.Y);
+        m.Clients[1].Submit(command);
+        original.Enqueue(command);
+        for (int i = 0; i < 200; i++)
+        {
+            m.StepAll();
+            original.Tick();
+            Assert.That(m.Sims[0].StateHash, Is.EqualTo(original.StateHash), $"tick {original.State.Tick}");
+            Assert.That(m.Sims[1].StateHash, Is.EqualTo(original.StateHash), $"tick {original.State.Tick}");
+        }
+        Assert.That(m.Clients.SelectMany(c => c.TakeNotices()), Is.Empty);
+    }
+
+    [Test]
+    public void SaveGWT9_SavePicked_FactionsFixed()
+    {
+        (SaveGame save, _) = SavedCoop();
+        var m = new Match();
+        m.Clients[0].PickSave(save.Write());
+        m.Pump();
+        m.Clients[1].PickFaction("blue_walls");
+        m.Pump();
+
+        Assert.That(m.Clients[0].Lobby.Select(e => e.FactionId), Is.EqualTo(new[] { "red_lightning", "yellow_star" }));
+    }
+
+    [Test]
+    public void SaveGWT10_SaveForTwo_LobbyOfOne_DoesNotStart()
+    {
+        (SaveGame save, _) = SavedCoop();
+        var m = new Match(players: 1);
+        m.Clients[0].PickSave(save.Write());
+        m.Pump();
+        m.Clients[0].RequestStart(1);
+        m.Pump();
+
+        Assert.That(m.Relay.Started, Is.False);
+    }
+
+    [Test]
+    public void Edge_SaveDropped_BackToANewMatch()
+    {
+        (SaveGame save, _) = SavedCoop();
+        var m = new Match();
+        m.Clients[0].PickSave(save.Write());
+        m.Pump();
+        m.Clients[0].PickSave(System.Array.Empty<byte>());
+        m.Pump();
+        m.Start();
+
+        Assert.That(m.Clients[1].LobbySaveTick, Is.EqualTo(-1));
+        Assert.That(m.Sims.Select(s => s.State.Tick), Is.All.Zero);
     }
 
     [Test]
