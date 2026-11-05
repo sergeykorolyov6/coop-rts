@@ -145,7 +145,10 @@ internal static class Construction
             if (site.WorkersThisTick >= stats.MaxBuilders)
                 return;
             site.WorkersThisTick++;
-            site.AddWork(1);
+            // One builder does build_speed_pct hundredths of a tick of work per tick, exactly.
+            site.BuildSpeedAccumulator += state.Rules.BuildSpeedPercent;
+            site.AddWork(site.BuildSpeedAccumulator / 100);
+            site.BuildSpeedAccumulator %= 100;
             if (site.IsComplete)
             {
                 events.Add(new ConstructionCompleted(state.Tick, site.OwnerId, site.Id));
@@ -199,7 +202,9 @@ internal static class Construction
             }
         }
 
-        int work = target is Building site ? site.BuildWork : RepairWork((Unit)target!);
+        // Buildings at the build speed of rules.csv (construction.md: repair as fast as building).
+        int work = target is Building site ? site.BuildWork * 100 : RepairWork((Unit)target!) * 100;
+        int pace = target is Building ? state.Rules.BuildSpeedPercent : 100;
         if (work == 0)
         {
             target!.Hp = target.MaxHp;
@@ -207,7 +212,7 @@ internal static class Construction
         else
         {
             // One repairer restores MaxHp over the build time: MaxHp / work HP per tick, exactly.
-            unit.RepairHpAccumulator += target!.MaxHp;
+            unit.RepairHpAccumulator += target!.MaxHp * pace;
             while (unit.RepairHpAccumulator >= work && target.Hp < target.MaxHp)
             {
                 if (!PayForOneHp(state, unit, target))

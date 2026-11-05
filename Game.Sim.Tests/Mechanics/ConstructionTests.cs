@@ -84,6 +84,26 @@ public class ConstructionTests
         Assert.That(sim.State.FindHeadquarters(Setups.PlayerA)!.IsComplete, Is.False);
     }
 
+    // rules.csv build_speed_pct (request of Sergey, 05.11.2026): repair of a building keeps pace
+    // with its construction (construction.md): MaxHp over the build time divided by the speed.
+    [Test]
+    public void BuildSpeed_BuildingRepairGoesAtTheSamePace()
+    {
+        var sim = Match();
+        Assert.That(sim.State.Rules.BuildSpeedPercent, Is.EqualTo(150));
+        Building drill = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("drill"), 12, 6, Direction.Right, complete: true);
+        drill.Hp = drill.MaxHp / 2;
+        drill.NoSelfRepair();
+        sim.Order(Repair(sim, Setups.PlayerA, drill, Worker(sim, Setups.PlayerA)));
+        sim.RunUntil(s => drill.Hp > drill.MaxHp / 2);
+        int from = drill.Hp;
+        int ticks = sim.RunUntil(s => drill.Hp == drill.MaxHp);
+
+        // MaxHp · 150 / (200 ticks · 100) HP per tick for a 10 s drill.
+        long expected = (long)(drill.MaxHp - from) * drill.BuildWork * 100 / ((long)drill.MaxHp * 150);
+        Assert.That(ticks, Is.InRange(expected, expected + 2));
+    }
+
     [Test]
     public void Edge_RepairWithAFractionalPrice_IsChargedInWholeUnitsAsItGoes()
     {
@@ -196,6 +216,13 @@ public class ConstructionTests
         Assert.That(sim.Events.OfType<CommandRejected>().Single().Reason, Is.EqualTo(RejectReason.NotDiscovered));
     }
 
+    // Ticks one builder needs for this much table work at the rules' build speed, rounded up.
+    internal static int TicksAtBuildSpeed(Simulation sim, int work)
+    {
+        int pct = sim.State.Rules.BuildSpeedPercent;
+        return (work * 100 + pct - 1) / pct;
+    }
+
     [Test]
     public void BuildTime_OneWorker_IsBuildTimeOfTheTable()
     {
@@ -205,8 +232,8 @@ public class ConstructionTests
         sim.RunUntil(s => SiteAt(s, 12, 6) != null);
         Building site = SiteAt(sim, 12, 6)!;
         int ticks = sim.RunUntil(s => site.IsComplete);
-        // Factory: 35 s = 700 units of work; the start tick already counts one.
-        Assert.That(ticks + 1, Is.EqualTo(35 * Simulation.TicksPerSecond));
+        // Factory: 35 s = 700 units of work at build_speed_pct (rules.csv); the start tick already counts.
+        Assert.That(ticks + 1, Is.EqualTo(TicksAtBuildSpeed(sim, 35 * Simulation.TicksPerSecond)));
         Assert.That(site.Hp, Is.EqualTo(site.MaxHp));
         sim.Run(2);
         Assert.That(a.Order.Kind, Is.EqualTo(UnitOrderKind.Idle));

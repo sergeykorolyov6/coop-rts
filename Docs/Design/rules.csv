@@ -25,3 +25,4 @@ capture_time,10,s,Время захвата нейтрального здани�
 capture_radius,2,cells,Радиус захвата от края здания,neutral-buildings.md (решение Claude),
 lighthouse_radius,2,cells,Радиус маяка от края,neutral-buildings.md (решение Claude),
 demolish_time_pct,25,pct,Время сноса от времени постройки,demolish.md (просьба Сергея),"«значительно меньшее, чем постройка»"
+build_speed_pct,150,pct,Скорость стройки,просьба Сергея (05.11.2026),"+50 %: строитель за тик делает 1,5 тика работы; ремонт зданий — так же (construction.md: скорость ремонта как стройки). Время в buildings.csv — при 100 %"

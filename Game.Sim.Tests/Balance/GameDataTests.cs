@@ -40,7 +40,8 @@ public class GameDataTests
       ""ai_defense_calm_ticks"": 200, ""ai_rebuild_safe_radius_mc"": 8000,
       ""auto_repair_radius_mc"": 8000, ""factory_stock"": 150,
       ""capture_time_ticks"": 200, ""capture_radius_mc"": 2000, ""lighthouse_radius_mc"": 2000,
-      ""demolish_time_pct"": 25
+      ""demolish_time_pct"": 25,
+      ""build_speed_pct"": 150
     }";
 
     [Test]

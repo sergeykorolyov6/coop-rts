@@ -36,7 +36,8 @@ public class DrillTests
 
         Building drill = SiteAt(sim, 10, 6)!;
         int buildTicks = sim.RunUntil(s => drill.IsComplete) + 1;
-        Assert.That(buildTicks, Is.EqualTo(10 * Simulation.TicksPerSecond));
+        // 10 s of table work, faster by build_speed_pct (rules.csv).
+        Assert.That(buildTicks, Is.EqualTo(ConstructionTests.TicksAtBuildSpeed(sim, 10 * Simulation.TicksPerSecond)));
         sim.Run(2);
         Assert.That(worker.Order.Kind, Is.EqualTo(UnitOrderKind.Idle));
 
@@ -67,9 +68,10 @@ public class DrillTests
         sim.Order(Repair(sim, Setups.PlayerB, drill, b));
         int rest = sim.RunUntil(s => drill.IsComplete);
 
-        // 100 units of work left at 2 per tick = 50 ticks = 2.5 s (instead of 5 s); the order
-        // lands on the next tick, which A works alone.
-        Assert.That(rest, Is.InRange(50, 52));
+        // 100 units of work left at twice one builder's pace: half of what A alone would take; the
+        // order lands on the next tick, which A works alone.
+        int half = ConstructionTests.TicksAtBuildSpeed(sim, 50);
+        Assert.That(rest, Is.InRange(half, half + 2));
         Assert.That(drill.OwnerId, Is.EqualTo(Setups.PlayerA));
         Assert.That(Wallet(sim, Setups.PlayerB), Is.EqualTo(walletB));
     }

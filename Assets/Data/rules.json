@@ -7,6 +7,7 @@
   "attack_alarm_cooldown_ticks": 100,
   "auto_repair_radius_mc": 8000,
   "bridge_range": 4,
+  "build_speed_pct": 150,
   "capture_radius_mc": 2000,
   "capture_time_ticks": 200,
   "construction_start_hp_pct": 10,

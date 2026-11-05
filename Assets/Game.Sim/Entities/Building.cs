@@ -70,6 +70,9 @@ public sealed class Building : Entity
     // factions.md: building self-repair (Blue Walls), exact HP accumulator.
     internal int RegenAccumulator { get; set; }
 
+    // rules.csv build_speed_pct: work in hundredths not yet turned into whole BuildProgress.
+    internal int BuildSpeedAccumulator { get; set; }
+
     // Builders or repairers counted so far in the current tick, against MaxBuilders.
     internal int WorkersThisTick { get; set; }
 

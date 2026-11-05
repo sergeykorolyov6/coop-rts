@@ -228,6 +228,7 @@ internal sealed class StateHasher
         _writer.Write(b.GuardCampIndex);
         _writer.Write(b.LitForPlayerId);
         _writer.Write(b.RegenAccumulator);
+        _writer.Write(b.BuildSpeedAccumulator);
         if (b.Stock != null)
         {
             for (int type = 0; type < b.Stock.ResourceTypeCount; type++)
