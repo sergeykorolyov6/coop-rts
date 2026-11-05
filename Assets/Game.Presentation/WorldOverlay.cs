@@ -20,6 +20,9 @@ namespace Game.Presentation
     {
         private const float FloatSeconds = 1.6f;
 
+        // A bar with its label under it, pixels: the hero's level bar sits this high over its HP bar.
+        private const float LabelledBarHeight = 32f;
+
         [SerializeField] private Hud? _hud;
         [SerializeField] private Camera? _camera;
         [SerializeField] private Color _hpHigh = new Color(0.35f, 0.85f, 0.35f);
@@ -95,7 +98,8 @@ namespace Game.Presentation
                 bool top = level >= levels.Count;
                 float share = top ? 1f : Mathf.InverseLerp(levels[level - 1].Xp, levels[level].Xp, owner.HeroXp);
                 float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
-                ShowBar(ground + Vector3.up * (size * 1.4f + 0.7f), 44f, share, _xpColor, top ? $"ур. {level} (макс.)" : $"ур. {level}");
+                // Anchored where the HP bar is and lifted in pixels: the label never covers the HP bar at any zoom.
+                ShowBar(ground + Vector3.up * (size * 1.4f + 0.2f), 44f, share, _xpColor, top ? $"ур. {level} (макс.)" : $"ур. {level}", LabelledBarHeight);
             }
 
             foreach (Building building in state.Buildings)
@@ -214,7 +218,7 @@ namespace Game.Presentation
             }
         }
 
-        private void ShowBar(Vector3 world, float width, float share, Color color, string? label)
+        private void ShowBar(Vector3 world, float width, float share, Color color, string? label, float pixelsUp = 0f)
         {
             if (_camera!.WorldToViewportPoint(world).z <= 0f)
                 return;
@@ -227,15 +231,15 @@ namespace Game.Presentation
             bar.Label.style.display = label != null ? DisplayStyle.Flex : DisplayStyle.None;
             if (label != null && bar.Label.text != label)
                 bar.Label.text = label;
-            Place(bar.Root, world, width);
+            Place(bar.Root, world, width, pixelsUp);
         }
 
-        // Centred horizontally over the world point.
-        private void Place(VisualElement element, Vector3 world, float width)
+        // Centred horizontally over the world point, its top there or pixelsUp higher.
+        private void Place(VisualElement element, Vector3 world, float width, float pixelsUp = 0f)
         {
             Vector2 p = RuntimePanelUtils.CameraTransformWorldToPanel(_layer!.panel, world, _camera!);
             element.style.left = p.x - width * 0.5f;
-            element.style.top = p.y;
+            element.style.top = p.y - pixelsUp;
         }
 
         private Label CreateAlert()

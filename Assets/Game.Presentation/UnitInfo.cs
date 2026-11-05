@@ -7,13 +7,15 @@ namespace Game.Presentation
 {
     // factions.md UI: what the selection is and does. One kind selected — its name, description
     // (units.csv "description"), numbers and abilities; several kinds — how many of each.
-    [RequireComponent(typeof(SimRunner), typeof(SelectionController))]
+    // Someone else's unit picked for a look (ally, Legion, creep) shows the same, plus whose it is.
+    [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class UnitInfo : MonoBehaviour
     {
         [SerializeField] private Hud? _hud;
 
         private SimRunner? _runner;
         private SelectionController? _selection;
+        private LocalPlayer? _localPlayer;
         private Label? _label;
         private string _shown = "";
 
@@ -21,6 +23,7 @@ namespace Game.Presentation
         {
             _runner = GetComponent<SimRunner>();
             _selection = GetComponent<SelectionController>();
+            _localPlayer = GetComponent<LocalPlayer>();
         }
 
         private void Start()
@@ -80,7 +83,10 @@ namespace Game.Presentation
                     counts[i] = (u.Stats, counts[i].Count + 1);
             }
             if (counts.Count == 0)
-                return "";
+            {
+                Unit? other = state.FindUnit(_selection.InspectedUnitId);
+                return other != null && !other.IsDead ? Single(state, other, 1) : "";
+            }
             if (counts.Count > 1)
             {
                 var parts = new List<string>();
@@ -89,16 +95,35 @@ namespace Game.Presentation
                 return "Выделено: " + string.Join(", ", parts);
             }
 
-            UnitStats s = counts[0].Stats;
-            string head = counts[0].Count > 1 ? $"{s.NameRu} × {counts[0].Count}" : s.NameRu;
+            return Single(state, first!, counts[0].Count);
+        }
+
+        // One kind: name, whose (when not ours), live HP of a lone unit, description, numbers, hero level.
+        private string Single(SimState state, Unit first, int count)
+        {
+            UnitStats s = first.Stats;
+            string head = count > 1 ? $"{s.NameRu} × {count}" : $"{s.NameRu} · {first.Hp} / {first.MaxHp}";
+            string whose = Whose(state, first.OwnerId);
+            if (whose.Length > 0)
+                head += $"\n{whose}";
             string text = $"{head}\n{s.Description}\n{StatsLine(s)}";
-            if (first!.IsHero)
+            if (first.IsHero)
             {
                 Player owner = state.GetPlayer(first.OwnerId);
                 string path = state.HeroPath(first.OwnerId)?.NameRu ?? "путь не выбран";
                 text += $"\nУровень {owner.HeroLevel}, опыт {owner.HeroXp} · {path}";
             }
             return text;
+        }
+
+        private string Whose(SimState state, int ownerId)
+        {
+            int me = _localPlayer!.PlayerId;
+            if (ownerId == me)
+                return "";
+            string faction = state.GetPlayer(ownerId).Faction?.NameRu ?? "";
+            string relation = state.Relations.IsAlly(me, ownerId) ? "союзник" : state.Relations.IsEnemy(me, ownerId) ? "враг" : "нейтрал";
+            return faction.Length > 0 ? $"{faction} — {relation}" : relation;
         }
 
         private static string Cells(int milli) => DisplayNames.Number(milli / (double)Game.Sim.Grid.MilliPerCell, "0.#");

@@ -6,11 +6,14 @@ using Grid = Game.Sim.Grid;
 namespace Game.Presentation
 {
     // Placeholder selection marker until there is art: a flat disc under each selected unit,
-    // a plate one cell wider than the footprint under a selected building.
+    // a plate one cell wider than the footprint under a selected building, a red disc under
+    // someone else's unit being inspected.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(SelectionController))]
     public sealed class SelectionView : MonoBehaviour
     {
         [SerializeField] private Color _color = new Color(0.4f, 1f, 0.4f);
+        [Tooltip("Under someone else's unit picked for a look.")]
+        [SerializeField] private Color _inspectColor = new Color(1f, 0.35f, 0.3f);
         [Tooltip("Disc diameter relative to the unit size.")]
         [SerializeField] private float _scale = 1.5f;
 
@@ -20,8 +23,10 @@ namespace Game.Presentation
         private EntityView? _entities;
         private SelectionController? _selection;
         private Material? _material;
+        private Material? _inspectMaterial;
         private Transform? _root;
         private Transform? _plate;
+        private Transform? _inspectDisc;
 
         private void Awake()
         {
@@ -63,6 +68,24 @@ namespace Game.Presentation
                 _plate.position = new Vector3(building.CellX + building.Width * 0.5f, 0.02f, building.CellY + building.Height * 0.5f);
             }
             _plate?.gameObject.SetActive(building != null);
+
+            Unit? inspected = simulation?.State.FindUnit(_selection.InspectedUnitId);
+            Vector3 at = default;
+            bool showInspected = inspected != null && _entities!.TryGetUnitPosition(inspected.Id, out at);
+            if (showInspected)
+            {
+                if (_inspectDisc == null)
+                {
+                    _inspectDisc = CreateMarker(PrimitiveType.Cylinder, "InspectDisc");
+                    MeshRenderer renderer = _inspectDisc.GetComponent<MeshRenderer>();
+                    _inspectMaterial = new Material(renderer.sharedMaterial) { color = _inspectColor };
+                    renderer.sharedMaterial = _inspectMaterial;
+                }
+                float size = inspected!.Stats.SizeMilli / (float)Grid.MilliPerCell * _scale;
+                _inspectDisc.localScale = new Vector3(size, 0.01f, size);
+                _inspectDisc.position = at + Vector3.up * 0.02f;
+            }
+            _inspectDisc?.gameObject.SetActive(showInspected);
         }
 
         // Discs are pooled: selection changes every few seconds, no objects churn.
@@ -91,6 +114,8 @@ namespace Game.Presentation
         {
             if (_material != null)
                 Destroy(_material);
+            if (_inspectMaterial != null)
+                Destroy(_inspectMaterial);
         }
     }
 }

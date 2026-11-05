@@ -12,6 +12,8 @@ namespace Game.Presentation
     // all inside, Shift adds. A click on an own building with no unit under the cursor selects
     // the building instead (the factory panel works on it). Groups as in SC2: Ctrl+digit sets, Shift+digit adds, digit recalls,
     // the digit twice centres the camera. Only own units: allies' units are not commandable.
+    // A click on someone else's unit (ally, Legion, creep) with none of ours under the cursor
+    // inspects it: UnitInfo shows what it is, no orders go to it.
     // Pure Presentation state: the sim never learns what is selected, commands carry the unit ids.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
     public sealed class SelectionController : MonoBehaviour
@@ -52,6 +54,9 @@ namespace Game.Presentation
         // Own building selected by a click, 0 when none; exclusive with the unit selection.
         public int SelectedBuildingId { get; private set; }
 
+        // Someone else's unit picked to read its numbers, 0 when none; exclusive with the rest.
+        public int InspectedUnitId { get; private set; }
+
         public event Action? Changed;
 
         private void Awake()
@@ -90,6 +95,12 @@ namespace Game.Presentation
                 return;
 
             DropGone(simulation.State, _selected, notify: true);
+            if (InspectedUnitId != 0)
+            {
+                Unit? inspected = simulation.State.FindUnit(InspectedUnitId);
+                if (inspected == null || inspected.IsDead || !Visibility.UnitShown(simulation.State, _localPlayer!.PlayerId, inspected))
+                    Inspect(0);
+            }
             if (SelectedBuildingId != 0)
             {
                 Building? building = simulation.State.FindBuilding(SelectedBuildingId);
@@ -164,14 +175,25 @@ namespace Game.Presentation
             else
             {
                 Unit? unit = UnitAt(state, pointer, u => u.OwnerId == playerId);
+                Unit? other = unit == null && !add
+                    ? UnitAt(state, pointer, u => u.OwnerId != playerId && Visibility.UnitShown(state, playerId, u))
+                    : null;
                 if (unit != null)
                     _scratch.Add(unit.Id);
+                else if (other != null)
+                {
+                    _selected.Clear();
+                    SelectedBuildingId = 0;
+                    Inspect(other.Id);
+                    return;
+                }
                 else if (!add && _camera!.GroundPoint(pointer, out Vector3 ground))
                 {
                     Building? building = OwnBuildingAt(state, playerId, Mathf.FloorToInt(ground.x), Mathf.FloorToInt(ground.z));
                     if (building != null)
                     {
                         _selected.Clear();
+                        InspectedUnitId = 0;
                         SetBuilding(building.Id);
                         return;
                     }
@@ -238,6 +260,7 @@ namespace Game.Presentation
         private void Select(List<int> ids, bool add)
         {
             SelectedBuildingId = 0;
+            InspectedUnitId = 0;
             if (!add)
                 _selected.Clear();
             foreach (int id in ids)
@@ -298,6 +321,12 @@ namespace Game.Presentation
                 Changed?.Invoke();
         }
 
+        private void Inspect(int unitId)
+        {
+            InspectedUnitId = unitId;
+            Changed?.Invoke();
+        }
+
         private void SetBuilding(int id)
         {
             SelectedBuildingId = id;
@@ -317,6 +346,7 @@ namespace Game.Presentation
         private void OnPlayerChanged()
         {
             SelectedBuildingId = 0;
+            InspectedUnitId = 0;
             _selected.Clear();
             foreach (List<int> group in _groups)
                 group.Clear();
