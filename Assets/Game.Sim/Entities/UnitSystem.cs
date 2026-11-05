@@ -91,7 +91,7 @@ internal static class UnitSystem
 
         // A group sent to one point: whoever bumps into an own unit that already stopped
         // closer to the point stops too, instead of shoving forever (as in SC2).
-        long myDist2 = Dist2(unit.X, unit.Y, x, y);
+        long myDist2 = Movement.DistanceSquared(unit.X, unit.Y, x, y);
         foreach (Unit other in state.Units)
         {
             if (other == unit || other.IsDead || other.OwnerId != unit.OwnerId || other.Order.Kind != UnitOrderKind.Idle)
@@ -99,19 +99,13 @@ internal static class UnitSystem
             long touch = unit.Radius + other.Radius + unit.MoveSpeedMilliPerTick;
             // Only units standing around the point count, not one idling somewhere on the way.
             long nearTarget = (unit.Radius + other.Radius) * GroupArrivalSpread;
-            long otherDist2 = Dist2(other.X, other.Y, x, y);
+            long otherDist2 = Movement.DistanceSquared(other.X, other.Y, x, y);
             if (otherDist2 <= nearTarget * nearTarget && otherDist2 < myDist2
-                && Dist2(unit.X, unit.Y, other.X, other.Y) <= touch * touch)
+                && Movement.DistanceSquared(unit.X, unit.Y, other.X, other.Y) <= touch * touch)
             {
                 unit.Order = UnitOrder.Idle;
                 return;
             }
         }
-    }
-
-    private static long Dist2(int x1, int y1, int x2, int y2)
-    {
-        long dx = x2 - x1, dy = y2 - y1;
-        return dx * dx + dy * dy;
     }
 }

@@ -45,7 +45,7 @@ public class BuilderTests
         Assert.That(ticks, Is.EqualTo(15 * Second));
         Unit back = Builder(sim, Setups.PlayerA);
         Building hq = sim.State.FindHeadquarters(Setups.PlayerA)!;
-        Assert.That(Movement.DistanceToRectangle(back, hq.CellX, hq.CellY, hq.Width, hq.Height), Is.LessThanOrEqualTo(1000));
+        Assert.That(Movement.DistanceToBuilding(back.X, back.Y, hq), Is.LessThanOrEqualTo(1000));
         Assert.That(sim.Events.OfType<BuilderRespawned>().Single().HeadquartersId, Is.EqualTo(hq.Id));
     }
 
@@ -59,7 +59,7 @@ public class BuilderTests
         Building allyHq = sim.State.FindHeadquarters(Setups.PlayerB)!;
         Unit back = Builder(sim, Setups.PlayerA);
         Assert.That(back.OwnerId, Is.EqualTo(Setups.PlayerA));
-        Assert.That(Movement.DistanceToRectangle(back, allyHq.CellX, allyHq.CellY, allyHq.Width, allyHq.Height), Is.LessThanOrEqualTo(1000));
+        Assert.That(Movement.DistanceToBuilding(back.X, back.Y, allyHq), Is.LessThanOrEqualTo(1000));
     }
 
     [Test]

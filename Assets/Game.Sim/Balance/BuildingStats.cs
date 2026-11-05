@@ -28,7 +28,7 @@ public sealed class BuildingStats
         AttackCooldownTicks = row.GetInt("attack_cooldown_ticks");
         _produces = row.GetStringList("produces");
         Behavior = ParseBehavior(row.GetString("behavior"));
-        Supply = row.GetString("supply");
+        SuppliedByConveyor = row.GetString("supply") == "conveyor";
         Invulnerable = row.GetInt("invulnerable") != 0;
         LinePlacement = row.GetString("placement") == "line";
         Ammo = row.GetInt("ammo");
@@ -68,12 +68,11 @@ public sealed class BuildingStats
 
     // Unit ids this building can produce.
     public IReadOnlyList<string> Produces => _produces;
+    public bool CanProduce(string unitId) => _produces.Contains(unitId);
 
     // factory.md M2: "conveyor" — the building has its own stock that belts fill: production
     // (factories) and ammo (turrets) are paid from it; empty — from the owner's wallet.
-    public string Supply { get; }
-    public bool SuppliedByConveyor => Supply == SupplyConveyor;
-    public const string SupplyConveyor = "conveyor";
+    public bool SuppliedByConveyor { get; }
 
     // neutral-buildings.md: points of interest nobody can damage.
     public bool Invulnerable { get; }

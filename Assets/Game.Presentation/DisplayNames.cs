@@ -47,10 +47,13 @@ namespace Game.Presentation
         // "units per ticks" as a rate per second: 0,5 ед./с. Invariant culture plus a comma:
         // culture data may be stripped from player builds.
         public static string PerSecond(int units, int ticks) =>
-            (units * Simulation.TicksPerSecond / (double)ticks).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " ед./с";
+            Number(units * Simulation.TicksPerSecond / (double)ticks, "0.###") + " ед./с";
 
-        public static string Seconds(int ticks) =>
-            (ticks / (double)Simulation.TicksPerSecond).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " с";
+        public static string Seconds(int ticks) => Number(ticks / (double)Simulation.TicksPerSecond, "0.#") + " с";
+
+        // A decimal with a Russian comma: 1,5.
+        public static string Number(double value, string format) =>
+            value.ToString(format, System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
 
         // "24 клетки", "5 клеток", "1 клетка".
         public static string Cells(int n)

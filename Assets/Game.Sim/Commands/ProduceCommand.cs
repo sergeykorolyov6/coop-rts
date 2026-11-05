@@ -51,7 +51,7 @@ public sealed class ProduceCommand : ICommand
         factory = state.FindBuilding(FactoryId);
         if (factory == null || factory.IsDead || factory.Factory == null || factory.OwnerId != PlayerId)
             return RejectReason.NotAllowed;
-        if (!factory.IsComplete || !Contains(factory.Stats.Produces, UnitTypeId)
+        if (!factory.IsComplete || !factory.Stats.CanProduce(UnitTypeId)
             || factory.Factory._queue.Count >= state.Rules.FactoryQueue
             || !state.Data.TryGetUnit(UnitTypeId, out stats))
             return RejectReason.CannotProduce;
@@ -65,13 +65,4 @@ public sealed class ProduceCommand : ICommand
     internal static Wallet Payer(SimState state, Building factory) =>
         factory.Stock ?? state.GetPlayer(factory.OwnerId).Wallet;
 
-    private static bool Contains(IReadOnlyList<string> list, string value)
-    {
-        foreach (string s in list)
-        {
-            if (s == value)
-                return true;
-        }
-        return false;
-    }
 }

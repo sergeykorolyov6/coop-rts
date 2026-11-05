@@ -61,4 +61,7 @@ public sealed class UnitStats
 
     // factions.md: ids of abilities.csv the unit can use, in button order.
     public IReadOnlyList<string> Abilities => _abilities;
+
+    // Position in Abilities (the unit's cooldown slot), -1 when the unit lacks it.
+    public int AbilityIndex(string abilityId) => _abilities.IndexOf(abilityId);
 }

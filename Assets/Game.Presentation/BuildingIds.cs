@@ -7,6 +7,7 @@ namespace Game.Presentation
         public const string Headquarters = "headquarters";
         public const string Factory = "factory";
         public const string Drill = "drill";
+        public const string SmallDrill = "bs_drill_small";
         public const string Conveyor = "conveyor";
         public const string ConveyorBridge = "conveyor_bridge";
         public const string Storage = "storage";

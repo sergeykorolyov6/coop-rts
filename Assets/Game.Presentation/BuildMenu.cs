@@ -35,7 +35,7 @@ namespace Game.Presentation
             new Entry { BuildingId = BuildingIds.Headquarters, Hotkey = Key.H },
             new Entry { BuildingId = BuildingIds.Turret, Hotkey = Key.T },
             new Entry { BuildingId = BuildingIds.Wall, Hotkey = Key.Y },
-            new Entry { BuildingId = "bs_drill_small", Hotkey = Key.N },
+            new Entry { BuildingId = BuildingIds.SmallDrill, Hotkey = Key.N },
             new Entry { BuildingId = BuildingIds.Booster, Hotkey = Key.P },
         };
         [SerializeField] private Color _activeColor = new Color(0.25f, 0.45f, 0.30f);

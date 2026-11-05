@@ -95,18 +95,12 @@ namespace Game.Presentation
             if (first!.IsHero)
             {
                 Player owner = state.GetPlayer(first.OwnerId);
-                string path = "путь не выбран";
-                foreach (HeroPathStats p in state.Data.HeroPaths)
-                {
-                    if (p.Id == owner.HeroPathId)
-                        path = p.NameRu;
-                }
+                string path = state.HeroPath(first.OwnerId)?.NameRu ?? "путь не выбран";
                 text += $"\nУровень {owner.HeroLevel}, опыт {owner.HeroXp} · {path}";
             }
             return text;
         }
 
-        private static string Cells(int milli) =>
-            (milli / (float)Game.Sim.Grid.MilliPerCell).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
+        private static string Cells(int milli) => DisplayNames.Number(milli / (double)Game.Sim.Grid.MilliPerCell, "0.#");
     }
 }

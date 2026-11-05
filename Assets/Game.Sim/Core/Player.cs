@@ -21,7 +21,6 @@ public sealed class Player
     // builder.md: when the dead builder may come back; Entity.NeverTick while it lives
     // (or for players who never had one).
     public int BuilderRespawnTick { get; internal set; } = Entity.NeverTick;
-    public bool IsBuilderDead => BuilderRespawnTick != Entity.NeverTick;
 
     // factions.md (Yellow Star): the hero's return time, experience and level live on the player,
     // so a hero that comes back keeps its level; the climb starts over every mission.

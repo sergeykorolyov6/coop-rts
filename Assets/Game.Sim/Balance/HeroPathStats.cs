@@ -28,6 +28,7 @@ public sealed class HeroPathStats
 
     // Ability ids of abilities.csv, in button order.
     public IReadOnlyList<string> Abilities => _abilities;
+    public bool HasAbility(string abilityId) => _abilities.Contains(abilityId);
 
     // Per level above the first, on top of hero_levels.csv.
     public int LevelHpPercent { get; }

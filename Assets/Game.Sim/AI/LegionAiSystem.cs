@@ -363,7 +363,7 @@ internal static class LegionAiSystem
         {
             if (!IsAlive(b) || Combat.IsInvulnerable(b) || !match(b))
                 continue;
-            long d = Combat.DistanceToRectangle(x, y, b);
+            long d = Movement.DistanceToBuilding(x, y, b);
             if (d < bestDist)
             {
                 best = b;

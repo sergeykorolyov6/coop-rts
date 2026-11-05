@@ -89,7 +89,7 @@ namespace Game.Presentation
         // Centre of the body as drawn, its colour and size: where a death or a strike is shown.
         public bool TryGetEntity(int id, out Vector3 centre, out Color color, out float size)
         {
-            Visual? visual = _units.TryGetValue(id, out UnitVisual? unit) ? unit : _buildings.TryGetValue(id, out BuildingVisual? building) ? building : null;
+            Visual? visual = FindVisual(id);
             if (visual == null || !visual.Transform.gameObject.activeInHierarchy)
             {
                 centre = default;
@@ -103,10 +103,13 @@ namespace Game.Presentation
             return true;
         }
 
+        private Visual? FindVisual(int id) =>
+            _units.TryGetValue(id, out UnitVisual? unit) ? unit : _buildings.TryGetValue(id, out BuildingVisual? building) ? building : null;
+
         // combat.md UI: the struck body flashes for a moment.
         public void Flash(int id)
         {
-            Visual? visual = _units.TryGetValue(id, out UnitVisual? unit) ? unit : _buildings.TryGetValue(id, out BuildingVisual? building) ? building : null;
+            Visual? visual = FindVisual(id);
             if (visual == null)
                 return;
             if (visual.FlashUntil <= 0f)

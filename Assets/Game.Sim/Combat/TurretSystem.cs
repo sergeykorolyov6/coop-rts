@@ -98,7 +98,7 @@ internal static class TurretSystem
     {
         if (target is Unit u)
         {
-            long d = Combat.DistanceToRectangle(u.X, u.Y, turret) - u.Radius;
+            long d = Movement.DistanceToBuilding(u.X, u.Y, turret) - u.Radius;
             return d < 0 ? 0 : d;
         }
         var b = (Building)target;

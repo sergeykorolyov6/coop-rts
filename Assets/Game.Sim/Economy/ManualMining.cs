@@ -150,7 +150,7 @@ internal static class ManualMining
             return CarryResult.Stopped;
         }
 
-        if (Movement.DistanceToRectangle(unit, hq.CellX, hq.CellY, hq.Width, hq.Height) > state.Rules.InteractRangeMilli)
+        if (Movement.DistanceToBuilding(unit.X, unit.Y, hq) > state.Rules.InteractRangeMilli)
         {
             Movement.StepToRectangle(state, unit, hq.CellX, hq.CellY, hq.Width, hq.Height);
             return CarryResult.Carrying;
@@ -180,7 +180,7 @@ internal static class ManualMining
         {
             if (b.OwnerId != unit.OwnerId || !CanDeliverTo(state, unit.OwnerId, b))
                 continue;
-            long d = Movement.DistanceToRectangle(unit, b.CellX, b.CellY, b.Width, b.Height);
+            long d = Movement.DistanceToBuilding(unit.X, unit.Y, b);
             if (d < bestDist)
             {
                 bestDist = d;

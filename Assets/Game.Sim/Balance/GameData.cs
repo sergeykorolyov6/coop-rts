@@ -234,15 +234,6 @@ public sealed class GameData
         return false;
     }
 
-    private static bool ContainsId(IReadOnlyList<string> list, string id)
-    {
-        foreach (string s in list)
-        {
-            if (s == id)
-                return true;
-        }
-        return false;
-    }
 
     // Catches typos in the design tables at load time instead of mid-match.
     private void Validate()
@@ -310,7 +301,7 @@ public sealed class GameData
                 throw new FormatException($"hero_paths.json: \"{p.Id}\" is for \"{p.HeroUnitId}\" that is not a unit tagged hero.");
             foreach (string a in p.Abilities)
             {
-                if (!ContainsId(hero.Abilities, a))
+                if (hero.AbilityIndex(a) < 0)
                     throw new FormatException($"hero_paths.json: \"{p.Id}\" has \"{a}\" that \"{p.HeroUnitId}\" lacks in its abilities column.");
             }
         }

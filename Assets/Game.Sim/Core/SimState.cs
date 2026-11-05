@@ -179,6 +179,22 @@ public sealed class SimState
         return null;
     }
 
+    // hero_paths.csv: the path the player chose for the hero, null until chosen.
+    public HeroPathStats? HeroPath(int playerId)
+    {
+        string id = GetPlayer(playerId).HeroPathId;
+        return id.Length > 0 && Data.TryGetHeroPath(id, out HeroPathStats? path) ? path : null;
+    }
+
+    // factions.md: what the unit may ever use — a hero its owner's path (none before the choice),
+    // other units their abilities column. The hero's level may still hold some back (HeroSystem.Allows).
+    public IReadOnlyList<string> AbilitiesOf(Unit unit)
+    {
+        if (!unit.IsHero)
+            return unit.Stats.Abilities;
+        return HeroPath(unit.OwnerId)?.Abilities ?? System.Array.Empty<string>();
+    }
+
     // mission.md: the living boss of a kill_boss mission, or null.
     public Unit? FindBoss()
     {

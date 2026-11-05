@@ -151,7 +151,7 @@ namespace Game.Presentation
             foreach (int id in _selection!.Selected)
             {
                 Unit? u = simulation.State.FindUnit(id);
-                if (u != null && Usable(simulation.State, u).Contains(abilityId))
+                if (u != null && simulation.State.AbilitiesOf(u).Contains(abilityId))
                     ids.Add(id);
             }
             if (ids.Count > 0)
@@ -180,7 +180,7 @@ namespace Game.Presentation
                     continue;
                 if (u.IsHero && state.GetPlayer(u.OwnerId).HeroPathId.Length == 0)
                     pathless = u;
-                foreach (string a in Usable(state, u))
+                foreach (string a in state.AbilitiesOf(u))
                 {
                     if (!_abilities.Contains(a))
                         _abilities.Add(a);
@@ -189,19 +189,6 @@ namespace Game.Presentation
             return pathless;
         }
 
-        // A hero's abilities are those of its owner's path (factions.md); other units have their own.
-        private static IReadOnlyList<string> Usable(SimState state, Unit u)
-        {
-            if (!u.IsHero)
-                return u.Stats.Abilities;
-            string pathId = state.GetPlayer(u.OwnerId).HeroPathId;
-            foreach (HeroPathStats p in state.Data.HeroPaths)
-            {
-                if (p.Id == pathId)
-                    return p.Abilities;
-            }
-            return System.Array.Empty<string>();
-        }
 
         private void ShowPaths(SimState state, Unit? pathless)
         {
@@ -248,7 +235,7 @@ namespace Game.Presentation
             foreach (int id in _selection!.Selected)
             {
                 Unit? u = state.FindUnit(id);
-                int index = u != null && Usable(state, u).Contains(abilityId) ? Index(u.Stats, abilityId) : -1;
+                int index = u != null && state.AbilitiesOf(u).Contains(abilityId) ? u.Stats.AbilityIndex(abilityId) : -1;
                 if (index < 0)
                     continue;
                 have++;
@@ -299,15 +286,6 @@ namespace Game.Presentation
             }
         }
 
-        private static int Index(UnitStats stats, string abilityId)
-        {
-            for (int i = 0; i < stats.Abilities.Count; i++)
-            {
-                if (stats.Abilities[i] == abilityId)
-                    return i;
-            }
-            return -1;
-        }
 
         private void OnDestroy() => _ring?.Destroy();
     }

@@ -71,19 +71,29 @@ internal static class Movement
     }
 
     // Distance from the unit's center to the nearest point of a cell rectangle, milli-cells.
-    public static long DistanceToRectangle(Unit unit, int cellX, int cellY, int w, int h)
+    public static long DistanceToRectangle(Unit unit, int cellX, int cellY, int w, int h) =>
+        DistanceToRectangle(unit.X, unit.Y, cellX, cellY, w, h);
+
+    // From a point to a building's footprint, milli-cells.
+    public static long DistanceToBuilding(int x, int y, Building b) =>
+        DistanceToRectangle(x, y, b.CellX, b.CellY, b.Width, b.Height);
+
+    public static long DistanceToRectangle(int x, int y, int cellX, int cellY, int w, int h)
     {
         long minX = Grid.CellToMilli(cellX), maxX = Grid.CellToMilli(cellX + w);
         long minY = Grid.CellToMilli(cellY), maxY = Grid.CellToMilli(cellY + h);
-        long dx = unit.X < minX ? minX - unit.X : unit.X > maxX ? unit.X - maxX : 0;
-        long dy = unit.Y < minY ? minY - unit.Y : unit.Y > maxY ? unit.Y - maxY : 0;
+        long dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
+        long dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
         return IntMath.Sqrt(dx * dx + dy * dy);
     }
 
-    public static long Distance(int x1, int y1, int x2, int y2)
+    public static long Distance(int x1, int y1, int x2, int y2) => IntMath.Sqrt(DistanceSquared(x1, y1, x2, y2));
+
+    // For comparisons against r·r without the root.
+    public static long DistanceSquared(int x1, int y1, int x2, int y2)
     {
         long dx = x2 - x1, dy = y2 - y1;
-        return IntMath.Sqrt(dx * dx + dy * dy);
+        return dx * dx + dy * dy;
     }
 
     private static bool StepAlong(SimState state, Unit unit, FlowField field)

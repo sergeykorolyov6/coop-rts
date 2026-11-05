@@ -109,7 +109,7 @@ internal static class CreepCampSystem
         {
             if (u.IsDead || !state.Relations.IsEnemy(creep.OwnerId, u.OwnerId) || !(InRadius(camp, u) || camp._attackers.Contains(u.Id)) || !Reachable(camp, creep, u))
                 continue;
-            long d = Dist2(creep.X, creep.Y, u.X, u.Y);
+            long d = Movement.DistanceSquared(creep.X, creep.Y, u.X, u.Y);
             if (d < bestDist)
             {
                 best = u;
@@ -123,7 +123,7 @@ internal static class CreepCampSystem
         {
             if (b.IsDead || !state.Relations.IsEnemy(creep.OwnerId, b.OwnerId) || b.Stats.Invulnerable || !(InRadius(camp, b) || camp._attackers.Contains(b.Id)) || !Reachable(camp, creep, b))
                 continue;
-            long d = Combat.DistanceToRectangle(creep.X, creep.Y, b);
+            long d = Movement.DistanceToBuilding(creep.X, creep.Y, b);
             if (d < bestDist)
             {
                 best = b;
@@ -138,7 +138,7 @@ internal static class CreepCampSystem
     {
         int x = creep.X, y = creep.Y;
         Combat.Engage(state, creep, target);
-        if (Dist2(creep.HomeX, creep.HomeY, creep.X, creep.Y) > (long)leash * leash)
+        if (Movement.DistanceSquared(creep.HomeX, creep.HomeY, creep.X, creep.Y) > (long)leash * leash)
         {
             creep.X = x;
             creep.Y = y;
@@ -153,15 +153,15 @@ internal static class CreepCampSystem
         long reach = camp.Stats.LeashRadiusMilli + creep.Radius + creep.Stats.AttackRangeMilli;
         if (target is Unit u)
             return Movement.Distance(creep.HomeX, creep.HomeY, u.X, u.Y) - u.Radius <= reach;
-        return Combat.DistanceToRectangle(creep.HomeX, creep.HomeY, (Building)target) <= reach;
+        return Movement.DistanceToBuilding(creep.HomeX, creep.HomeY, (Building)target) <= reach;
     }
 
     private static bool InRadius(CreepCamp camp, Entity e)
     {
         long r = camp.Stats.AggroRadiusMilli;
         if (e is Unit u)
-            return Dist2(camp.CenterMilliX, camp.CenterMilliY, u.X, u.Y) <= r * r;
-        return Combat.DistanceToRectangle(camp.CenterMilliX, camp.CenterMilliY, (Building)e) <= r;
+            return Movement.DistanceSquared(camp.CenterMilliX, camp.CenterMilliY, u.X, u.Y) <= r * r;
+        return Movement.DistanceToBuilding(camp.CenterMilliX, camp.CenterMilliY, (Building)e) <= r;
     }
 
     private static bool AnyIntruder(SimState state, CreepCamp camp)
@@ -185,7 +185,7 @@ internal static class CreepCampSystem
         foreach (int id in camp._creepIds)
         {
             Unit? creep = state.FindUnit(id);
-            if (creep != null && !creep.IsDead && Dist2(creep.HomeX, creep.HomeY, creep.X, creep.Y) > HomeSlack * HomeSlack)
+            if (creep != null && !creep.IsDead && Movement.DistanceSquared(creep.HomeX, creep.HomeY, creep.X, creep.Y) > HomeSlack * HomeSlack)
                 return false;
         }
         return true;
@@ -214,11 +214,5 @@ internal static class CreepCampSystem
                 creep.Hp++;
             }
         }
-    }
-
-    private static long Dist2(int x1, int y1, int x2, int y2)
-    {
-        long dx = x2 - x1, dy = y2 - y1;
-        return dx * dx + dy * dy;
     }
 }

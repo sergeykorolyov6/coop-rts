@@ -36,8 +36,6 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _missionsJson;
         [Tooltip("Assets/Data/maps/*.json; a mission finds its map by the asset name.")]
         [SerializeField] private TextAsset[] _maps = System.Array.Empty<TextAsset>();
-        [Tooltip("Seed of a new mission; a save keeps its own.")]
-        [SerializeField] private int _seed = 1;
 
         [Header("Read-only")]
         [SerializeField] private string _missionId = "";

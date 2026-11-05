@@ -31,7 +31,7 @@ internal static class HeroSystem
     // Max HP by the level and the path; the hero keeps the share of HP it had (a full hero stays full).
     public static void ApplyLevel(SimState state, Unit hero, int level)
     {
-        HeroPathStats? path = PathOf(state, hero.OwnerId);
+        HeroPathStats? path = state.HeroPath(hero.OwnerId);
         int pct = Level(state, level).HpPercent + (path?.LevelHpPercent ?? 0) * (level - 1);
         int maxHp = hero.Stats.Hp * (100 + pct) / 100;
         int hp = (int)((long)hero.Hp * maxHp / hero.MaxHp);
@@ -46,7 +46,7 @@ internal static class HeroSystem
         FactionStats? f = player.Faction;
         if (f == null || f.HeroUnitId.Length == 0)
             return 0;
-        HeroPathStats? path = PathOf(state, unit.OwnerId);
+        HeroPathStats? path = state.HeroPath(unit.OwnerId);
         if (unit.IsHero)
             return Level(state, player.HeroLevel).DamagePercent + (path?.LevelDamagePercent ?? 0) * (player.HeroLevel - 1);
         Unit? hero = state.FindHero(unit.OwnerId);
@@ -60,25 +60,10 @@ internal static class HeroSystem
     {
         if (!unit.IsHero)
             return true;
-        HeroPathStats? path = PathOf(state, unit.OwnerId);
-        return path != null && Contains(path.Abilities, ability.Id) && state.GetPlayer(unit.OwnerId).HeroLevel >= ability.MinLevel;
+        HeroPathStats? path = state.HeroPath(unit.OwnerId);
+        return path != null && path.HasAbility(ability.Id) && state.GetPlayer(unit.OwnerId).HeroLevel >= ability.MinLevel;
     }
 
-    public static HeroPathStats? PathOf(SimState state, int playerId)
-    {
-        string id = state.GetPlayer(playerId).HeroPathId;
-        return id.Length > 0 && state.Data.TryGetHeroPath(id, out HeroPathStats? path) ? path : null;
-    }
-
-    private static bool Contains(IReadOnlyList<string> list, string value)
-    {
-        foreach (string s in list)
-        {
-            if (s == value)
-                return true;
-        }
-        return false;
-    }
 
     private static HeroLevelStats Level(SimState state, int level) => state.Data.HeroLevels[level - 1];
 }

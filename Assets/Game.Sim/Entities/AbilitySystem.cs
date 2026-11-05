@@ -24,7 +24,7 @@ internal static class AbilitySystem
     // May the unit use it now: it has it, it is ready, the hero's level and path allow it.
     public static bool IsReady(SimState state, Unit unit, AbilityStats ability)
     {
-        int index = IndexOf(unit.Stats, ability.Id);
+        int index = unit.Stats.AbilityIndex(ability.Id);
         return index >= 0 && unit._abilityCooldowns[index] == 0 && HeroSystem.Allows(state, unit, ability);
     }
 
@@ -45,7 +45,7 @@ internal static class AbilitySystem
         };
         if (!used)
             return false;
-        unit._abilityCooldowns[IndexOf(unit.Stats, ability.Id)] = ability.CooldownTicks;
+        unit._abilityCooldowns[unit.Stats.AbilityIndex(ability.Id)] = ability.CooldownTicks;
         // After a blink the effect's point is where the unit landed.
         events?.Add(new AbilityUsed(state.Tick, unit.OwnerId, unit.Id, ability.Id,
             ability.Kind == AbilityKind.Blink ? unit.X : cx, ability.Kind == AbilityKind.Blink ? unit.Y : cy));
@@ -151,16 +151,5 @@ internal static class AbilitySystem
             return true;
         }
         return false;
-    }
-
-    private static int IndexOf(UnitStats stats, string abilityId)
-    {
-        IReadOnlyList<string> list = stats.Abilities;
-        for (int i = 0; i < list.Count; i++)
-        {
-            if (list[i] == abilityId)
-                return i;
-        }
-        return -1;
     }
 }

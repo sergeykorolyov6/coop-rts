@@ -179,7 +179,7 @@ internal static class Construction
 
         if (target is Building b)
         {
-            if (Movement.DistanceToRectangle(unit, b.CellX, b.CellY, b.Width, b.Height) > state.Rules.InteractRangeMilli)
+            if (Movement.DistanceToBuilding(unit.X, unit.Y, b) > state.Rules.InteractRangeMilli)
             {
                 Movement.StepToRectangle(state, unit, b.CellX, b.CellY, b.Width, b.Height);
                 return;

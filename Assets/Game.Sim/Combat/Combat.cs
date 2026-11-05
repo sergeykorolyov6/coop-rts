@@ -16,7 +16,7 @@ internal static class Combat
             return d < 0 ? 0 : d;
         }
         var b = (Building)target;
-        long r = Movement.DistanceToRectangle(unit, b.CellX, b.CellY, b.Width, b.Height) - unit.Radius;
+        long r = Movement.DistanceToBuilding(unit.X, unit.Y, b) - unit.Radius;
         return r < 0 ? 0 : r;
     }
 
@@ -143,7 +143,7 @@ internal static class Combat
         {
             if (!IsValidTarget(state, unit, b))
                 continue;
-            long d = DistanceToRectangle(x, y, b);
+            long d = Movement.DistanceToBuilding(x, y, b);
             if (d <= radius && d < bestDist)
             {
                 best = b;
@@ -153,14 +153,6 @@ internal static class Combat
         return best;
     }
 
-    public static long DistanceToRectangle(int x, int y, Building b)
-    {
-        long minX = Grid.CellToMilli(b.CellX), maxX = Grid.CellToMilli(b.CellX + b.Width);
-        long minY = Grid.CellToMilli(b.CellY), maxY = Grid.CellToMilli(b.CellY + b.Height);
-        long dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
-        long dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
-        return IntMath.Sqrt(dx * dx + dy * dy);
-    }
 
     // All blows of the tick at once, in attacker id order: two units can kill each other.
     public static void ApplyHits(SimState state, List<SimEvent> events)
