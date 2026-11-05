@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace Game.Presentation
 {
-    // factions.md UI: a button per ability the selected own units have (Q, E, X, C), with how many
+    // factions.md UI: a button per ability the selected own units have (Z, X, C, V), with how many
     // of them have it ready, the cooldown left or the hero's level it opens at, and its description
     // on hover. Self abilities go at once; point abilities wait for a left click on the ground with a
     // ring of their area under the cursor (right click or Esc cancels). A hero without a path shows
@@ -15,8 +15,8 @@ namespace Game.Presentation
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class AbilityPanel : MonoBehaviour
     {
-        // R rotates a building being placed; X and C stay free of it.
-        private static readonly Key[] Hotkeys = { Key.Q, Key.E, Key.X, Key.C };
+        // W, A, S, D, Q, E belong to the camera, R rotates a building being placed.
+        private static readonly Key[] Hotkeys = { Key.Z, Key.X, Key.C, Key.V };
         private const int RingSegments = 24;
 
         [SerializeField] private Hud? _hud;

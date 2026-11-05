@@ -44,7 +44,7 @@ description: Добавить новый юнит в CoopRTS от строки �
 
 ## 3. UI
 
-- Горячие клавиши способностей — Q, E, X по порядку `abilities`; меню стройки — `BuildMenu._hotkeys`.
+- Горячие клавиши способностей — Z, X, C, V по порядку `abilities`; меню стройки — `BuildMenu._hotkeys`; список всех клавиш — `Docs/Design/hotkeys.md` (W, A, S, D, Q, E — только камера).
 
 ## 4. Отчёт
 

@@ -5,8 +5,9 @@ using UnityEngine.InputSystem;
 namespace Game.Presentation
 {
     // Top-down RTS camera: looks at a focus point on the ground from a fixed pitch.
-    // Arrows and screen edges pan, middle mouse drags the ground, the wheel zooms, Space
-    // returns to the own headquarters. Arrows rather than WASD: letters stay free for command hotkeys.
+    // WASD, arrows and screen edges pan (along the view), Q and E turn the view around the focus,
+    // middle mouse drags the ground, the wheel zooms smoothly, Space returns to the own
+    // headquarters. Command hotkeys keep off W, A, S, D, Q and E.
     [RequireComponent(typeof(Camera))]
     public sealed class RtsCamera : MonoBehaviour
     {
@@ -19,6 +20,10 @@ namespace Game.Presentation
         [SerializeField] private float _startDistance = 24f;
         [Tooltip("Share of the distance removed per wheel notch.")]
         [SerializeField, Range(0.02f, 0.5f)] private float _zoomStep = 0.12f;
+        [Tooltip("How fast the distance follows the wheel: higher is snappier.")]
+        [SerializeField, Range(1f, 30f)] private float _zoomSmoothing = 8f;
+        [Tooltip("Degrees per second while Q or E is held.")]
+        [SerializeField] private float _turnSpeed = 90f;
 
         [Tooltip("Cells per second at the start distance; scales with zoom.")]
         [SerializeField] private float _panSpeed = 24f;
@@ -29,6 +34,8 @@ namespace Game.Presentation
         private Camera? _camera;
         private Vector3 _focus;
         private float _distance;
+        private float _targetDistance;
+        private float _yaw;
         private Vector2 _dragFrom;
         private bool _dragging;
         private bool _focused;
@@ -37,6 +44,7 @@ namespace Game.Presentation
         {
             _camera = GetComponent<Camera>();
             _distance = _startDistance;
+            _targetDistance = _startDistance;
         }
 
         private void OnEnable()
@@ -87,10 +95,12 @@ namespace Game.Presentation
             Vector2 pan = Vector2.zero;
             if (keyboard != null)
             {
-                if (keyboard.leftArrowKey.isPressed) pan.x -= 1f;
-                if (keyboard.rightArrowKey.isPressed) pan.x += 1f;
-                if (keyboard.downArrowKey.isPressed) pan.y -= 1f;
-                if (keyboard.upArrowKey.isPressed) pan.y += 1f;
+                if (keyboard.leftArrowKey.isPressed || keyboard.aKey.isPressed) pan.x -= 1f;
+                if (keyboard.rightArrowKey.isPressed || keyboard.dKey.isPressed) pan.x += 1f;
+                if (keyboard.downArrowKey.isPressed || keyboard.sKey.isPressed) pan.y -= 1f;
+                if (keyboard.upArrowKey.isPressed || keyboard.wKey.isPressed) pan.y += 1f;
+                if (keyboard.qKey.isPressed) _yaw += _turnSpeed * Time.unscaledDeltaTime;
+                if (keyboard.eKey.isPressed) _yaw -= _turnSpeed * Time.unscaledDeltaTime;
                 if (keyboard.spaceKey.wasPressedThisFrame) FocusHeadquarters();
             }
 
@@ -122,11 +132,15 @@ namespace Game.Presentation
                 // Trackpads send many small deltas, wheels large ones: only the sign counts.
                 float scroll = mouse.scroll.ReadValue().y;
                 if (scroll != 0f && InsideScreen(pointer))
-                    _distance = Mathf.Clamp(_distance * (1f - Mathf.Sign(scroll) * _zoomStep), _minDistance, _maxDistance);
+                    _targetDistance = Mathf.Clamp(_targetDistance * (1f - Mathf.Sign(scroll) * _zoomStep), _minDistance, _maxDistance);
             }
 
+            // The distance eases towards the wheel's target instead of jumping a notch at a time.
+            _distance = Mathf.Lerp(_distance, _targetDistance, 1f - Mathf.Exp(-_zoomSmoothing * Time.unscaledDeltaTime));
+
+            // Pan along the view: "up" is away from the camera whichever way it is turned.
             if (pan != Vector2.zero)
-                _focus += new Vector3(pan.x, 0f, pan.y).normalized * speed;
+                _focus += Quaternion.Euler(0f, _yaw, 0f) * new Vector3(pan.x, 0f, pan.y).normalized * speed;
 
             ClampFocus();
             Apply();
@@ -149,14 +163,13 @@ namespace Game.Presentation
             Simulation? simulation = _runner != null ? _runner.Simulation : null;
             if (simulation == null)
                 return;
-            // Every cell must be reachable, with at most _overscrollCells of void past the map edge.
-            // The view is a trapezoid on the ground: the bottom edge is the narrowest, so it sets X;
-            // bottom and top edges set Z.
+            // Every cell must be reachable, with little void past the map edge. The view is a
+            // trapezoid on the ground; turned, any side of it may face any map edge, so the focus keeps
+            // the narrowest half-extent of the view (bottom corners, unturned) from every edge.
             Vector3 bottomLeft = GroundOffset(-1f, -1f);
-            Vector3 top = GroundOffset(0f, 1f);
-            float halfX = -bottomLeft.x;
-            _focus.x = ClampAxis(_focus.x, halfX - _overscrollCells, simulation.State.Grid.Width - halfX + _overscrollCells, simulation.State.Grid.Width);
-            _focus.z = ClampAxis(_focus.z, -bottomLeft.z - _overscrollCells, simulation.State.Grid.Height - top.z + _overscrollCells, simulation.State.Grid.Height);
+            float inset = Mathf.Min(-bottomLeft.x, -bottomLeft.z);
+            _focus.x = ClampAxis(_focus.x, inset - _overscrollCells, simulation.State.Grid.Width - inset + _overscrollCells, simulation.State.Grid.Width);
+            _focus.z = ClampAxis(_focus.z, inset - _overscrollCells, simulation.State.Grid.Height - inset + _overscrollCells, simulation.State.Grid.Height);
         }
 
         // A map smaller than the view stays centred.
@@ -179,7 +192,7 @@ namespace Game.Presentation
 
         private void Apply()
         {
-            Quaternion rotation = Quaternion.Euler(_pitch, 0f, 0f);
+            Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
             transform.SetPositionAndRotation(_focus - rotation * Vector3.forward * _distance, rotation);
         }
 

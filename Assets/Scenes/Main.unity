@@ -774,13 +774,13 @@ MonoBehaviour:
   _localPlayer: {fileID: 1100000009}
   _hotkeys:
   - BuildingId: drill
-    Hotkey: 18
-  - BuildingId: conveyor
-    Hotkey: 17
-  - BuildingId: conveyor_bridge
     Hotkey: 16
+  - BuildingId: conveyor
+    Hotkey: 26
+  - BuildingId: conveyor_bridge
+    Hotkey: 27
   - BuildingId: storage
-    Hotkey: 33
+    Hotkey: 25
   - BuildingId: factory
     Hotkey: 20
   - BuildingId: headquarters
@@ -788,9 +788,9 @@ MonoBehaviour:
   - BuildingId: turret
     Hotkey: 34
   - BuildingId: wall
-    Hotkey: 37
+    Hotkey: 39
   - BuildingId: bs_drill_small
-    Hotkey: 36
+    Hotkey: 28
   - BuildingId: booster
     Hotkey: 30
   _activeColor: {r: 0.25, g: 0.45, b: 0.3, a: 1}

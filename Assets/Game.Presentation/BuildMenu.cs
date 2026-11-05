@@ -26,15 +26,16 @@ namespace Game.Presentation
         [Tooltip("Hotkeys by building id, or by its model kind (PrimitiveModels.Shape): another faction's factory gets F too.")]
         [SerializeField] private Entry[] _hotkeys =
         {
-            new Entry { BuildingId = BuildingIds.Drill, Hotkey = Key.D },
-            new Entry { BuildingId = BuildingIds.Conveyor, Hotkey = Key.C },
-            new Entry { BuildingId = BuildingIds.ConveyorBridge, Hotkey = Key.B },
-            new Entry { BuildingId = BuildingIds.Storage, Hotkey = Key.S },
+            // W, A, S, D, Q, E move and turn the camera; Z, X, C, V are the abilities'.
+            new Entry { BuildingId = BuildingIds.Drill, Hotkey = Key.B },
+            new Entry { BuildingId = BuildingIds.Conveyor, Hotkey = Key.L },
+            new Entry { BuildingId = BuildingIds.ConveyorBridge, Hotkey = Key.M },
+            new Entry { BuildingId = BuildingIds.Storage, Hotkey = Key.K },
             new Entry { BuildingId = BuildingIds.Factory, Hotkey = Key.F },
             new Entry { BuildingId = BuildingIds.Headquarters, Hotkey = Key.H },
             new Entry { BuildingId = BuildingIds.Turret, Hotkey = Key.T },
-            new Entry { BuildingId = BuildingIds.Wall, Hotkey = Key.W },
-            new Entry { BuildingId = "bs_drill_small", Hotkey = Key.V },
+            new Entry { BuildingId = BuildingIds.Wall, Hotkey = Key.Y },
+            new Entry { BuildingId = "bs_drill_small", Hotkey = Key.N },
             new Entry { BuildingId = BuildingIds.Booster, Hotkey = Key.P },
         };
         [SerializeField] private Color _activeColor = new Color(0.25f, 0.45f, 0.30f);
