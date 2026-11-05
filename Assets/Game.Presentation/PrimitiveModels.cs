@@ -58,12 +58,42 @@ namespace Game.Presentation
 
             if (stats.HasTag(UnitTags.Hero))
             {
-                // The hero (factions.md): bigger than the army, a light cape behind and a crown of three points.
-                Add(root, part, renderers, PrimitiveType.Capsule, owner, new Vector3(0f, s * 0.5f, 0f), new Vector3(s * 0.6f, s * 0.5f, s * 0.6f));
-                Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, s * 0.55f, s * 0.32f), new Vector3(s * 0.65f, s * 0.8f, s * 0.06f));
-                Add(root, part, renderers, PrimitiveType.Sphere, light, new Vector3(0f, s * 1.1f, 0f), Vector3.one * s * 0.34f);
-                for (int i = -1; i <= 1; i++)
-                    Add(root, part, renderers, PrimitiveType.Cube, new Color(0.98f, 0.85f, 0.3f), new Vector3(i * s * 0.1f, s * 1.32f, 0f), new Vector3(s * 0.06f, s * 0.14f, s * 0.06f));
+                // The Star Knight (factions.md): an armoured knight taller than the army — a helmet with a
+                // visor slit and a star for a crest, shoulder plates, a long cape, a raised sword and a kite
+                // shield with a star. Armour and cape take the owner's colour; steel, gold and starlight
+                // are details, so the knight reads as a hero in any player's colour.
+                Color starlight = new Color(1.00f, 0.97f, 0.72f);
+                Color gold = new Color(0.95f, 0.75f, 0.20f);
+                // Cape behind the body, widening to the ground.
+                Add(root, part, renderers, PrimitiveType.Cube, shade, new Vector3(0f, s * 0.6f, s * 0.3f), new Vector3(s * 0.95f, s * 1.05f, s * 0.06f));
+                root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(-8f, 0f, 0f);
+                // Armoured body, a gold belt and steel shoulder plates.
+                Add(root, part, renderers, PrimitiveType.Capsule, owner, new Vector3(0f, s * 0.55f, 0f), new Vector3(s * 0.62f, s * 0.55f, s * 0.55f));
+                Add(root, part, renderers, PrimitiveType.Cylinder, gold, new Vector3(0f, s * 0.5f, 0f), new Vector3(s * 0.64f, s * 0.04f, s * 0.57f));
+                for (int side = -1; side <= 1; side += 2)
+                    Add(root, part, renderers, PrimitiveType.Sphere, Metal, new Vector3(side * s * 0.33f, s * 0.92f, 0f), new Vector3(s * 0.3f, s * 0.2f, s * 0.32f));
+                // Helmet: a steel head with a dark visor slit at the camera.
+                Add(root, part, renderers, PrimitiveType.Sphere, Metal, new Vector3(0f, s * 1.18f, 0f), new Vector3(s * 0.36f, s * 0.38f, s * 0.36f));
+                Add(root, part, renderers, PrimitiveType.Cube, Dark, new Vector3(0f, s * 1.2f, -s * 0.17f), new Vector3(s * 0.24f, s * 0.05f, s * 0.04f));
+                // The star crest: two crossed squares facing the camera make an eight-pointed star.
+                for (int i = 0; i < 2; i++)
+                {
+                    Add(root, part, renderers, PrimitiveType.Cube, starlight, new Vector3(0f, s * 1.47f, 0f), new Vector3(s * 0.22f, s * 0.22f, s * 0.04f));
+                    root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(0f, 0f, 45f * i);
+                }
+                // Sword raised in the right hand: steel blade, gold crossguard.
+                Add(root, part, renderers, PrimitiveType.Cube, Color.Lerp(Metal, Color.white, 0.5f), new Vector3(s * 0.45f, s * 1.08f, -s * 0.12f), new Vector3(s * 0.11f, s * 0.8f, s * 0.04f));
+                Add(root, part, renderers, PrimitiveType.Cube, Dark, new Vector3(s * 0.45f, s * 0.58f, -s * 0.12f), new Vector3(s * 0.06f, s * 0.14f, s * 0.06f));
+                Add(root, part, renderers, PrimitiveType.Cube, gold, new Vector3(s * 0.45f, s * 0.66f, -s * 0.12f), new Vector3(s * 0.24f, s * 0.05f, s * 0.05f));
+                // Kite shield on the left arm with a star.
+                Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(-s * 0.36f, s * 0.66f, -s * 0.3f), new Vector3(s * 0.36f, s * 0.4f, s * 0.06f));
+                Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(-s * 0.36f, s * 0.46f, -s * 0.3f), new Vector3(s * 0.25f, s * 0.25f, s * 0.06f));
+                root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(0f, 0f, 45f);
+                for (int i = 0; i < 2; i++)
+                {
+                    Add(root, part, renderers, PrimitiveType.Cube, gold, new Vector3(-s * 0.36f, s * 0.64f, -s * 0.34f), new Vector3(s * 0.15f, s * 0.15f, s * 0.02f));
+                    root.GetChild(root.childCount - 1).localRotation = Quaternion.Euler(0f, 0f, 45f * i);
+                }
                 return root;
             }
 
