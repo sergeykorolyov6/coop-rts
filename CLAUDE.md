@@ -3,7 +3,7 @@
 Кооперативная PvE-RTS для 1–4 друзей на Unity 6 / C#. Экономика по мотивам Mindustry (буры на месторождениях работают сами, конвейеры везут ресурс в штаб), ядро — точки интереса, у каждого игрока своя база, свои ресурсы и свой цвет. Туман войны общий для команды.
 
 Источники правды:
-- `PLAN.md` — дорожная карта, вехи, скоуп MVP. **Не добавляй фичи, фракции, юниты и механики, которых нет в текущей вехе.** Если задача выходит за скоуп — скажи об этом, не делай молча.
+- `PLAN.md` — дорожная карта, вехи, скоуп MVP. Текущая веха — «T — Большая карта и рельеф», подробности в `Docs/Design/plan-terrain-and-factions.md`. **Не добавляй фичи, фракции, юниты и механики, которых нет в текущей вехе.** Если задача выходит за скоуп — скажи об этом, не делай молча.
 - `Docs/Design/vision.md` — видение (портрет игрока, JTBD, фракции).
 - `Docs/Design/mechanics/*.md` — спецификации механик. Если спека и `PLAN.md` расходятся, права спека.
 - `Docs/Design/open-questions.md` — вопросы и решения геймдизайна.
@@ -102,6 +102,9 @@
 | Жёлтая Звезда: герой (Звёздный рыцарь), опыт, уровень, аура, Звездопад, Воодушевление; Подмастерье, Оруженосец, Лучник, Послушник, Катапульта; Святилище, Казарма, Сторожевая башня | тег `hero`, `ys_hero`, `HeroSystem`, `Player.HeroXp`/`HeroLevel`/`HeroRespawnTick`, `hero_levels.csv`, события `HeroDied`/`HeroRespawned`/`HeroLevelUp`; `ys_nova` (nova), `ys_inspire` (inspire); `ys_builder`, `ys_squire`, `ys_archer`, `ys_acolyte`, `ys_catapult`; `ys_hq`, `ys_barracks`, `ys_tower` |
 | путь героя (Воин, Маг, Покровитель); способность сработала; описание, снаряд, эффект | `HeroPathStats` (`hero_paths.csv`), `ChooseHeroPathCommand`, `Player.HeroPathId`; событие `AbilityUsed`; колонки `description`, `projectile` (юниты, здания), `effect` (способности) — только для UI |
 | источники данных для загрузки | `GameDataSources` → `GameData.Parse` |
+| замер стоимости тика, стенд масштаба | `TickCostProbe` (`dotnet test Game.Sim.Tests -c Release --filter TickCostProbe`); миссия `bench256` — карта из `Tools/make_bench_map.py`, не игровая |
+| здания по корзинам карты (поиск цели) | `BuildingIndex`, `SimState.BuildingListVersion` |
+| план рельефа (кода ещё нет, этапы T3–T4 в `plan-terrain-and-factions.md`): уровень высоты, рампа, обрыв; тип местности, порода; копатель, копать | `MapState.LevelAt`, `Ramp`, `MapState.CanStep`; `TerrainStats` (`terrain.csv`); тег `digger`, колонка `dig_rate`, `DigCommand`, события `RockDamaged`, `RockDestroyed` |
 | сетевой кооп: хост, игрок, ход, задержка ввода, лобби, место, рассинхронизация (`network.md`) | `Relay` (хост: лобби, сбор ходов, сверка хешей), `LockstepClient`, `LockstepSettings` (`TurnTicks`, `DelayTurns`), `LobbyEntry`, `MatchStart`, `NetNotice` (`Desync`, `PlayerLeft`, `HostLost`); транспорт `IConnection` (`TcpConnection`, `LoopbackConnection`), `TcpServer`, `TcpConnector`; в Presentation `NetSession`, `SimRunner.Submit` |
 | играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (все четыре есть) |
 | неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
