@@ -51,3 +51,8 @@ __pycache__/
 
 # Claude Code: личные настройки, не общие
 .claude/settings.local.json
+
+# Сборки игры (Windows-билд, архив, бэкап IL2CPP) — не в репозиторий
+/CoopRTS_win/
+/CoopRTS_win.zip
+/*_BackUpThisFolder_ButDontShipItWithYourGame/
