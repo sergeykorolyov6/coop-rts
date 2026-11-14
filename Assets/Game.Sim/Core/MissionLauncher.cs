@@ -20,7 +20,7 @@ public static class MissionLauncher
         var humans = new List<int>();
         for (int id = 1; id <= mission.Players; id++)
             humans.Add(id);
-        MapSetup map = MapLoader.Parse(mapJson, humans);
+        MapSetup map = MapLoader.Parse(mapJson, humans, data);
 
         bool legion = mission.HasLegion && map.LegionSlots.Count > 0;
         var playerIds = new List<int>(humans) { CreepPlayerId, NeutralPlayerId };

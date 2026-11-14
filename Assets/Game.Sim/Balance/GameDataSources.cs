@@ -14,4 +14,7 @@ public sealed class GameDataSources
     public string Abilities { get; set; } = "[]";
     public string HeroLevels { get; set; } = "[]";
     public string HeroPaths { get; set; } = "[]";
+
+    // terrain.csv: needed by any map loaded from json (MapLoader); maps built in code do without.
+    public string Terrain { get; set; } = "[]";
 }

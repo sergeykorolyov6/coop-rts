@@ -6,7 +6,7 @@ ticks (20 per second) and milli-cells (1000 per cell). A value that does not
 convert to a whole number is an error, not a silent rounding: rounding would
 quietly change the balance.
 
-    python3 Tools/csv2json.py           regenerate Assets/Data/*.json (and maps/*.json from Docs/Design/maps/*.txt)
+    python3 Tools/csv2json.py           regenerate Assets/Data/*.json (and maps/*.json from Docs/Design/maps/*.txt and *.tmj)
     python3 Tools/csv2json.py --check   exit 1 if the json is stale (for hooks/CI)
 
 Standard library only, so it runs anywhere python3 does.
@@ -329,6 +329,17 @@ MISSIONS = {
     "notes": None,
 }
 
+# plan-terrain-and-factions.md, 3.2: kinds of ground and rock; a map names them by the symbol.
+TERRAIN = {
+    "id": ("id", string),
+    "name_ru": ("name_ru", string),
+    "symbol": ("symbol", string),
+    "passable": ("passable", int_),
+    "destructible": ("destructible", int_),
+    "description": ("description", string),
+    "notes": None,
+}
+
 # (csv, json, schema, key column)
 TABLES = [
     ("units.csv", "units.json", UNITS, "id"),
@@ -341,6 +352,7 @@ TABLES = [
     ("abilities.csv", "abilities.json", ABILITIES, "id"),
     ("hero_levels.csv", "hero_levels.json", HERO_LEVELS, "level"),
     ("hero_paths.csv", "hero_paths.json", HERO_PATHS, "id"),
+    ("terrain.csv", "terrain.json", TERRAIN, "id"),
 ]
 
 
@@ -385,33 +397,48 @@ def render(rows) -> str:
     return json.dumps(rows, ensure_ascii=False, indent=2) + "\n"
 
 
-MAP_CHARS = {".": None, "#": "blocked", "o": 0, "s": 1}
+ORE_CHARS = {"o": 0, "s": 1}
+# Without terrain.csv (unit tests of the converter): ground and eternal rock only.
+LEGACY_TERRAIN = {".": {"passable": 1, "destructible": 0}, "#": {"passable": 0, "destructible": 0}}
+MAX_LEVEL = 7
 MAPS_DIR = DESIGN_DIR / "maps"
 
 
 DIRECTIONS = {"right": (1, 0), "up": (0, 1), "left": (-1, 0), "down": (0, -1)}
 
 
-def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, building_sizes: dict | None = None) -> dict:
-    """Docs/Design/maps/*.txt → map json. Rows are stored bottom-up: rows[y] is row y."""
+def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, building_sizes: dict | None = None,
+                terrain: dict | None = None) -> dict:
+    """Docs/Design/maps/*.txt → map json. Rows are stored bottom-up: rows[y] is row y.
+
+    terrain: symbol → terrain.csv row. A second block `levels … end` of the same size gives
+    heights: a digit 0–7 is the cell's level, a letter (a = 0 … g = 6) a ramp from that level up."""
     building_sizes = building_sizes or {}
+    terrain = terrain or LEGACY_TERRAIN
+    for ch in terrain:
+        if ch in ORE_CHARS or ch.isdigit() or len(ch) != 1 or ch.isspace():
+            raise ConvertError(f"terrain.csv: символ «{ch}» занят рудой, стартом или не один знак")
+
+    def solid(c):
+        return c is None or (c in terrain and not terrain[c]["passable"])
     lines = text.splitlines()
-    grid, camps, legion, neutrals, rally, inside, done = [], [], [], [], None, False, False
+    grid, level_grid, camps, legion, neutrals, rally, inside, done = [], [], [], [], [], None, None, set()
     for number, raw in enumerate(lines, start=1):
         line = raw.rstrip("\r")
         if inside:
             if line.strip() == "end":
-                inside, done = False, True
+                done.add(inside)
+                inside = None
             else:
-                grid.append((number, line))
+                (grid if inside == "map" else level_grid).append((number, line))
             continue
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        if stripped == "map":
-            if done:
-                raise ConvertError(f"{file_name}, строка {number}: второй блок map")
-            inside = True
+        if stripped in ("map", "levels"):
+            if stripped in done:
+                raise ConvertError(f"{file_name}, строка {number}: второй блок {stripped}")
+            inside = stripped
             continue
         parts = stripped.split()
         if parts[0] == "camp":
@@ -447,10 +474,25 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
                 if ch in starts:
                     raise ConvertError(f"{file_name}, строка {number}: старт {ch} второй раз")
                 starts[ch] = (x, y)
-            elif ch not in MAP_CHARS:
+            elif ch not in ORE_CHARS and ch not in terrain:
                 raise ConvertError(f"{file_name}, строка {number}, x = {x}: символ «{ch}» не из легенды")
 
     rows = [row for _, row in reversed(grid)]
+
+    # Heights: the same picture, top row first. No block — everything is level 0.
+    levels = None
+    if level_grid:
+        if len(level_grid) != height:
+            raise ConvertError(f"{file_name}: в блоке levels {len(level_grid)} строк, а в map {height}")
+        for number, row in level_grid:
+            if len(row) != width:
+                raise ConvertError(f"{file_name}, строка {number}: длина {len(row)}, а у карты {width}")
+            for x, ch in enumerate(row):
+                if not ("0" <= ch <= str(MAX_LEVEL) or "a" <= ch < chr(ord("a") + MAX_LEVEL)):
+                    raise ConvertError(f"{file_name}, строка {number}, x = {x}: «{ch}» — не уровень 0–{MAX_LEVEL} и не рампа a–{chr(ord('a') + MAX_LEVEL - 1)}")
+        levels = [row for _, row in reversed(level_grid)]
+        if all(set(row) <= {"0"} for row in levels):
+            levels = None
 
     def cell(x, y):
         return rows[y][x] if 0 <= x < width and 0 <= y < height else None
@@ -479,7 +521,7 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
             raise ConvertError(f"{file_name}, строка {number}: у «{camp_type}» {camp_types[camp_type]} крипов — нужно столько пар x y")
         creeps = [[coords[i], coords[i + 1]] for i in range(0, len(coords), 2)]
         for x, y in [[cx, cy]] + creeps:
-            if cell(x, y) in (None, "#"):
+            if solid(cell(x, y)):
                 raise ConvertError(f"{file_name}, строка {number}: клетка ({x}, {y}) вне карты или в скале")
         out_camps.append({"type": camp_type, "x": cx, "y": cy, "creeps": creeps})
 
@@ -513,7 +555,7 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
             for yy in range(y, y + h):
                 for xx in range(x, x + w):
                     c = cell(xx, yy)
-                    if c in (None, "#") or c.isdigit():
+                    if solid(c) or c.isdigit():
                         raise ConvertError(f"{file_name}, строка {number}: «{building}» в ({x}, {y}) задевает клетку ({xx}, {yy}) вне карты, в скале или на старте")
                     if (xx, yy) in taken:
                         raise ConvertError(f"{file_name}, строка {number}: клетка ({xx}, {yy}) уже занята слотом из строки {taken[(xx, yy)]}")
@@ -523,7 +565,7 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
             slots.append({"building": building, "x": x, "y": y, "dir": direction})
     if slots and rally is None:
         raise ConvertError(f"{file_name}: у базы Легиона нет точки сбора (rally <x> <y>)")
-    if rally is not None and cell(rally[1], rally[2]) in (None, "#"):
+    if rally is not None and solid(cell(rally[1], rally[2])):
         raise ConvertError(f"{file_name}, строка {rally[0]}: точка сбора вне карты или в скале")
 
     # neutral-buildings.md: neutral <здание> <x> <y> [guard <номер лагеря с 1>].
@@ -544,7 +586,7 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
         for yy in range(y, y + h):
             for xx in range(x, x + w):
                 c = cell(xx, yy)
-                if c in (None, "#") or c.isdigit():
+                if solid(c) or c.isdigit():
                     raise ConvertError(f"{file_name}, строка {number}: «{building}» в ({x}, {y}) задевает клетку ({xx}, {yy}) вне карты, в скале или на старте")
                 if (xx, yy) in taken:
                     raise ConvertError(f"{file_name}, строка {number}: клетка ({xx}, {yy}) уже занята строкой {taken[(xx, yy)]}")
@@ -563,11 +605,139 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
         "starts": [{"slot": int(k), "x": v[0], "y": v[1]} for k, v in sorted(starts.items())],
         "camps": out_camps,
     }
+    if levels:
+        out["levels_bottom_up"] = levels
     if slots:
         out["legion"] = {"slots": slots, "rally": [rally[1], rally[2]]}
     if out_neutral:
         out["neutral"] = out_neutral
+    footprints = [(f"штаб игрока {k}", v[0], v[1], w, h) for k, v in sorted(starts.items())]
+    footprints += [(f"слот Легиона «{s_['building']}»", s_["x"], s_["y"], *building_sizes[s_["building"]]) for s_ in slots]
+    footprints += [(f"«{n['building']}»", n["x"], n["y"], *building_sizes[n["building"]]) for n in out_neutral]
+    check_map(out, file_name, terrain, footprints)
     return out
+
+
+def check_map(data: dict, file_name: str, terrain: dict, footprints: list) -> None:
+    """Что карта обязана выдержать (plan-terrain-and-factions.md, T2). Ошибка, не предупреждение.
+
+    Переход между соседними клетками — по mechanics/heights.md: уровни равны, либо одна из клеток —
+    рампа, которая соединяет именно эти два уровня; по диагонали — только если разрешены оба пути в обход."""
+    width, height, rows = data["width"], data["height"], data["rows_bottom_up"]
+    level_rows = data.get("levels_bottom_up")
+
+    def level(x, y):
+        c = level_rows[y][x] if level_rows else "0"
+        return (ord(c) - ord("a"), True) if c >= "a" else (int(c), False)
+
+    def open_cell(x, y, digging):
+        t = terrain.get(rows[y][x])
+        return t is None or bool(t["passable"]) or (digging and bool(t["destructible"]))
+
+    # heights.md: a ramp of level L lies between L and L + 1 and joins exactly these two.
+    def can_step(ax, ay, bx, by):
+        (la, ra), (lb, rb) = level(ax, ay), level(bx, by)
+        if ra and rb:
+            return abs(la - lb) <= 1
+        if ra:
+            return lb in (la, la + 1)
+        if rb:
+            return la in (lb, lb + 1)
+        return la == lb
+
+    def flood(sx, sy, digging):
+        seen = bytearray(width * height)
+        seen[sy * width + sx] = 1
+        stack = [(sx, sy)]
+        while stack:
+            x, y = stack.pop()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < width and 0 <= ny < height) or seen[ny * width + nx]:
+                    continue
+                if not open_cell(nx, ny, digging) or not can_step(x, y, nx, ny):
+                    continue
+                if dx and dy:
+                    if not (open_cell(x + dx, y, digging) and open_cell(x, y + dy, digging)):
+                        continue
+                    if not (can_step(x, y, x + dx, y) and can_step(x + dx, y, nx, ny)
+                            and can_step(x, y, x, y + dy) and can_step(x, y + dy, nx, ny)):
+                        continue
+                seen[ny * width + nx] = 1
+                stack.append((nx, ny))
+        return seen
+
+    # Ramps: every patch of ramp touches the level above, and no ramp cell stands alone.
+    if level_rows:
+        def near(x, y):
+            return [(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if 0 <= x + dx < width and 0 <= y + dy < height]
+
+        patched = set()
+        for y in range(height):
+            for x in range(width):
+                lv, ramp = level(x, y)
+                if not ramp or (x, y) in patched:
+                    continue
+                if not any(level(nx, ny) == (lv, True) for nx, ny in near(x, y)):
+                    raise ConvertError(f"{file_name}: рампа в ({x}, {y}) шириной в одну клетку — нужно хотя бы две рядом")
+                patch, stack, leads = {(x, y)}, [(x, y)], False
+                while stack:
+                    px, py = stack.pop()
+                    for nx, ny in near(px, py):
+                        if level(nx, ny) == (lv, True):
+                            if (nx, ny) not in patch:
+                                patch.add((nx, ny))
+                                stack.append((nx, ny))
+                        elif level(nx, ny)[0] == lv + 1:
+                            leads = True
+                if not leads:
+                    raise ConvertError(f"{file_name}: рампа в ({x}, {y}) с уровня {lv} никуда не ведёт — рядом нет клетки уровня {lv + 1}")
+                patched |= patch
+        for what, fx, fy, fw, fh in footprints:
+            cells = [level(xx, yy) for yy in range(fy, fy + fh) for xx in range(fx, fx + fw)]
+            if any(ramp for _, ramp in cells) or len({lv for lv, _ in cells}) > 1:
+                raise ConvertError(f"{file_name}: {what} в ({fx}, {fy}) стоит на рампе или на разных уровнях")
+
+    starts = data["starts"]
+    if not starts:
+        return
+
+    # A free cell beside a footprint: units appear and work around a building, not under it.
+    def beside(fx, fy, fw, fh):
+        for yy in range(fy - 1, fy + fh + 1):
+            for xx in range(fx - 1, fx + fw + 1):
+                inside = fx <= xx < fx + fw and fy <= yy < fy + fh
+                if not inside and 0 <= xx < width and 0 <= yy < height and open_cell(xx, yy, False):
+                    return xx, yy
+        return None
+
+    hq = {f[0]: f for f in footprints}
+    first = starts[0]
+    _, fx, fy, fw, fh = hq[f"штаб игрока {first['slot']}"]
+    origin = beside(fx, fy, fw, fh)
+    if origin is None:
+        raise ConvertError(f"{file_name}: штаб игрока {first['slot']} замурован — рядом нет свободной клетки")
+    walk = flood(origin[0], origin[1], False)
+    dig = flood(origin[0], origin[1], True)
+
+    def reached(seen, fx, fy, fw, fh):
+        return any(seen[yy * width + xx] for yy in range(max(0, fy - 1), min(height, fy + fh + 1)) for xx in range(max(0, fx - 1), min(width, fx + fw + 1)))
+
+    for s_ in starts[1:]:
+        _, fx, fy, fw, fh = hq[f"штаб игрока {s_['slot']}"]
+        if not reached(walk, fx, fy, fw, fh):
+            raise ConvertError(f"{file_name}: от штаба игрока {first['slot']} нет пути к штабу игрока {s_['slot']} без копания")
+    if "legion" in data:
+        rx, ry = data["legion"]["rally"]
+        if not walk[ry * width + rx]:
+            raise ConvertError(f"{file_name}: от штаба игрока {first['slot']} нет пути к точке сбора Легиона ({rx}, {ry}) без копания")
+    for camp in data["camps"]:
+        if not dig[camp["y"] * width + camp["x"]]:
+            raise ConvertError(f"{file_name}: лагерь «{camp['type']}» в ({camp['x']}, {camp['y']}) недостижим даже с копанием")
+    for y in range(height):
+        for x in range(width):
+            if rows[y][x] in ORE_CHARS and not dig[y * width + x]:
+                raise ConvertError(f"{file_name}: руда в ({x}, {y}) недостижима даже с копанием — за вечной скалой")
 
 
 def build_all() -> dict[Path, str]:
@@ -583,9 +753,28 @@ def build_all() -> dict[Path, str]:
     buildings = convert_table((DESIGN_DIR / "buildings.csv").read_text(encoding="utf-8-sig"), BUILDINGS, "buildings.csv")
     hq = next(b for b in buildings if b["id"] == "headquarters")
     sizes = {b["id"]: (b["size_w"], b["size_h"]) for b in buildings}
-    for path in sorted(MAPS_DIR.glob("*.txt")):
-        data = convert_map(path.read_text(encoding="utf-8-sig"), "maps/" + path.name, camp_types, (hq["size_w"], hq["size_h"]), sizes)
-        out[DATA_DIR / "maps" / (path.stem + ".json")] = render_map(data)
+    terrain_rows = convert_table((DESIGN_DIR / "terrain.csv").read_text(encoding="utf-8-sig"), TERRAIN, "terrain.csv")
+    terrain = {t["symbol"]: t for t in terrain_rows}
+    if len(terrain) != len(terrain_rows):
+        raise ConvertError("terrain.csv: два вида местности с одним символом")
+    # A map is drawn either as text (*.txt) or in Tiled (*.tmj, Tools/tiled.py turns it into the same text).
+    import tiled
+    sources = {}
+    for path in sorted(MAPS_DIR.glob("*.txt")) + sorted(MAPS_DIR.glob("*.tmj")):
+        if path.stem in sources:
+            raise ConvertError(f"maps/{path.stem}: есть и .txt, и .tmj — у карты должен быть один файл")
+        if path.suffix == ".txt":
+            sources[path.stem] = (path.name, path.read_text(encoding="utf-8-sig"))
+        else:
+            try:
+                tmj = json.loads(path.read_text(encoding="utf-8-sig"))
+                load = lambda source, base=path.parent: json.loads((base / source).read_text(encoding="utf-8-sig"))
+                sources[path.stem] = (path.name, tiled.to_text(tmj, load, "maps/" + path.name))
+            except (tiled.TiledError, OSError, ValueError, KeyError) as e:
+                raise ConvertError(f"maps/{path.name}: {e}") from None
+    for stem, (name, text) in sorted(sources.items()):
+        data = convert_map(text, "maps/" + name, camp_types, (hq["size_w"], hq["size_h"]), sizes, terrain)
+        out[DATA_DIR / "maps" / (stem + ".json")] = render_map(data)
     return out
 
 
@@ -596,6 +785,8 @@ def render_map(data: dict) -> str:
     tail = {k: data[k] for k in ("starts", "camps", "legion", "neutral") if k in data}
     return ("{\n" + ",\n".join(f'  "{k}": {json.dumps(v)}' for k, v in head.items())
             + ',\n  "rows_bottom_up": [\n' + rows + "\n  ],\n"
+            + ('  "levels_bottom_up": [\n' + ",\n".join("    " + json.dumps(r) for r in data["levels_bottom_up"]) + "\n  ],\n"
+               if "levels_bottom_up" in data else "")
             + ",\n".join(f'  "{k}": {json.dumps(v, ensure_ascii=False)}' for k, v in tail.items()) + "\n}\n")
 
 

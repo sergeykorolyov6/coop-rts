@@ -28,6 +28,7 @@ internal static class RepoData
             Abilities = Read("abilities.json"),
             HeroLevels = Read("hero_levels.json"),
             HeroPaths = Read("hero_paths.json"),
+            Terrain = Read("terrain.json"),
         });
     }
 

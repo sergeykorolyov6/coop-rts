@@ -10,7 +10,7 @@ root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 # Balance tables: Sim loads Assets/Data/*.json, so the json must follow the csv.
 case "$file" in
-  */Docs/Design/*.csv|*/Tools/*.py|*/Assets/Data/*.json)
+  */Docs/Design/*.csv|*/Docs/Design/maps/*|*/Tools/*.py|*/Assets/Data/*.json)
     if ! out=$(python3 "$root/Tools/csv2json.py" --check 2>&1); then
       echo "$out" >&2
       exit 2

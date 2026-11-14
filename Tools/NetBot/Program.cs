@@ -30,7 +30,7 @@ GameData gameData = GameData.Parse(new GameDataSources
 {
     Units = Read("units.json"), Buildings = Read("buildings.json"), CreepCamps = Read("creep_camps.json"),
     Rules = Read("rules.json"), Legion = Read("legion.json"), Waves = Read("waves.json"), Factions = Read("factions.json"),
-    Abilities = Read("abilities.json"), HeroLevels = Read("hero_levels.json"), HeroPaths = Read("hero_paths.json"),
+    Abilities = Read("abilities.json"), HeroLevels = Read("hero_levels.json"), HeroPaths = Read("hero_paths.json"), Terrain = Read("terrain.json"),
 });
 MissionCatalog catalog = MissionCatalog.Parse(Read("missions.json"));
 

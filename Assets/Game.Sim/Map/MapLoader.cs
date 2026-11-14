@@ -20,7 +20,8 @@ public static class MapLoader
 
     // playerIdsBySlot[i] plays start slot i + 1; slots beyond the list stay empty
     // (a 4-player map works for 2).
-    public static MapSetup Parse(string json, IReadOnlyList<int> playerIdsBySlot)
+    // data: terrain.csv gives the meaning of the rock characters.
+    public static MapSetup Parse(string json, IReadOnlyList<int> playerIdsBySlot, GameData data)
     {
         JsonNode root = JsonParser.Parse(json);
         int width = root.GetInt("width"), height = root.GetInt("height");
@@ -38,14 +39,44 @@ public static class MapLoader
             {
                 switch (row[x])
                 {
-                    case '#': map.Block(x, y); break;
                     case 'o': map.Ore(x, y, Resources.Primary); break;
                     case 's': map.Ore(x, y, Resources.Secondary); break;
                     case '.': break;
                     default:
-                        if (row[x] < '1' || row[x] > '9')
-                            throw new FormatException($"Map cell ({x}, {y}) has unknown '{row[x]}'.");
+                        if (row[x] >= '1' && row[x] <= '9')
+                            break;
+                        TerrainStats? terrain = data.TerrainBySymbol(row[x]);
+                        if (terrain == null)
+                            throw new FormatException($"Map cell ({x}, {y}) has '{row[x]}', which is neither ore, a start nor a symbol of terrain.json.");
+                        if (!terrain.Passable)
+                            map.Terrain(x, y, terrain);
                         break;
+                }
+            }
+        }
+
+        // Optional: a digit is the cell's level, a letter (a = 0, b = 1, …) a ramp from that level up.
+        foreach (KeyValuePair<string, JsonNode> field in root.Fields)
+        {
+            if (field.Key != "levels_bottom_up")
+                continue;
+            IReadOnlyList<JsonNode> levels = field.Value.Items;
+            if (levels.Count != height)
+                throw new FormatException($"Map has {levels.Count} rows of levels, expected {height}.");
+            for (int y = 0; y < height; y++)
+            {
+                string row = levels[y].Text;
+                if (row.Length != width)
+                    throw new FormatException($"Levels row {y} has {row.Length} cells, expected {width}.");
+                for (int x = 0; x < width; x++)
+                {
+                    char c = row[x];
+                    if (c >= '0' && c <= '0' + MapSetup.MaxLevel)
+                        map.Level(x, y, c - '0');
+                    else if (c >= 'a' && c < 'a' + MapSetup.MaxLevel)
+                        map.Level(x, y, c - 'a', ramp: true);
+                    else
+                        throw new FormatException($"Levels cell ({x}, {y}) has unknown '{c}'.");
                 }
             }
         }

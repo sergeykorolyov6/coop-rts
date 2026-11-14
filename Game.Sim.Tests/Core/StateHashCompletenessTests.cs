@@ -109,7 +109,7 @@ public class StateHashCompletenessTests
     private static Simulation RichMatch()
     {
         MissionStats mission = RepoData.Catalog().Find("m2")!;
-        var map = MapLoader.Parse(RepoData.MapJson("m2"), new[] { 1 })
+        var map = MapLoader.Parse(RepoData.MapJson("m2"), new[] { 1 }, RepoData.Get())
             .Neutral("cave", 30, 40);
         var setup = new MatchSetup(1, RepoData.Get(), map, MissionLauncher.ResourceTypeCount,
             new[] { 1, MissionLauncher.LegionPlayerId, MissionLauncher.CreepPlayerId, MissionLauncher.NeutralPlayerId },

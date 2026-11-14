@@ -17,11 +17,13 @@ public sealed class GameData
     private readonly List<AbilityStats> _abilities;
     private readonly List<HeroLevelStats> _heroLevels;
     private readonly List<HeroPathStats> _heroPaths;
+    private readonly List<TerrainStats> _terrain;
 
     private GameData(List<UnitStats> units, List<BuildingStats> buildings, List<CreepCampStats> creepCamps,
         List<LegionStats> legion, List<WaveStats> waves, List<FactionStats> factions, List<AbilityStats> abilities,
-        List<HeroLevelStats> heroLevels, List<HeroPathStats> heroPaths, GameRules rules)
+        List<HeroLevelStats> heroLevels, List<HeroPathStats> heroPaths, List<TerrainStats> terrain, GameRules rules)
     {
+        _terrain = terrain;
         _heroPaths = heroPaths;
         _heroLevels = heroLevels;
         _abilities = abilities;
@@ -60,6 +62,20 @@ public sealed class GameData
     // hero_paths.csv, sorted by id.
     public IReadOnlyList<HeroPathStats> HeroPaths => _heroPaths;
 
+    // terrain.csv, sorted by id. Empty in data for maps built in code.
+    public IReadOnlyList<TerrainStats> Terrain => _terrain;
+
+    // The terrain a map row's character stands for, or null when it is not a terrain symbol.
+    public TerrainStats? TerrainBySymbol(char symbol)
+    {
+        foreach (TerrainStats t in _terrain)
+        {
+            if (t.Symbol == symbol)
+                return t;
+        }
+        return null;
+    }
+
     public bool TryGetHeroPath(string id, out HeroPathStats? stats) => TryFind(_heroPaths, id, p => p.Id, out stats);
 
     // Without the Legion tables: matches with no enemy AI (the M1 prototype, most tests).
@@ -78,6 +94,15 @@ public sealed class GameData
         List<HeroPathStats> heroPaths = ReadTable("hero_paths.json", sources.HeroPaths, row => new HeroPathStats(row), p => p.Id);
         List<HeroLevelStats> heroLevels = ReadNumbered("hero_levels.json", sources.HeroLevels, row => new HeroLevelStats(row), l => l.Level);
 
+        List<TerrainStats> terrain = ReadTable("terrain.json", sources.Terrain, row => new TerrainStats(row), t => t.Id);
+        for (int i = 0; i < terrain.Count; i++)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                if (terrain[i].Symbol == terrain[j].Symbol)
+                    throw new FormatException($"terrain.json: \"{terrain[i].Id}\" and \"{terrain[j].Id}\" share the symbol '{terrain[i].Symbol}'.");
+            }
+        }
         GameRules rules;
         try
         {
@@ -88,7 +113,7 @@ public sealed class GameData
             throw new FormatException($"rules.json: {e.Message}", e);
         }
 
-        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, heroLevels, heroPaths, rules);
+        var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, heroLevels, heroPaths, terrain, rules);
         data.Validate();
         return data;
     }

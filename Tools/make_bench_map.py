@@ -10,6 +10,7 @@ from pathlib import Path
 SIZE = 256
 COARSE = 8          # шаг решётки шума, клеток
 ROCK_PERCENT = 42   # порог шума; после прорубки проходов породы остаётся около трети
+CORE_PERCENT = 33   # ниже этого порога — вечная скала, между порогами — мягкая порода
 STARTS = {"1": (24, 24), "2": (90, 24), "3": (24, 90), "4": (90, 90)}
 LEGION = (160, 160)  # сдвиг базы Легиона из m2.txt
 RALLY = (218, 218)
@@ -40,7 +41,12 @@ def noise(x: int, y: int) -> int:
 
 
 def main() -> None:
-    grid = [["#" if noise(x, y) < ROCK_PERCENT * 10 else "." for x in range(SIZE)] for y in range(SIZE)]
+    # Ядро массива — вечная скала, кромка — мягкая порода: карманы за ней достижимы копанием.
+    def rock(x, y):
+        n = noise(x, y)
+        return "#" if n < CORE_PERCENT * 10 else "%" if n < ROCK_PERCENT * 10 else "."
+
+    grid = [[rock(x, y) for x in range(SIZE)] for y in range(SIZE)]
 
     def clear(cx, cy, r):
         for y in range(max(0, cy - r), min(SIZE, cy + r + 1)):
@@ -117,7 +123,7 @@ def main() -> None:
         else:
             lines.append(f"legion_line {item[1] + ox} {item[2] + oy} {item[3] + ox} {item[4] + oy}")
 
-    rocks = sum(row.count("#") for row in grid)
+    rocks = sum(row.count("#") + row.count("%") for row in grid)
     header = [
         f"# Стенд масштаба {SIZE}×{SIZE} (plan-terrain-and-factions.md, T1): не игровая карта. Порода {rocks * 100 // (SIZE * SIZE)} %.",
         "# Сгенерировано Tools/make_bench_map.py — руками не править, править генератор.",

@@ -9,7 +9,7 @@ namespace Game.Sim.Tests;
 public class PrototypeMapTests
 {
     private static MapSetup Load(params int[] players) =>
-        MapLoader.Parse(File.ReadAllText(Path.Combine(RepoData.RepoRoot(), "Assets", "Data", "maps", "prototype.json")), players);
+        MapLoader.Parse(File.ReadAllText(Path.Combine(RepoData.RepoRoot(), "Assets", "Data", "maps", "prototype.json")), players, RepoData.Get());
 
     [Test]
     public void Map_MatchesThePlan()

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "crystal_rock",
+    "name_ru": "Кристальная порода",
+    "symbol": "C",
+    "passable": 0,
+    "destructible": 1,
+    "description": "Порода со вторым ресурсом: редкая награда в глубине."
+  },
+  {
+    "id": "ground",
+    "name_ru": "Земля",
+    "symbol": ".",
+    "passable": 1,
+    "destructible": 0,
+    "description": "Обычная земля: по ней ходят и на ней строят."
+  },
+  {
+    "id": "hard_rock",
+    "name_ru": "Твёрдая порода",
+    "symbol": "@",
+    "passable": 0,
+    "destructible": 1,
+    "description": "Долгий проход: копать можно, но стоит ли."
+  },
+  {
+    "id": "ore_rock",
+    "name_ru": "Рудная порода",
+    "symbol": "R",
+    "passable": 0,
+    "destructible": 1,
+    "description": "Порода с основным ресурсом: награда за раскопки."
+  },
+  {
+    "id": "rock",
+    "name_ru": "Скала",
+    "symbol": "#",
+    "passable": 0,
+    "destructible": 0,
+    "description": "Вечная скала: не пройти и не разрушить. Каркас карты."
+  },
+  {
+    "id": "soft_rock",
+    "name_ru": "Мягкая порода",
+    "symbol": "%",
+    "passable": 0,
+    "destructible": 1,
+    "description": "Завал: копатель пробивает быстро. Короткий путь или вход в карман."
+  }
+]

@@ -10,6 +10,9 @@ public sealed class MapState
     private readonly int[] _buildingAt;
     private readonly bool[] _walkableBuilding;
     private readonly int[] _depositAt;
+    private readonly TerrainStats?[] _terrain;
+    private readonly byte[] _level;
+    private readonly bool[] _ramp;
     private readonly List<Deposit> _deposits = new List<Deposit>();
 
     internal MapState(MapSetup setup)
@@ -22,12 +25,19 @@ public sealed class MapState
         _buildingAt = new int[count];
         _walkableBuilding = new bool[count];
         _depositAt = new int[count];
+        _terrain = new TerrainStats?[count];
+        _level = new byte[count];
+        _ramp = new bool[count];
         for (int y = 0; y < Height; y++)
         {
             for (int x = 0; x < Width; x++)
             {
                 _blocked[y * Width + x] = setup.IsBlocked(x, y);
                 _ore[y * Width + x] = setup.OreAt(x, y);
+                _terrain[y * Width + x] = setup.TerrainAt(x, y);
+                _level[y * Width + x] = (byte)setup.LevelAt(x, y);
+                _ramp[y * Width + x] = setup.IsRamp(x, y);
+                HasLevels |= _level[y * Width + x] != 0 || _ramp[y * Width + x];
             }
         }
         FindDeposits();
@@ -46,6 +56,57 @@ public sealed class MapState
     public int Index(int x, int y) => y * Width + x;
 
     public bool IsBlocked(int x, int y) => _blocked[Index(x, y)];
+
+    // The cell's kind from terrain.csv; null for plain ground and for rock a test set by hand.
+    public TerrainStats? TerrainAt(int x, int y) => _terrain[Index(x, y)];
+
+    // Height level, 0..MapSetup.MaxLevel, and whether the cell is a ramp to the level above.
+    // heights.md. A ramp of level L lies between L and L + 1.
+    public int LevelAt(int x, int y) => _level[Index(x, y)];
+    public bool IsRamp(int x, int y) => _ramp[Index(x, y)];
+
+    // False on a flat map: every height rule is skipped.
+    public bool HasLevels { get; }
+
+    // What a unit standing in the cell sees over: from a ramp, the plateau it leads to.
+    public int EyeLevel(int x, int y) => _level[Index(x, y)] + (_ramp[Index(x, y)] ? 1 : 0);
+
+    // heights.md, "рядом по высоте": no cliff between the levels of the two cells (which need not
+    // be neighbours) — equal levels, or a ramp that joins exactly these two.
+    public bool LevelsJoin(int ax, int ay, int bx, int by)
+    {
+        if (!HasLevels)
+            return true;
+        int a = Index(ax, ay), b = Index(bx, by);
+        int la = _level[a], lb = _level[b];
+        if (_ramp[a] && _ramp[b])
+            return la - lb <= 1 && lb - la <= 1;
+        if (_ramp[a])
+            return lb == la || lb == la + 1;
+        if (_ramp[b])
+            return la == lb || la == lb + 1;
+        return la == lb;
+    }
+
+    // heights.md: a step from a cell into one of its 8 neighbours. The neighbour is passable and
+    // there is no cliff on the way; diagonally both ways round must be open as well, so a unit
+    // cuts neither the corner of a building nor the corner of a cliff. The cell stepped from may
+    // be blocked itself (a unit caught under a new building walks out).
+    public bool CanStep(int fromX, int fromY, int toX, int toY)
+    {
+        if (!IsPassable(toX, toY))
+            return false;
+        bool diagonal = fromX != toX && fromY != toY;
+        if (diagonal && (!IsPassable(toX, fromY) || !IsPassable(fromX, toY)))
+            return false;
+        if (!HasLevels || !InBounds(fromX, fromY))
+            return true;
+        if (!LevelsJoin(fromX, fromY, toX, toY))
+            return false;
+        return !diagonal
+            || (LevelsJoin(fromX, fromY, toX, fromY) && LevelsJoin(toX, fromY, toX, toY)
+                && LevelsJoin(fromX, fromY, fromX, toY) && LevelsJoin(fromX, toY, toX, toY));
+    }
 
     // Resource type of ore in the cell, or MapSetup.NoOre.
     public int OreAt(int x, int y) => _ore[Index(x, y)];

@@ -11,6 +11,9 @@ public sealed class MapSetup
 
     private readonly bool[] _blocked;
     private readonly int[] _ore;
+    private readonly TerrainStats?[] _terrain;
+    private readonly byte[] _level;
+    private readonly bool[] _ramp;
     private readonly List<PlayerStart> _starts = new List<PlayerStart>();
     private readonly List<CreepCampSetup> _camps = new List<CreepCampSetup>();
     private readonly List<BaseSlotSetup> _legionSlots = new List<BaseSlotSetup>();
@@ -26,6 +29,9 @@ public sealed class MapSetup
         Height = height;
         _blocked = new bool[width * height];
         _ore = new int[width * height];
+        _terrain = new TerrainStats?[width * height];
+        _level = new byte[width * height];
+        _ramp = new bool[width * height];
         for (int i = 0; i < _ore.Length; i++)
             _ore[i] = NoOre;
     }
@@ -48,6 +54,36 @@ public sealed class MapSetup
 
     // Resource type of the ore in the cell, or NoOre.
     public int OreAt(int x, int y) => _ore[Index(x, y)];
+
+    // The cell's kind from terrain.csv; null for plain ground and for rock set by Block.
+    public TerrainStats? TerrainAt(int x, int y) => _terrain[Index(x, y)];
+
+    // Height level of the cell, 0..MaxLevel (plan-terrain-and-factions.md, 3.1).
+    public int LevelAt(int x, int y) => _level[Index(x, y)];
+
+    // A ramp joins its own level with the one above.
+    public bool IsRamp(int x, int y) => _ramp[Index(x, y)];
+
+    public const int MaxLevel = 7;
+
+    // A cell of the given kind: blocked unless the kind is passable.
+    public MapSetup Terrain(int x, int y, TerrainStats terrain)
+    {
+        _terrain[Index(x, y)] = terrain;
+        _blocked[Index(x, y)] = !terrain.Passable;
+        return this;
+    }
+
+    public MapSetup Level(int x, int y, int level, bool ramp = false)
+    {
+        if (level < 0 || level > MaxLevel)
+            throw new ArgumentOutOfRangeException(nameof(level), level, $"A level is 0..{MaxLevel}.");
+        if (ramp && level == MaxLevel)
+            throw new ArgumentException($"A ramp on level {MaxLevel} has nowhere to lead.", nameof(ramp));
+        _level[Index(x, y)] = (byte)level;
+        _ramp[Index(x, y)] = ramp;
+        return this;
+    }
 
     public MapSetup Block(int x, int y)
     {

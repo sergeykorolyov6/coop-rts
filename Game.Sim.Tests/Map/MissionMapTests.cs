@@ -16,7 +16,7 @@ public class MissionMapTests
     private static Simulation Match(int players, int seed = 42)
     {
         int[] ids = Four.Take(players).ToArray();
-        MapSetup map = MapLoader.Parse(File.ReadAllText(Path.Combine(RepoData.RepoRoot(), "Assets", "Data", "maps", "m2.json")), ids);
+        MapSetup map = MapLoader.Parse(File.ReadAllText(Path.Combine(RepoData.RepoRoot(), "Assets", "Data", "maps", "m2.json")), ids, RepoData.Get());
         var all = new List<int>(ids) { Legion, Setups.Creeps };
         var relations = new List<RelationSetup>();
         foreach (int a in ids)
