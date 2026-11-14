@@ -56,6 +56,31 @@ class CheckTest(unittest.TestCase):
         with self.assertRaisesRegex(c.ConvertError, "точке сбора"):
             convert("map\n1.#..\n..#..\nend\nlegion conveyor 4 0\nrally 3 0\n")
 
+    # legion-ai.md, T5: several Legion bases — a rally line ends a base.
+    def test_one_base_keeps_the_legion_key_two_bases_become_a_list(self):
+        one = convert("map\n1.....\nend\nlegion conveyor 4 0\nrally 3 0\n")
+        self.assertEqual(one["legion"], {"slots": [{"building": "conveyor", "x": 4, "y": 0, "dir": "right"}], "rally": [3, 0]})
+        self.assertNotIn("legions", one)
+        two = convert("map\n1.......\n........\nend\nlegion conveyor 4 0\nlegion_line 5 0 6 0\nrally 3 0\nlegion conveyor 4 1 up\nrally 3 1\n")
+        self.assertNotIn("legion", two)
+        self.assertEqual([len(b["slots"]) for b in two["legions"]], [3, 1])
+        self.assertEqual([b["rally"] for b in two["legions"]], [[3, 0], [3, 1]])
+        self.assertEqual(two["legions"][1]["slots"][0]["dir"], "up")
+
+    def test_every_base_needs_its_own_rally_after_its_slots(self):
+        with self.assertRaisesRegex(c.ConvertError, "нет точки сбора"):
+            convert("map\n1.....\nend\nlegion conveyor 4 0\nrally 3 0\nlegion conveyor 5 0\n")
+        with self.assertRaisesRegex(c.ConvertError, "rally"):
+            convert("map\n1.....\nend\nrally 3 0\nlegion conveyor 4 0\n")
+        with self.assertRaisesRegex(c.ConvertError, "rally"):
+            convert("map\n1.....\nend\nlegion conveyor 4 0\nrally 3 0\nrally 2 0\n")
+
+    def test_slots_of_two_bases_may_not_overlap_and_every_rally_must_be_reachable(self):
+        with self.assertRaisesRegex(c.ConvertError, "уже занята"):
+            convert("map\n1.....\nend\nlegion conveyor 4 0\nrally 3 0\nlegion conveyor 4 0\nrally 2 0\n")
+        with self.assertRaisesRegex(c.ConvertError, r"точке сбора Легиона \(5, 0\)"):
+            convert("map\n1...#.\n....#.\nend\nlegion conveyor 2 0\nrally 3 0\nlegion conveyor 5 1\nrally 5 0\n")
+
     def test_ore_behind_soft_rock_is_fine_behind_eternal_rock_is_not(self):
         convert("map\n1.%o\nend\n")
         with self.assertRaisesRegex(c.ConvertError, "руда в \\(3, 0\\)"):
@@ -106,6 +131,14 @@ class TiledTest(unittest.TestCase):
                 "camp g 3 0 creeps 4 0\nneutral cave 5 0 guard 1\nlegion drill 6 1 up\nlegion_line 2 0 0 0\nlegion conveyor 7 0\nrally 2 1\n")
         back = self.round_trip(text)
         self.assertEqual(convert(back), convert(text))
+
+    def test_two_bases_round_trip_every_slot_goes_to_the_nearest_rally(self):
+        text = ("map\n1...........\n............\n............\nend\n"
+                "legion conveyor 2 2\nlegion_line 3 2 4 2\nrally 2 1\n"
+                "legion conveyor 9 1 up\nlegion conveyor 11 0\nrally 10 0\n")
+        data = convert(self.round_trip(text))
+        self.assertEqual(data, convert(text))
+        self.assertEqual([len(b["slots"]) for b in data["legions"]], [3, 2])
 
     def test_every_map_of_the_repo_survives_tiled(self):
         _, symbols, sizes = tiled._tables()

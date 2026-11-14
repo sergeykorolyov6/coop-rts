@@ -95,12 +95,12 @@ public class StateHashCompletenessTests
         }
         foreach (CreepCamp c in state.CreepCamps)
             yield return c;
-        if (state.Legion != null)
+        foreach (LegionAi legion in state.Legions)
         {
-            yield return state.Legion;
-            foreach (BaseSlot s in state.Legion.Slots)
+            yield return legion;
+            foreach (BaseSlot s in legion.Slots)
                 yield return s;
-            foreach (Wave w in state.Legion.Waves)
+            foreach (Wave w in legion.Waves)
                 yield return w;
         }
     }

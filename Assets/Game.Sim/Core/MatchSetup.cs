@@ -15,6 +15,7 @@ public sealed class MatchSetup
     // A real match: balance data, hand-made map with starts and camps.
     // creepPlayerId owns the creeps (Grey Creatures); it must be one of playerIds when the map has camps.
     // legionPlayerId plays the Black Legion's base from the map (legion-ai.md); the map must have one.
+    // legionPlayerIds: one player per base of the map, in the map's order, when it has several (T5).
     // neutralPlayerId owns the map's neutral buildings (neutral-buildings.md): neutral to everyone.
     // goal: mission.md; by default destroy_legion with a Legion, free play without.
     // factions: chosen factions; every other player gets the first faction of its role (factions.csv).
@@ -29,15 +30,19 @@ public sealed class MatchSetup
         int legionPlayerId = NoPlayer,
         int neutralPlayerId = NoPlayer,
         MissionGoal? goal = null,
-        IEnumerable<PlayerFaction>? factions = null)
+        IEnumerable<PlayerFaction>? factions = null,
+        IEnumerable<int>? legionPlayerIds = null)
         : this(seed, map.Width, map.Height, resourceTypeCount, playerIds, relations)
     {
         Data = data;
         Map = map;
         CreepPlayerId = creepPlayerId;
-        LegionPlayerId = legionPlayerId;
+        if (legionPlayerIds != null)
+            _legionPlayerIds.AddRange(legionPlayerIds);
+        else if (legionPlayerId != NoPlayer)
+            _legionPlayerIds.Add(legionPlayerId);
         NeutralPlayerId = neutralPlayerId;
-        Goal = goal ?? (legionPlayerId != NoPlayer ? MissionGoal.DestroyLegion : MissionGoal.None);
+        Goal = goal ?? (_legionPlayerIds.Count > 0 ? MissionGoal.DestroyLegion : MissionGoal.None);
         ResolveFactions(factions);
         foreach (PlayerStart start in map.Starts)
         {
@@ -46,13 +51,13 @@ public sealed class MatchSetup
                 throw new ArgumentException($"Player {start.PlayerId} has a start but no faction with a headquarters.", nameof(factions));
         }
 
-        if (Goal == MissionGoal.DestroyLegion && legionPlayerId == NoPlayer)
+        if (Goal == MissionGoal.DestroyLegion && _legionPlayerIds.Count == 0)
             throw new ArgumentException("A destroy_legion mission needs the Legion.", nameof(goal));
         if (map.Neutrals.Count > 0)
         {
             if (_playerIds.BinarySearch(neutralPlayerId) < 0)
                 throw new ArgumentException("The map has neutral buildings but no neutral player.", nameof(neutralPlayerId));
-            if (neutralPlayerId == creepPlayerId || neutralPlayerId == legionPlayerId)
+            if (neutralPlayerId == creepPlayerId || IsLegionPlayer(neutralPlayerId))
                 throw new ArgumentException("The neutral player is neither the creeps nor the Legion.", nameof(neutralPlayerId));
             foreach (NeutralBuildingSetup n in map.Neutrals)
             {
@@ -63,26 +68,37 @@ public sealed class MatchSetup
             }
         }
 
-        if (legionPlayerId != NoPlayer)
+        if (_legionPlayerIds.Count > 0)
         {
-            if (_playerIds.BinarySearch(legionPlayerId) < 0)
-                throw new ArgumentException($"Unknown Legion player {legionPlayerId}.", nameof(legionPlayerId));
-            if (legionPlayerId == creepPlayerId)
-                throw new ArgumentException("The Legion and the creeps are different players.", nameof(legionPlayerId));
-            if (map.LegionSlots.Count == 0 || !map.HasRally)
-                throw new ArgumentException("The Legion needs base slots and a rally point on the map.", nameof(map));
+            if (_legionPlayerIds.Count != map.LegionBases.Count)
+                throw new ArgumentException($"The map has {map.LegionBases.Count} Legion bases, the match {_legionPlayerIds.Count} Legion players.", nameof(legionPlayerIds));
             if (data.Legion.Count == 0)
                 throw new ArgumentException("The Legion needs legion.json rows.", nameof(data));
-            foreach (PlayerStart start in map.Starts)
+            for (int i = 0; i < _legionPlayerIds.Count; i++)
             {
-                if (start.PlayerId == legionPlayerId)
-                    throw new ArgumentException("The Legion cannot have a player start.", nameof(map));
+                int id = _legionPlayerIds[i];
+                if (_playerIds.BinarySearch(id) < 0)
+                    throw new ArgumentException($"Unknown Legion player {id}.", nameof(legionPlayerId));
+                if (id == creepPlayerId)
+                    throw new ArgumentException("The Legion and the creeps are different players.", nameof(legionPlayerId));
+                if (_legionPlayerIds.IndexOf(id) != i)
+                    throw new ArgumentException($"Legion player {id} plays two bases.", nameof(legionPlayerIds));
+                if (map.LegionBases[i].Slots.Count == 0 || !map.LegionBases[i].HasRally)
+                    throw new ArgumentException("The Legion needs base slots and a rally point on the map.", nameof(map));
+                foreach (PlayerStart start in map.Starts)
+                {
+                    if (start.PlayerId == id)
+                        throw new ArgumentException("The Legion cannot have a player start.", nameof(map));
+                }
             }
         }
-        foreach (BaseSlotSetup slot in map.LegionSlots)
+        foreach (LegionBaseSetup legionBase in map.LegionBases)
         {
-            if (!data.TryGetBuilding(slot.BuildingTypeId, out _))
-                throw new ArgumentException($"Legion slot with unknown building \"{slot.BuildingTypeId}\".", nameof(map));
+            foreach (BaseSlotSetup slot in legionBase.Slots)
+            {
+                if (!data.TryGetBuilding(slot.BuildingTypeId, out _))
+                    throw new ArgumentException($"Legion slot with unknown building \"{slot.BuildingTypeId}\".", nameof(map));
+            }
         }
 
         foreach (PlayerStart start in map.Starts)
@@ -148,15 +164,20 @@ public sealed class MatchSetup
         Data = GameData.Empty;
         Map = new MapSetup(mapWidth, mapHeight);
         CreepPlayerId = NoPlayer;
-        LegionPlayerId = NoPlayer;
         NeutralPlayerId = NoPlayer;
     }
 
     public GameData Data { get; }
     public MapSetup Map { get; }
     public int CreepPlayerId { get; }
-    public int LegionPlayerId { get; }
     public int NeutralPlayerId { get; }
+
+    // legion-ai.md: the player of each Legion base, in the order of MapSetup.LegionBases; empty without the Legion.
+    public IReadOnlyList<int> LegionPlayerIds => _legionPlayerIds;
+
+    public bool IsLegionPlayer(int playerId) => _legionPlayerIds.Contains(playerId);
+
+    private readonly List<int> _legionPlayerIds = new List<int>();
     public MissionGoal Goal { get; }
 
     // The player's faction, or null (data without factions, the core-loop matches).
@@ -185,7 +206,7 @@ public sealed class MatchSetup
                 _factions.Add(pf);
                 continue;
             }
-            FactionRole role = id == LegionPlayerId ? FactionRole.Legion
+            FactionRole role = IsLegionPlayer(id) ? FactionRole.Legion
                 : id == CreepPlayerId ? FactionRole.Creeps
                 : id == NeutralPlayerId ? FactionRole.Neutral
                 : FactionRole.Player;

@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace Game.Sim;
 
-// legion-ai.md: once per ai_think_interval the Legion orders workers, rebuilds lost slots,
-// produces the next wave, sends waves on their timer, leads them and defends its base.
+// legion-ai.md: once per ai_think_interval every base of the Legion orders workers, rebuilds lost
+// slots, produces the next wave, sends waves on their timer, leads them and defends itself.
 // It gives itself the same commands a player would (ProduceCommand, BuildCommand), so the
 // rules of payment and placement are the players' rules.
 internal static class LegionAiSystem
@@ -11,26 +11,29 @@ internal static class LegionAiSystem
     // Waiting units this close to the rally point count as gathered.
     private const int RallySlack = 3 * Grid.MilliPerCell;
 
-    private static readonly List<Unit> Picked = new List<Unit>();
-
     public static void Tick(SimState state, List<SimEvent> events)
     {
-        LegionAi? ai = state.Legion;
-        if (ai == null || state.Outcome != MissionOutcome.InProgress)
+        if (state.Legions.Count == 0 || state.Outcome != MissionOutcome.InProgress)
             return;
         int interval = System.Math.Max(1, state.Rules.AiThinkIntervalTicks);
         if (state.Tick % interval != 0)
             return;
 
-        PruneWaves(state, ai);
-        UpdateSlots(state, ai);
-        OrderWorkers(state, ai, events);
-        Rebuild(state, ai, events);
-        ProduceArmy(state, ai, events);
-        WarnAndLaunch(state, ai, events);
-        LeadWaves(state, ai);
-        Defend(state, ai);
-        ai.NextWaveTick = WaveTick(state, ai, ai.NextWave);
+        // Bases think in the map's order: the same on every machine.
+        foreach (LegionAi ai in state.Legions)
+        {
+            PruneWaves(state, ai);
+            UpdateSlots(state, ai);
+            OrderWorkers(state, ai, events);
+            Rebuild(state, ai, events);
+            ProduceArmy(state, ai, events);
+            // T5: a base without players of its own keeps its first wave at home.
+            if (!ai.IsDormant)
+                WarnAndLaunch(state, ai, events);
+            LeadWaves(state, ai);
+            Defend(state, ai);
+            ai.NextWaveTick = ai.IsDormant ? int.MaxValue : WaveTick(state, ai, ai.NextWave);
+        }
     }
 
     // Wave n (1-based): launch tick for this number of players.
@@ -195,25 +198,33 @@ internal static class LegionAiSystem
             return;
         int n = ai.NextWave;
         int launch = WaveTick(state, ai, n);
+        WaveStats row = WaveRow(state, n);
+        int rallyX = Grid.CellCenter(ai.RallyX), rallyY = Grid.CellCenter(ai.RallyY);
         if (!ai.NextWaveWarned && state.Tick >= launch - state.Rules.AiWaveWarningTicks)
         {
             ai.NextWaveWarned = true;
-            ai.NextWaveTargetPlayerId = ChooseTargetPlayer(state, n);
+            ai.NextWaveTargetPlayerId = ChooseTargetPlayer(state, ai, n);
+            ai.NextWaveArrivalTick = launch;
             if (ai.NextWaveTargetPlayerId != MatchSetup.NoPlayer)
-                events.Add(new WaveIncoming(state.Tick, n, ai.NextWaveTargetPlayerId, launch));
+            {
+                // T5: the way to what the wave would go for now, at the pace of its slowest unit.
+                int aim = ChooseTarget(state, row.Target, ai.NextWaveTargetPlayerId, rallyX, rallyY);
+                ai.NextWaveArrivalTick = launch + TravelTicks(state, ai, state.FindEntity(aim), SlowestSpeed(state, row));
+                events.Add(new WaveIncoming(state.Tick, ai.PlayerId, n, ai.NextWaveTargetPlayerId, launch, ai.NextWaveArrivalTick));
+            }
         }
         if (state.Tick < launch)
             return;
 
         ai.NextWave = n + 1;
         ai.NextWaveWarned = false;
+        ai.NextWaveArrivalTick = int.MaxValue;
         int player = ai.NextWaveTargetPlayerId;
         if (!IsPlayerAlive(state, player))
-            player = ChooseTargetPlayer(state, n);
+            player = ChooseTargetPlayer(state, ai, n);
         if (player == MatchSetup.NoPlayer)
             return;
 
-        WaveStats row = WaveRow(state, n);
         var ids = new List<int>();
         foreach (WaveUnit wu in row.Units)
         {
@@ -234,10 +245,40 @@ internal static class LegionAiSystem
         ids.Sort();
 
         var wave = new Wave(n, row.Target, player, ids);
-        wave.TargetId = ChooseTarget(state, wave, Grid.CellCenter(ai.RallyX), Grid.CellCenter(ai.RallyY));
+        wave.TargetId = ChooseTarget(state, wave.Target, player, rallyX, rallyY);
         ai._waves.Add(wave);
         SendWave(state, wave, retarget: true);
-        events.Add(new WaveLaunched(state.Tick, n, player, wave.TargetId, ids.Count));
+        int slowest = int.MaxValue;
+        foreach (int id in ids)
+            slowest = System.Math.Min(slowest, state.FindUnit(id)!.Stats.MoveSpeedMilliPerTick);
+        int arrival = state.Tick + TravelTicks(state, ai, state.FindEntity(wave.TargetId), slowest);
+        events.Add(new WaveLaunched(state.Tick, ai.PlayerId, n, player, wave.TargetId, ids.Count, arrival));
+    }
+
+    // The pace of a wave is that of its slowest unit: it has arrived when the last one has.
+    internal static int SlowestSpeed(SimState state, WaveStats row)
+    {
+        int slowest = int.MaxValue;
+        foreach (WaveUnit wu in row.Units)
+            slowest = System.Math.Min(slowest, state.Data.Unit(wu.UnitId).MoveSpeedMilliPerTick);
+        return slowest;
+    }
+
+    // Ticks from the base's rally point to the target over passable ground (ramps, no cliffs);
+    // 0 when there is no target or no way to it.
+    private static int TravelTicks(SimState state, LegionAi ai, Entity? target, int speedMilliPerTick)
+    {
+        if (!IsAlive(target) || speedMilliPerTick <= 0 || speedMilliPerTick == int.MaxValue)
+            return 0;
+        MapState map = state.Map;
+        FlowField field = target is Building b
+            ? state.Paths.ToRectangle(map, b.CellX, b.CellY, b.Width, b.Height)
+            : state.Paths.ToCell(map, ((Unit)target!).CellX, ((Unit)target).CellY);
+        int distance = field.DistanceAt(ai.RallyX, ai.RallyY);
+        if (distance == FlowField.Unreachable)
+            return 0;
+        long milli = (long)distance * Grid.MilliPerCell / FlowField.StraightCost;
+        return (int)((milli + speedMilliPerTick - 1) / speedMilliPerTick);
     }
 
     private static void LeadWaves(SimState state, LegionAi ai)
@@ -249,8 +290,8 @@ internal static class LegionAiSystem
             {
                 Unit lead = state.FindUnit(wave._unitIds[0])!;
                 if (!IsPlayerAlive(state, wave.TargetPlayerId))
-                    wave.TargetPlayerId = ChooseTargetPlayer(state, wave.Number);
-                wave.TargetId = ChooseTarget(state, wave, lead.X, lead.Y);
+                    wave.TargetPlayerId = ChooseTargetPlayer(state, ai, wave.Number);
+                wave.TargetId = ChooseTarget(state, wave.Target, wave.TargetPlayerId, lead.X, lead.Y);
             }
             SendWave(state, wave, retarget);
         }
@@ -309,23 +350,31 @@ internal static class LegionAiSystem
         }
     }
 
-    // Wave n goes for team player (n − 1) mod N among those still in the game, by id.
-    private static int ChooseTargetPlayer(SimState state, int n)
+    // Wave n goes for player (n − 1) mod N among the base's own players still in the game, by id;
+    // when none of them is, among the whole team's (T5).
+    private static int ChooseTargetPlayer(SimState state, LegionAi ai, int n)
     {
         var alive = new List<int>();
-        foreach (int p in state.TeamPlayerIds)
+        foreach (int p in ai.TargetPlayerIds)
         {
             if (IsPlayerAlive(state, p))
                 alive.Add(p);
+        }
+        if (alive.Count == 0)
+        {
+            foreach (int p in state.TeamPlayerIds)
+            {
+                if (IsPlayerAlive(state, p))
+                    alive.Add(p);
+            }
         }
         return alive.Count == 0 ? MatchSetup.NoPlayer : alive[(n - 1) % alive.Count];
     }
 
     // legion-ai.md, "Цель волны" and the fallback order.
-    private static int ChooseTarget(SimState state, Wave wave, int fromX, int fromY)
+    private static int ChooseTarget(SimState state, string targetKind, int player, int fromX, int fromY)
     {
-        int player = wave.TargetPlayerId;
-        if (wave.Target == WaveStats.TargetEconomy)
+        if (targetKind == WaveStats.TargetEconomy)
         {
             Building? eco = NearestBuilding(state, fromX, fromY, b => b.OwnerId == player && IsEconomy(b));
             if (eco != null)

@@ -18,7 +18,8 @@ Tiled — второй способ записать ту же карту, чт�
         legion legion_hq [up]      слот базы Легиона, порядок слотов — порядок создания объектов
         legion_line left           лента Легиона во всю длину прямоугольника, смотрит в указанную сторону
         neutral cave [guard]       нейтральное здание; guard — охраняет ближайший лагерь
-        rally                      точка сбора Легиона
+        rally                      точка сбора Легиона; на карте с несколькими базами (legion-ai.md, T5)
+                                   точек несколько, и каждый слот и лента уходят ближайшей
 
 Только стандартная библиотека.
 """
@@ -290,7 +291,7 @@ def to_text(tmj: dict, load_tileset, name: str) -> str:
         return cx, height - top - h, w, h
 
     objects.sort(key=lambda o: o["id"])
-    camps, creeps, lines, tail = [], [], [], []
+    camps, creeps, lines, tail, at = [], [], [], [], {}
     for obj in objects:
         words = (obj.get("name") or "").split()
         x, y, w, h = cells(obj)
@@ -310,6 +311,7 @@ def to_text(tmj: dict, load_tileset, name: str) -> str:
             creeps.append((x, y, where))
         elif kind == "legion" and len(words) in (2, 3):
             lines.append(["legion", words[1], str(x), str(y)] + words[2:])
+            at[len(lines) - 1] = (x, y)
         elif kind == "legion_line" and len(words) == 2 and words[1] in ("right", "left", "up", "down"):
             if (w > 1) == (h > 1):
                 raise TiledError(f"{where} — лента идёт по прямой и длиннее одной клетки")
@@ -318,6 +320,7 @@ def to_text(tmj: dict, load_tileset, name: str) -> str:
             if (words[1] in ("right", "left")) != (w > 1):
                 raise TiledError(f"{where} — направление поперёк прямоугольника")
             lines.append(["legion_line"] + [str(v) for v in ends])
+            at[len(lines) - 1] = (ends[0], ends[1])
         elif kind == "neutral" and len(words) in (2, 3) and words[2:] in ([], ["guard"]):
             tail.append((["neutral", words[1], str(x), str(y)], len(words) == 3, x, y, where))
         elif kind == "rally" and len(words) == 1:
@@ -344,6 +347,16 @@ def to_text(tmj: dict, load_tileset, name: str) -> str:
         level_rows = None
     rally = [l for l in lines if l[0] == "rally"]
     rest = [l for l in lines if l[0] != "rally"]
+    if len(rally) > 1:
+        # Several bases: every slot goes to the nearest rally point; a base is its slots, then its rally.
+        def base_of(i):
+            x, y = at[i]
+            return min(range(len(rally)), key=lambda b: ((int(rally[b][1]) - x) ** 2 + (int(rally[b][2]) - y) ** 2, b))
+        grouped = [[] for _ in rally]
+        for i, line in enumerate(lines):
+            if line[0] != "rally":
+                grouped[base_of(i)].append(line)
+        rest, rally = [l for b, group in enumerate(grouped) for l in group + [rally[b]]], []
     return join_text(comments, ["".join(r) for r in grid], level_rows,
                      [" ".join(l) for l in camp_lines + neutral_lines + rest + rally])
 

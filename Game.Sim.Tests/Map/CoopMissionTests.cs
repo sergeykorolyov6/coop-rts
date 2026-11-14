@@ -18,7 +18,7 @@ public class CoopMissionTests
     public void Catalog_HasBothMissions()
     {
         MissionCatalog catalog = RepoData.Catalog();
-        Assert.That(catalog.Missions.Select(m => m.Id), Is.EquivalentTo(new[] { "m2", "m2_red", "m2_brown", "m2_yellow", "coop", "bench256", "heights" }));
+        Assert.That(catalog.Missions.Select(m => m.Id), Is.EquivalentTo(new[] { "m2", "m2_red", "m2_brown", "m2_yellow", "coop", "bench256", "heights", "canyons2", "canyons4" }));
         Assert.That(catalog.Find("m2")!.Goal, Is.EqualTo(MissionGoal.DestroyLegion));
         Assert.That(catalog.Find("coop")!.Goal, Is.EqualTo(MissionGoal.KillBoss));
         Assert.That(catalog.Find("coop")!.HasLegion, Is.False);

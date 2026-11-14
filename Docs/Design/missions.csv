@@ -6,3 +6,5 @@ m2_brown,Чёрный Легион — Коричневые Мусорщики,m
 m2_yellow,Чёрный Легион — Жёлтая Звезда,m2,1,1,destroy_legion,yellow_star,yellow,"factions.md: та же миссия за Жёлтую Звезду"
 bench256,Стенд 256×256 (проверка масштаба),bench256,4,1,destroy_legion,blue_walls;red_lightning;brown_scavengers;yellow_star,blue;red;brown;yellow,"plan-terrain-and-factions.md T1: не игровая карта, стенд для замеров; убрать, когда появится карта T5"
 heights,Высоты (проверочная карта),heights,2,1,destroy_legion,blue_walls;red_lightning,blue;red,"heights.md: плато, рампы, обрывы; база Легиона на плато. Проверочная карта этапа T3"
+canyons2,Каньоны — вдвоём,canyons,2,1,destroy_legion,blue_walls;red_lightning,blue;red,"plan-terrain-and-factions.md T5: большая карта 192×192 с высотами и породой, две базы Легиона — у каждого игрока свой фронт (legion-ai.md, T5)"
+canyons4,Каньоны — вчетвером,canyons,4,1,destroy_legion,blue_walls;red_lightning;brown_scavengers;yellow_star,blue;red;brown;yellow,"Та же карта на четверых: западная база Легиона воюет с местами 1 и 3, восточная — с 2 и 4"

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace Game.Sim;
 
@@ -80,6 +81,29 @@ public sealed class Wallet
             return false;
         _amounts[resourceType] -= amount;
         return true;
+    }
+
+    // save-load.md, T5.
+    internal void WriteSnapshot(BinaryWriter w)
+    {
+        for (int type = 0; type < _amounts.Length; type++)
+        {
+            w.Write(_amounts[type]);
+            w.Write(_earned[type]);
+            w.Write(_incomeRemainder[type]);
+        }
+    }
+
+    internal void ReadSnapshot(BinaryReader r)
+    {
+        for (int type = 0; type < _amounts.Length; type++)
+        {
+            _amounts[type] = r.ReadInt32();
+            _earned[type] = r.ReadInt32();
+            _incomeRemainder[type] = r.ReadInt32();
+            if (_amounts[type] < 0)
+                throw new InvalidDataException($"Snapshot: a wallet with {_amounts[type]} of resource {type}.");
+        }
     }
 
     private int CheckType(int resourceType)

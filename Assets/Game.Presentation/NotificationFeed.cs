@@ -66,7 +66,9 @@ namespace Game.Presentation
             _column = new VisualElement { name = "Notifications", pickingMode = PickingMode.Ignore };
             _column.style.position = Position.Absolute;
             _column.style.left = 12;
-            _column.style.top = 44;
+            // Below the wallet and, in a team, the allies' panel (Hud, coop-tools.md).
+            int allies = _runner!.Simulation != null ? _runner.Simulation.State.TeamPlayerIds.Count - 1 : 0;
+            _column.style.top = 44 + (allies > 0 ? Hud.AlliesPanelHeight(allies) + 6 : 0);
             _column.style.alignItems = Align.FlexStart;
             _hud.Root.Add(_column);
         }
@@ -184,11 +186,24 @@ namespace Game.Presentation
                     // legion-ai.md: the whole team hears where the next wave goes.
                     case WaveIncoming incoming:
                         string toWhom = incoming.TargetPlayerId == me ? "к вам" : $"к союзнику {incoming.TargetPlayerId}";
-                        Show($"Волна {incoming.Wave} Легиона через {DisplayNames.Clock(incoming.LaunchTick - incoming.Tick)} — идёт {toWhom}", _alarmColor);
+                        // legion-ai.md, T5: on a big map the way is long — the warning says when it will be there.
+                        string arrives = incoming.ArrivalTick > incoming.LaunchTick ? $", дойдёт ≈ через {DisplayNames.Clock(incoming.ArrivalTick - incoming.Tick)}" : "";
+                        Show($"Волна {incoming.Wave} Легиона: выйдет через {DisplayNames.Clock(incoming.LaunchTick - incoming.Tick)}{arrives} — идёт {toWhom}", _alarmColor);
                         break;
                     case WaveLaunched launched:
                         string side = launched.TargetPlayerId == me ? "на вас" : $"на союзника {launched.TargetPlayerId}";
-                        Show($"Волна {launched.Wave} вышла {side}: {launched.UnitCount} юн.", _alarmColor);
+                        string eta = launched.ArrivalTick > launched.Tick ? $", дойдёт ≈ через {DisplayNames.Clock(launched.ArrivalTick - launched.Tick)}" : "";
+                        Show($"Волна {launched.Wave} вышла {side}: {launched.UnitCount} юн.{eta}", _alarmColor);
+                        break;
+                    // coop-tools.md: the mark itself is on the minimap and on the ground.
+                    case Pinged ping when ping.PlayerId != me && state.Relations.IsAlly(me, ping.PlayerId):
+                        Show($"{DisplayNames.PlayerName(state, ping.PlayerId)} поставил метку на карте", _infoColor);
+                        break;
+                    case ResourcesGiven given when given.FromPlayerId == me || given.ToPlayerId == me:
+                        string what = given.ResourceType == Game.Sim.Resources.Secondary ? "второго ресурса" : "основного ресурса";
+                        Show(given.FromPlayerId == me
+                            ? $"Вы передали {given.Amount} {what}: {DisplayNames.PlayerName(state, given.ToPlayerId)}"
+                            : $"{DisplayNames.PlayerName(state, given.FromPlayerId)} передал вам {given.Amount} {what}", _infoColor);
                         break;
 
                 }

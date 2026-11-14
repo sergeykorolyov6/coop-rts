@@ -12,12 +12,13 @@ public sealed class SimState
     private readonly List<Building> _buildings = new List<Building>();
     private readonly List<CreepCamp> _camps = new List<CreepCamp>();
     private readonly List<int> _teamPlayerIds = new List<int>();
+    private readonly List<LegionAi> _legions = new List<LegionAi>();
 
     internal SimState(MatchSetup setup)
     {
         Data = setup.Data;
+        Seed = setup.Seed;
         CreepPlayerId = setup.CreepPlayerId;
-        LegionPlayerId = setup.LegionPlayerId;
         NeutralPlayerId = setup.NeutralPlayerId;
         Goal = setup.Goal;
         Map = new MapState(setup.Map);
@@ -40,8 +41,15 @@ public sealed class SimState
             _teamPlayerIds.Add(start.PlayerId);
         }
         _teamPlayerIds.Sort();
-        if (LegionPlayerId != MatchSetup.NoPlayer)
-            Legion = SpawnLegion(setup.Map);
+        // legion-ai.md, T5: the team's players are dealt to the bases in turn.
+        int bases = setup.LegionPlayerIds.Count;
+        for (int i = 0; i < bases; i++)
+        {
+            var targets = new List<int>();
+            for (int k = i; k < _teamPlayerIds.Count; k += bases)
+                targets.Add(_teamPlayerIds[k]);
+            _legions.Add(SpawnLegion(setup.Map.LegionBases[i], setup.LegionPlayerIds[i], targets));
+        }
 
         // Grey Creatures are enemies of everyone else, whatever the setup says (creep-camp.md, assumption 1);
         // the neutral player is no one's enemy (neutral-buildings.md).
@@ -79,6 +87,9 @@ public sealed class SimState
 
     public FogOfWar Fog { get; }
 
+    // The match's seed: with the map and the players it says which match a snapshot belongs to.
+    public int Seed { get; }
+
     public GameData Data { get; }
     public GameRules Rules => Data.Rules;
     public MapState Map { get; }
@@ -101,9 +112,21 @@ public sealed class SimState
     // Owner of the creeps, MatchSetup.NoPlayer when the map has none.
     public int CreepPlayerId { get; }
 
-    // The Black Legion (legion-ai.md), MatchSetup.NoPlayer and null without one.
-    public int LegionPlayerId { get; }
-    public LegionAi? Legion { get; }
+    // The Black Legion's bases in the map's order, each with its own player (legion-ai.md); empty without the Legion.
+    public IReadOnlyList<LegionAi> Legions => _legions;
+
+    // The first base — on most maps the only one; null without the Legion.
+    public LegionAi? Legion => _legions.Count > 0 ? _legions[0] : null;
+
+    public bool IsLegionPlayer(int playerId)
+    {
+        foreach (LegionAi ai in _legions)
+        {
+            if (ai.PlayerId == playerId)
+                return true;
+        }
+        return false;
+    }
 
     // Owner of the neutral buildings (neutral-buildings.md), MatchSetup.NoPlayer without them.
     public int NeutralPlayerId { get; }
@@ -234,6 +257,23 @@ public sealed class SimState
         return building;
     }
 
+    // save-load.md, T5: the units and buildings a snapshot recorded, both in id order, in place of
+    // the ones the match started with.
+    internal void RestoreEntities(List<Unit> units, List<Building> buildings, int nextEntityId)
+    {
+        _units.Clear();
+        _units.AddRange(units);
+        _buildings.Clear();
+        Map.ClearBuildings();
+        foreach (Building b in buildings)
+        {
+            _buildings.Add(b);
+            Map.Occupy(b);
+        }
+        BuildingListVersion++;
+        NextEntityId = nextEntityId;
+    }
+
     // Drops dead entities at the end of a tick, keeping id order; frees their cells.
     internal void RemoveDead()
     {
@@ -301,15 +341,15 @@ public sealed class SimState
     }
 
     // legion-ai.md: every slot built at the start, workers next to the first headquarters,
-    // money and income by the number of players.
-    private LegionAi SpawnLegion(MapSetup map)
+    // money and income by the number of players the base plays against.
+    private LegionAi SpawnLegion(LegionBaseSetup map, int legionPlayerId, List<int> targetPlayerIds)
     {
-        LegionStats stats = Data.LegionFor(_teamPlayerIds.Count);
-        var ai = new LegionAi(LegionPlayerId, stats, map.RallyX, map.RallyY);
+        LegionStats stats = Data.LegionFor(targetPlayerIds.Count);
+        var ai = new LegionAi(legionPlayerId, stats, map.RallyX, map.RallyY, targetPlayerIds);
         Building? hq = null;
-        foreach (BaseSlotSetup setup in map.LegionSlots)
+        foreach (BaseSlotSetup setup in map.Slots)
         {
-            Building b = PlaceBuilding(LegionPlayerId, Data.Building(setup.BuildingTypeId), setup.CellX, setup.CellY, setup.Direction, complete: true);
+            Building b = PlaceBuilding(legionPlayerId, Data.Building(setup.BuildingTypeId), setup.CellX, setup.CellY, setup.Direction, complete: true);
             ai._slots.Add(new BaseSlot(setup) { BuildingId = b.Id });
             if (hq == null && b.Stats.Behavior == BuildingBehavior.Headquarters)
                 hq = b;
@@ -318,7 +358,7 @@ public sealed class SimState
         UnitStats? workerStats = null;
         foreach (UnitStats u in Data.Units)
         {
-            if (u.Faction == GetPlayer(LegionPlayerId).Faction?.Id && u.HasTag(UnitTags.Worker))
+            if (u.Faction == GetPlayer(legionPlayerId).Faction?.Id && u.HasTag(UnitTags.Worker))
             {
                 workerStats = u;
                 break;
@@ -328,10 +368,10 @@ public sealed class SimState
         if (workerStats != null)
         {
             foreach ((int x, int y) in FreeCellsAround(home.CellX, home.CellY, home.Width, home.Height, stats.StartWorkers))
-                SpawnUnit(LegionPlayerId, workerStats, Grid.CellCenter(x), Grid.CellCenter(y));
+                SpawnUnit(legionPlayerId, workerStats, Grid.CellCenter(x), Grid.CellCenter(y));
         }
 
-        Wallet wallet = GetPlayer(LegionPlayerId).Wallet;
+        Wallet wallet = GetPlayer(legionPlayerId).Wallet;
         wallet.Add(Resources.Primary, stats.StartPrimary);
         if (ResourceTypeCount > Resources.Secondary)
             wallet.Add(Resources.Secondary, stats.StartSecondary);

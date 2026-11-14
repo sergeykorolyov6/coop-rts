@@ -432,7 +432,9 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
     def solid(c):
         return c is None or (c in terrain and not terrain[c]["passable"])
     lines = text.splitlines()
-    grid, level_grid, camps, legion, neutrals, rally, inside, done = [], [], [], [], [], None, None, set()
+    # legion-ai.md, T5: a map may have several Legion bases. A base is its legion / legion_line lines
+    # and the rally line that ends it; legion lines after a rally start the next base.
+    grid, level_grid, camps, bases, neutrals, inside, done = [], [], [], [], [], None, set()
     for number, raw in enumerate(lines, start=1):
         line = raw.rstrip("\r")
         if inside:
@@ -455,18 +457,20 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
             camps.append((number, parts))
             continue
         if parts[0] in ("legion", "legion_line"):
-            legion.append((number, parts))
+            if not bases or bases[-1]["rally"] is not None:
+                bases.append({"lines": [], "rally": None})
+            bases[-1]["lines"].append((number, parts))
             continue
         if parts[0] == "neutral":
             neutrals.append((number, parts))
             continue
         if parts[0] == "rally":
             try:
-                if len(parts) != 3 or rally is not None:
+                if len(parts) != 3 or not bases or bases[-1]["rally"] is not None:
                     raise ValueError
-                rally = (number, int(parts[1]), int(parts[2]))
+                bases[-1]["rally"] = (number, int(parts[1]), int(parts[2]))
             except ValueError:
-                raise ConvertError(f"{file_name}, строка {number}: ожидается одна строка rally <x> <y>") from None
+                raise ConvertError(f"{file_name}, строка {number}: ожидается одна строка rally <x> <y> после строк legion своей базы") from None
             continue
         raise ConvertError(f"{file_name}, строка {number}: непонятная строка «{stripped}»")
     if inside or not grid:
@@ -535,9 +539,11 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
                 raise ConvertError(f"{file_name}, строка {number}: клетка ({x}, {y}) вне карты или в скале")
         out_camps.append({"type": camp_type, "x": cx, "y": cy, "creeps": creeps})
 
-    # legion-ai.md: base slots in file order (the rebuild order).
-    slots, taken = [], {}
-    for number, parts in legion:
+    # legion-ai.md: base slots in file order (the rebuild order), base by base.
+    out_bases, taken = [], {}
+    for base in bases:
+        out_bases.append({"slots": [], "rally": None})
+    for number, parts, slots in [(n, p, out_bases[i]["slots"]) for i, base in enumerate(bases) for n, p in base["lines"]]:
         try:
             if parts[0] == "legion":
                 if len(parts) not in (4, 5):
@@ -573,10 +579,14 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
             if building == "drill" and not any(cell(xx, yy) in ("o", "s") for yy in range(y, y + h) for xx in range(x, x + w)):
                 raise ConvertError(f"{file_name}, строка {number}: бур в ({x}, {y}) не стоит на руде")
             slots.append({"building": building, "x": x, "y": y, "dir": direction})
-    if slots and rally is None:
-        raise ConvertError(f"{file_name}: у базы Легиона нет точки сбора (rally <x> <y>)")
-    if rally is not None and solid(cell(rally[1], rally[2])):
-        raise ConvertError(f"{file_name}, строка {rally[0]}: точка сбора вне карты или в скале")
+    for base, out_base in zip(bases, out_bases):
+        rally = base["rally"]
+        if rally is None:
+            raise ConvertError(f"{file_name}: у базы Легиона нет точки сбора (rally <x> <y>)")
+        if solid(cell(rally[1], rally[2])):
+            raise ConvertError(f"{file_name}, строка {rally[0]}: точка сбора вне карты или в скале")
+        out_base["rally"] = [rally[1], rally[2]]
+    slots = [s_ for b in out_bases for s_ in b["slots"]]
 
     # neutral-buildings.md: neutral <здание> <x> <y> [guard <номер лагеря с 1>].
     out_neutral = []
@@ -617,8 +627,11 @@ def convert_map(text: str, file_name: str, camp_types: dict, hq_size: tuple, bui
     }
     if levels:
         out["levels_bottom_up"] = levels
-    if slots:
-        out["legion"] = {"slots": slots, "rally": [rally[1], rally[2]]}
+    # One base keeps the old key, so the maps made before T5 give the same json.
+    if len(out_bases) == 1:
+        out["legion"] = out_bases[0]
+    elif out_bases:
+        out["legions"] = out_bases
     if out_neutral:
         out["neutral"] = out_neutral
     footprints = [(f"штаб игрока {k}", v[0], v[1], w, h) for k, v in sorted(starts.items())]
@@ -737,8 +750,8 @@ def check_map(data: dict, file_name: str, terrain: dict, footprints: list) -> No
         _, fx, fy, fw, fh = hq[f"штаб игрока {s_['slot']}"]
         if not reached(walk, fx, fy, fw, fh):
             raise ConvertError(f"{file_name}: от штаба игрока {first['slot']} нет пути к штабу игрока {s_['slot']} без копания")
-    if "legion" in data:
-        rx, ry = data["legion"]["rally"]
+    for base in ([data["legion"]] if "legion" in data else data.get("legions", [])):
+        rx, ry = base["rally"]
         if not walk[ry * width + rx]:
             raise ConvertError(f"{file_name}: от штаба игрока {first['slot']} нет пути к точке сбора Легиона ({rx}, {ry}) без копания")
     for camp in data["camps"]:
@@ -792,7 +805,7 @@ def render_map(data: dict) -> str:
     # One row per line keeps the json diffable and readable as a picture.
     rows = ",\n".join("    " + json.dumps(r) for r in data["rows_bottom_up"])
     head = {k: data[k] for k in ("width", "height")}
-    tail = {k: data[k] for k in ("starts", "camps", "legion", "neutral") if k in data}
+    tail = {k: data[k] for k in ("starts", "camps", "legion", "legions", "neutral") if k in data}
     return ("{\n" + ",\n".join(f'  "{k}": {json.dumps(v)}' for k, v in head.items())
             + ',\n  "rows_bottom_up": [\n' + rows + "\n  ],\n"
             + ('  "levels_bottom_up": [\n' + ",\n".join("    " + json.dumps(r) for r in data["levels_bottom_up"]) + "\n  ],\n"

@@ -24,6 +24,10 @@ public sealed class UnitOrder
     // Taken by the unit itself (a repairer's auto-repair, builder.md), not given by the player.
     public bool IsAuto { get; }
 
+    // save-load.md, T5: an order as a snapshot recorded it.
+    internal static UnitOrder Restore(UnitOrderKind kind, int x, int y, int targetId, bool isAuto) =>
+        kind == UnitOrderKind.Idle ? Idle : new UnitOrder(kind, x, y, targetId, isAuto);
+
     public static UnitOrder MoveTo(int x, int y) => new UnitOrder(UnitOrderKind.Move, x, y, 0);
     public static UnitOrder Attack(int targetId) => new UnitOrder(UnitOrderKind.Attack, 0, 0, targetId);
     public static UnitOrder Mine(int cellX, int cellY) => new UnitOrder(UnitOrderKind.Mine, cellX, cellY, 0);

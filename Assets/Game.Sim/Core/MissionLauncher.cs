@@ -4,12 +4,15 @@ namespace Game.Sim;
 
 // mission.md: one way to turn a mission row and its map into a match, shared by the game,
 // saves and tests. Humans are players 1..N, allied; the Legion 9, the creeps 10, the neutral
-// buildings' owner 11.
+// buildings' owner 11; the Legion's further bases (legion-ai.md, T5) 12, 13, …
 public static class MissionLauncher
 {
     public const int LegionPlayerId = 9;
     public const int CreepPlayerId = 10;
     public const int NeutralPlayerId = 11;
+
+    // The player of the map's Legion base number baseIndex (from 0).
+    public static int LegionPlayerIdFor(int baseIndex) => baseIndex == 0 ? LegionPlayerId : NeutralPlayerId + baseIndex;
 
     // Primary and secondary ore.
     public const int ResourceTypeCount = Resources.Secondary + 1;
@@ -22,10 +25,11 @@ public static class MissionLauncher
             humans.Add(id);
         MapSetup map = MapLoader.Parse(mapJson, humans, data);
 
-        bool legion = mission.HasLegion && map.LegionSlots.Count > 0;
+        var legions = new List<int>();
+        for (int i = 0; mission.HasLegion && i < map.LegionBases.Count; i++)
+            legions.Add(LegionPlayerIdFor(i));
         var playerIds = new List<int>(humans) { CreepPlayerId, NeutralPlayerId };
-        if (legion)
-            playerIds.Add(LegionPlayerId);
+        playerIds.AddRange(legions);
         var relations = new List<RelationSetup>();
         foreach (int a in humans)
         {
@@ -35,8 +39,17 @@ public static class MissionLauncher
                     relations.Add(new RelationSetup(a, b, Relation.Ally));
             }
             relations.Add(new RelationSetup(a, CreepPlayerId, Relation.Enemy));
-            if (legion)
-                relations.Add(new RelationSetup(a, LegionPlayerId, Relation.Enemy));
+            foreach (int legion in legions)
+                relations.Add(new RelationSetup(a, legion, Relation.Enemy));
+        }
+        // The Legion's bases are one enemy: they never fight each other.
+        foreach (int a in legions)
+        {
+            foreach (int b in legions)
+            {
+                if (a < b)
+                    relations.Add(new RelationSetup(a, b, Relation.Ally));
+            }
         }
         // factions.md: the mission names the faction of every start slot; the rest get the default.
         IReadOnlyList<string> chosen = factions ?? mission.Factions;
@@ -44,6 +57,6 @@ public static class MissionLauncher
         for (int i = 0; i < humans.Count && i < chosen.Count; i++)
             slots.Add(new PlayerFaction(humans[i], chosen[i]));
         return new MatchSetup(seed, data, map, ResourceTypeCount, playerIds, relations,
-            CreepPlayerId, legion ? LegionPlayerId : MatchSetup.NoPlayer, NeutralPlayerId, mission.Goal, slots);
+            CreepPlayerId, MatchSetup.NoPlayer, NeutralPlayerId, mission.Goal, slots, legions);
     }
 }

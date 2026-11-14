@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 
 namespace Game.Sim;
 
@@ -15,6 +16,8 @@ public sealed class MapState
     private readonly bool[] _ramp;
     private readonly int[] _rockHp;
     private readonly List<Deposit> _deposits = new List<Deposit>();
+    // Rock cells dug away, in the order they broke: for the snapshot (save-load.md, T5).
+    private readonly List<int> _brokenRock = new List<int>();
 
     internal MapState(MapSetup setup)
     {
@@ -43,10 +46,16 @@ public sealed class MapState
                 TerrainStats? terrain = _terrain[y * Width + x];
                 if (terrain != null && terrain.Destructible)
                     _rockHp[y * Width + x] = terrain.Hp;
+                int i = y * Width + x;
+                int cell = (_blocked[i] ? 1 : 0) | ((_ore[i] + 1) << 1) | (_level[i] << 4) | ((_ramp[i] ? 1 : 0) << 8);
+                LayoutChecksum ^= Mix(i, cell) ^ Mix(i + count, _rockHp[i]);
             }
         }
         FindDeposits();
     }
+
+    // A fold of the map as it was drawn (rock, ore, levels): a snapshot of one map never loads onto another.
+    public ulong LayoutChecksum { get; }
 
     public int Width { get; }
     public int Height { get; }
@@ -141,10 +150,120 @@ public sealed class MapState
         TerrainStats rock = _terrain[i]!;
         _terrain[i] = null;
         _blocked[i] = false;
+        _brokenRock.Add(i);
         if (rock.OreType != MapSetup.NoOre)
             AddOre(x, y, rock.OreType);
         Version++;
         return true;
+    }
+
+    // save-load.md, T5: what a match changes in the map — rock dug at or away, and the deposits
+    // with the ore that rock left. Buildings are put back by SimState.RestoreEntities.
+    internal void WriteSnapshot(BinaryWriter w)
+    {
+        w.Write(RockChecksum);
+        w.Write(_brokenRock.Count);
+        foreach (int cell in _brokenRock)
+            w.Write(cell);
+        int cracked = 0;
+        for (int i = 0; i < _rockHp.Length; i++)
+        {
+            if (_rockHp[i] > 0 && _rockHp[i] != _terrain[i]!.Hp)
+                cracked++;
+        }
+        w.Write(cracked);
+        for (int i = 0; i < _rockHp.Length; i++)
+        {
+            if (_rockHp[i] > 0 && _rockHp[i] != _terrain[i]!.Hp)
+            {
+                w.Write(i);
+                w.Write(_rockHp[i]);
+            }
+        }
+        w.Write(_deposits.Count);
+        foreach (Deposit d in _deposits)
+        {
+            w.Write(d.ResourceType);
+            w.Write(d.Cells.Count);
+            foreach (int cell in d.Cells)
+                w.Write(cell);
+        }
+    }
+
+    // Into the map as the match started with it.
+    internal void ReadSnapshot(BinaryReader r)
+    {
+        ulong checksum = r.ReadUInt64();
+        int cells = _rockHp.Length;
+        for (int n = ReadCount(r, cells); n > 0; n--)
+        {
+            int i = ReadRockCell(r);
+            _rockHp[i] = 0;
+            _terrain[i] = null;
+            _blocked[i] = false;
+            _brokenRock.Add(i);
+        }
+        for (int n = ReadCount(r, cells); n > 0; n--)
+        {
+            int i = ReadRockCell(r);
+            int hp = r.ReadInt32();
+            if (hp <= 0 || hp >= _rockHp[i])
+                throw new InvalidDataException($"Snapshot: rock cell {i} with {hp} left of {_rockHp[i]}.");
+            _rockHp[i] = hp;
+        }
+        RockChecksum = checksum;
+
+        int deposits = ReadCount(r, cells);
+        if (deposits < _deposits.Count)
+            throw new InvalidDataException("Snapshot: fewer deposits than the map has.");
+        _deposits.Clear();
+        for (int i = 0; i < cells; i++)
+        {
+            _ore[i] = MapSetup.NoOre;
+            _depositAt[i] = 0;
+        }
+        for (int id = 1; id <= deposits; id++)
+        {
+            int type = r.ReadInt32();
+            var list = new List<int>();
+            for (int n = ReadCount(r, cells); n > 0; n--)
+            {
+                int cell = r.ReadInt32();
+                if (cell < 0 || cell >= cells || _depositAt[cell] != 0 || _blocked[cell] || (list.Count > 0 && cell <= list[list.Count - 1]))
+                    throw new InvalidDataException($"Snapshot: ore cell {cell} of deposit {id}.");
+                list.Add(cell);
+                _ore[cell] = type;
+                _depositAt[cell] = id;
+            }
+            if (type < 0 || list.Count == 0)
+                throw new InvalidDataException($"Snapshot: deposit {id} of resource {type} with {list.Count} cells.");
+            _deposits.Add(new Deposit(id, type, list));
+        }
+        Version++;
+    }
+
+    private static int ReadCount(BinaryReader r, int max)
+    {
+        int count = r.ReadInt32();
+        if (count < 0 || count > max)
+            throw new InvalidDataException($"Snapshot: a list of {count} map cells.");
+        return count;
+    }
+
+    // A cell that is destructible rock in the map as drawn and still stands here.
+    private int ReadRockCell(BinaryReader r)
+    {
+        int i = r.ReadInt32();
+        if (i < 0 || i >= _rockHp.Length || _rockHp[i] <= 0)
+            throw new InvalidDataException($"Snapshot: cell {i} is not destructible rock on this map.");
+        return i;
+    }
+
+    internal void ClearBuildings()
+    {
+        System.Array.Clear(_buildingAt, 0, _buildingAt.Length);
+        System.Array.Clear(_walkableBuilding, 0, _walkableBuilding.Length);
+        Version++;
     }
 
     private static ulong Mix(int cell, int hp)

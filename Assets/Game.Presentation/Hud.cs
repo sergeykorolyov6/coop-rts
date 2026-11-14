@@ -5,14 +5,26 @@ using UnityEngine.UIElements;
 namespace Game.Presentation
 {
     // Root of the in-game UI (UI Toolkit, built in code until there is a designer for it):
-    // the wallet bar on top (with income over the last minute), a bottom bar that panels fill,
-    // and a tip that follows the cursor.
+    // the wallet bar on top (with income over the last minute), under it the allies with buttons to
+    // give them resources (coop-tools.md), a bottom bar that panels fill, and a tip that follows the cursor.
     // Mouse input on the map asks IsPointerOverUi first so a button click never also orders units.
     [RequireComponent(typeof(UIDocument))]
     public sealed class Hud : MonoBehaviour
     {
         [SerializeField] private SimRunner? _runner;
         [SerializeField] private LocalPlayer? _localPlayer;
+
+        [Tooltip("coop-tools.md: resources one click gives an ally; with Shift five times as much.")]
+        [SerializeField] private int _giveStep = 50;
+
+        private const float AllyRowHeight = 30f;
+
+        // The height of the allies' panel for that many allies: what sits below it leaves room (NotificationFeed).
+        public static float AlliesPanelHeight(int allies) => allies * AllyRowHeight + 8f;
+
+        private VisualElement? _alliesPanel;
+        private readonly System.Collections.Generic.List<AllyRow> _allyRows = new System.Collections.Generic.List<AllyRow>();
+        private int _alliesFor = -1;
 
         private Label? _wallet;
         private Label? _tip;
@@ -80,6 +92,7 @@ namespace Game.Presentation
             bool hasSecondary = wallet.ResourceTypeCount > Game.Sim.Resources.Secondary;
             int primary = wallet.Get(Game.Sim.Resources.Primary);
             int secondary = hasSecondary ? wallet.Get(Game.Sim.Resources.Secondary) : 0;
+            UpdateAllies(simulation.State, playerId, primary, secondary, hasSecondary);
 
             SampleIncome(simulation.State.Tick, playerId, wallet, hasSecondary);
             int oldest = _samples > IncomeWindowSeconds ? (_samples - IncomeWindowSeconds - 1) % _earnedPrimary.Length : 0;
@@ -97,6 +110,100 @@ namespace Game.Presentation
             _shownIncomePrimary = incomePrimary;
             _shownIncomeSecondary = incomeSecondary;
             _wallet.text = $"{DisplayNames.PlayerName(simulation.State, playerId)}    Основной ресурс: {primary} (+{incomePrimary}/мин)    Второй: {secondary} (+{incomeSecondary}/мин)";
+        }
+
+        // coop-tools.md: one row per team ally — its wallet and the buttons that give it resources.
+        private void UpdateAllies(SimState state, int me, int myPrimary, int mySecondary, bool hasSecondary)
+        {
+            if (Root == null || _runner == null)
+                return;
+            if (_alliesFor != me)
+            {
+                _alliesFor = me;
+                _alliesPanel?.RemoveFromHierarchy();
+                _alliesPanel = null;
+                _allyRows.Clear();
+                // Nobody to give to alone, and nothing to give in a replay.
+                if (state.TeamPlayerIds.Count < 2 || !state.IsTeamPlayer(me) || _runner.IsReplay)
+                    return;
+                _alliesPanel = new VisualElement { name = "Allies", pickingMode = PickingMode.Ignore };
+                _alliesPanel.style.position = Position.Absolute;
+                _alliesPanel.style.left = 12;
+                _alliesPanel.style.top = 40;
+                Panelise(_alliesPanel);
+                foreach (int ally in state.TeamPlayerIds)
+                {
+                    if (ally != me)
+                        _allyRows.Add(new AllyRow(this, _alliesPanel, ally, hasSecondary));
+                }
+                Root.Add(_alliesPanel);
+            }
+            foreach (AllyRow row in _allyRows)
+                row.Update(state, myPrimary, mySecondary, _giveStep);
+        }
+
+        private void Give(int allyId, int resourceType)
+        {
+            Simulation? simulation = _runner != null ? _runner.Simulation : null;
+            if (simulation == null || _localPlayer == null)
+                return;
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            int amount = keyboard != null && keyboard.shiftKey.isPressed ? _giveStep * 5 : _giveStep;
+            _runner!.Submit(new GiveResourcesCommand(_localPlayer.PlayerId, simulation.State.Tick, allyId, resourceType, amount));
+        }
+
+        private sealed class AllyRow
+        {
+            private readonly int _allyId;
+            private readonly Label _label;
+            private readonly Button _primary;
+            private readonly Button? _secondary;
+            private string _shown = "";
+
+            public AllyRow(Hud hud, VisualElement panel, int allyId, bool hasSecondary)
+            {
+                _allyId = allyId;
+                var row = new VisualElement { pickingMode = PickingMode.Ignore };
+                row.style.flexDirection = FlexDirection.Row;
+                row.style.alignItems = Align.Center;
+                row.style.height = AllyRowHeight;
+                _label = new Label { pickingMode = PickingMode.Ignore };
+                _label.style.minWidth = 300;
+                row.Add(_label);
+                _primary = new Button(() => hud.Give(allyId, Game.Sim.Resources.Primary));
+                StyleButton(_primary);
+                row.Add(_primary);
+                hud.AttachTip(_primary, () => "Передать союзнику основной ресурс из своего кошелька. С Shift — в пять раз больше.");
+                if (hasSecondary)
+                {
+                    _secondary = new Button(() => hud.Give(allyId, Game.Sim.Resources.Secondary));
+                    StyleButton(_secondary);
+                    row.Add(_secondary);
+                    hud.AttachTip(_secondary, () => "Передать союзнику второй ресурс из своего кошелька. С Shift — в пять раз больше.");
+                }
+                panel.Add(row);
+            }
+
+            public void Update(SimState state, int myPrimary, int mySecondary, int step)
+            {
+                Wallet wallet = state.GetPlayer(_allyId).Wallet;
+                string text = $"{DisplayNames.PlayerName(state, _allyId)}: {wallet.Get(Game.Sim.Resources.Primary)} / {wallet.Secondary}";
+                if (text != _shown)
+                {
+                    _shown = text;
+                    _label.text = text;
+                }
+                string primary = $"+{step} осн.";
+                if (_primary.text != primary)
+                    _primary.text = primary;
+                _primary.SetEnabled(myPrimary >= step);
+                if (_secondary == null)
+                    return;
+                string secondary = $"+{step} втор.";
+                if (_secondary.text != secondary)
+                    _secondary.text = secondary;
+                _secondary.SetEnabled(mySecondary >= step);
+            }
         }
 
         private void SampleIncome(int tick, int playerId, Wallet wallet, bool hasSecondary)

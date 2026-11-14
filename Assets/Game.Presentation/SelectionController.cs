@@ -153,6 +153,13 @@ namespace Game.Presentation
             if (mouse.leftButton.wasPressedThisFrame && !(_placement != null && _placement.IsBusy) && !(_abilities != null && _abilities.IsBusy)
                 && !(_hud != null && _hud.IsPointerOverUi(pointer)))
             {
+                // coop-tools.md: Alt + click marks the point for the allies and selects nothing.
+                if (Keyboard.current != null && Keyboard.current.altKey.isPressed)
+                {
+                    if (_camera != null && _minimap != null && _camera.GroundPoint(pointer, out Vector3 ground))
+                        _minimap.PlacePing(ground.x, ground.z);
+                    return;
+                }
                 _pressing = true;
                 _pressAt = pointer;
             }

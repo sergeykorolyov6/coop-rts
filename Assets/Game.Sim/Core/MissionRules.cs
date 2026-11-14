@@ -1,7 +1,7 @@
 namespace Game.Sim;
 
-// mission.md: victory by the mission's goal — destroy_legion: the Legion has no headquarters and
-// no factory left (sites count); kill_boss: no living boss is left. Defeat: no team player has a
+// mission.md: victory by the mission's goal — destroy_legion: no base of the Legion has a headquarters
+// or a factory left (sites count); kill_boss: no living boss is left. Defeat: no team player has a
 // finished headquarters and no team builder lives (builder.md). Victory wins a tie.
 internal static class MissionRules
 {
@@ -24,7 +24,7 @@ internal static class MissionRules
     {
         foreach (Building b in state.Buildings)
         {
-            if (!b.IsDead && b.OwnerId == state.LegionPlayerId && (b.Stats.Behavior == BuildingBehavior.Headquarters || b.Factory != null))
+            if (!b.IsDead && state.IsLegionPlayer(b.OwnerId) && (b.Stats.Behavior == BuildingBehavior.Headquarters || b.Factory != null))
                 return true;
         }
         return false;

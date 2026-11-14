@@ -70,12 +70,12 @@ internal sealed class StateHasher
         }
 
         _writer.Write((byte)state.Outcome);
-        LegionAi? ai = state.Legion;
-        if (ai != null)
+        foreach (LegionAi ai in state.Legions)
         {
             _writer.Write(ai.NextWave);
             _writer.Write(ai.NextWaveTargetPlayerId);
             _writer.Write(ai.NextWaveWarned);
+            _writer.Write(ai.NextWaveArrivalTick);
             _writer.Write(ai.DefendBuildingId);
             foreach (BaseSlot slot in ai.Slots)
             {

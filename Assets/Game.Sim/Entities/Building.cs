@@ -76,6 +76,15 @@ public sealed class Building : Entity
     // Builders or repairers counted so far in the current tick, against MaxBuilders.
     internal int WorkersThisTick { get; set; }
 
+    // save-load.md, T5: the stage of construction a snapshot recorded.
+    internal void RestoreBuild(BuildState state, int progress)
+    {
+        if (progress < 0 || progress > BuildWork)
+            throw new System.IO.InvalidDataException($"Snapshot: building {Id} with {progress} of {BuildWork} work done.");
+        State = state;
+        BuildProgress = progress;
+    }
+
     public bool OccupiesCell(int x, int y) =>
         x >= CellX && y >= CellY && x < CellX + Width && y < CellY + Height;
 

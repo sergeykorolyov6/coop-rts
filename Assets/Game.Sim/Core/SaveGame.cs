@@ -8,16 +8,19 @@ namespace Game.Sim;
 // save-load.md: a save is a recording — mission, seed, the faction of every start slot and every
 // player command up to Tick — plus the StateHash at Tick to check that replaying it gives the same
 // match. A replay is the same recording taken when the match ends, watched from tick 0.
+// T5: a save also carries a snapshot of the state at Tick, so it loads at once; the recording
+// stays as the fallback and for the replay.
 public sealed class SaveGame
 {
     private const string Magic = "COOPSAVE";
 
-    // 2: factions of the start slots (chosen in the network lobby, network.md). 1 is still read.
-    public const int FormatVersion = 2;
+    // 3: a snapshot of the state after the command log. 2: factions of the start slots (chosen in
+    // the network lobby, network.md). 1 and 2 are still read.
+    public const int FormatVersion = 3;
 
     private readonly List<string> _factions;
 
-    public SaveGame(string missionId, int seed, int tick, ulong stateHash, byte[] commandLog, IReadOnlyList<string>? factions = null)
+    public SaveGame(string missionId, int seed, int tick, ulong stateHash, byte[] commandLog, IReadOnlyList<string>? factions = null, byte[]? snapshot = null)
     {
         MissionId = missionId;
         Seed = seed;
@@ -25,7 +28,12 @@ public sealed class SaveGame
         StateHash = stateHash;
         CommandLog = commandLog;
         _factions = factions != null ? new List<string>(factions) : new List<string>();
+        Snapshot = snapshot ?? Array.Empty<byte>();
     }
+
+    // Simulation.WriteSnapshot at Tick; empty in a replay and in formats 1 and 2.
+    public byte[] Snapshot { get; }
+    public bool HasSnapshot => Snapshot.Length > 0;
 
     public string MissionId { get; }
     public int Seed { get; }
@@ -41,12 +49,14 @@ public sealed class SaveGame
     // The factions to launch with (MissionLauncher.CreateSetup): null — the mission's own.
     public IReadOnlyList<string>? FactionsOrNull => _factions.Count > 0 ? _factions : null;
 
-    public static SaveGame Capture(Simulation simulation, string missionId, int seed, CommandCodec codec)
+    // snapshot: false for a replay — it is watched from tick 0 and the file stays small.
+    public static SaveGame Capture(Simulation simulation, string missionId, int seed, CommandCodec codec, bool snapshot = true)
     {
         var factions = new List<string>();
         foreach (int playerId in simulation.State.TeamPlayerIds)
             factions.Add(simulation.State.GetPlayer(playerId).Faction?.Id ?? "");
-        return new SaveGame(missionId, seed, simulation.State.Tick, simulation.StateHash, codec.WriteLog(simulation.CommandLog), factions);
+        return new SaveGame(missionId, seed, simulation.State.Tick, simulation.StateHash, codec.WriteLog(simulation.CommandLog), factions,
+            snapshot ? simulation.WriteSnapshot() : null);
     }
 
     public byte[] Write()
@@ -65,6 +75,8 @@ public sealed class SaveGame
             writer.Write(StateHash);
             writer.Write(CommandLog.Length);
             writer.Write(CommandLog);
+            writer.Write(Snapshot.Length);
+            writer.Write(Snapshot);
         }
         return stream.ToArray();
     }
@@ -78,7 +90,7 @@ public sealed class SaveGame
             if (Encoding.ASCII.GetString(reader.ReadBytes(Magic.Length)) != Magic)
                 throw new InvalidDataException("Not a CoopRTS save.");
             int version = reader.ReadInt32();
-            if (version != 1 && version != FormatVersion)
+            if (version < 1 || version > FormatVersion)
                 throw new InvalidDataException($"Save format {version}, expected {FormatVersion}.");
             string mission = reader.ReadString();
             int seed = reader.ReadInt32();
@@ -97,9 +109,21 @@ public sealed class SaveGame
             if (length < 0)
                 throw new InvalidDataException("Negative command log length.");
             byte[] log = reader.ReadBytes(length);
-            if (log.Length != length || stream.Position != stream.Length)
-                throw new InvalidDataException("Save is truncated or has trailing bytes.");
-            return new SaveGame(mission, seed, tick, hash, log, factions);
+            if (log.Length != length)
+                throw new InvalidDataException("Save is truncated.");
+            byte[]? snapshot = null;
+            if (version >= 3)
+            {
+                int size = reader.ReadInt32();
+                if (size < 0)
+                    throw new InvalidDataException("Negative snapshot length.");
+                snapshot = reader.ReadBytes(size);
+                if (snapshot.Length != size)
+                    throw new InvalidDataException("Save is truncated.");
+            }
+            if (stream.Position != stream.Length)
+                throw new InvalidDataException("Save has trailing bytes.");
+            return new SaveGame(mission, seed, tick, hash, log, factions, snapshot);
         }
         catch (EndOfStreamException e)
         {
@@ -125,10 +149,31 @@ public sealed class SaveGame
     public bool Matches(Simulation simulation) =>
         simulation.State.Tick == Tick && simulation.StateHash == StateHash;
 
-    // Replays the commands from the mission's start up to Tick. Throws InvalidDataException when the
-    // result does not match the recorded StateHash (another version of the rules or the data).
+    // T5: the match straight from the snapshot, or null when the save has none or it does not fit
+    // (another version of the game, damaged bytes, another StateHash) — then replay the recording.
+    public Simulation? TryRestoreSnapshot(MatchSetup setup, CommandCodec codec)
+    {
+        if (!HasSnapshot)
+            return null;
+        try
+        {
+            Simulation simulation = Simulation.FromSnapshot(setup, Snapshot, codec.ReadLog(CommandLog));
+            return Matches(simulation) ? simulation : null;
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+    }
+
+    // The match at Tick: from the snapshot when it fits, else by replaying the commands from the
+    // mission's start. Throws InvalidDataException when the result does not match the recorded
+    // StateHash (another version of the rules or the data).
     public Simulation Restore(MatchSetup setup, CommandCodec codec)
     {
+        Simulation? restored = TryRestoreSnapshot(setup, codec);
+        if (restored != null)
+            return restored;
         Simulation simulation = BeginReplay(setup, codec);
         simulation.FastForward(Tick);
         if (!Matches(simulation))

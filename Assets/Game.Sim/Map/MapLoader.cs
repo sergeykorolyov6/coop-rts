@@ -116,15 +116,28 @@ public static class MapLoader
                 }
                 continue;
             }
-            if (field.Key != "legion")
+            // legion-ai.md, T5: "legion" is the map's only base, "legions" a list of several.
+            if (field.Key == "legion")
+                ParseBase(map, field.Value);
+            if (field.Key != "legions")
                 continue;
-            foreach (JsonNode slot in field.Value.Get("slots").Items)
-                map.LegionSlot(slot.GetString("building"), slot.GetInt("x"), slot.GetInt("y"), ParseDirection(slot.GetString("dir")));
-            JsonNode rally = field.Value.Get("rally");
-            if (rally.Items.Count != 2)
-                throw new FormatException("The Legion's rally point is a pair [x, y].");
-            map.Rally(rally.Items[0].Integer, rally.Items[1].Integer);
+            for (int i = 0; i < field.Value.Items.Count; i++)
+            {
+                if (i > 0)
+                    map.LegionBase();
+                ParseBase(map, field.Value.Items[i]);
+            }
         }
         return map;
+    }
+
+    private static void ParseBase(MapSetup map, JsonNode legionBase)
+    {
+        foreach (JsonNode slot in legionBase.Get("slots").Items)
+            map.LegionSlot(slot.GetString("building"), slot.GetInt("x"), slot.GetInt("y"), ParseDirection(slot.GetString("dir")));
+        JsonNode rally = legionBase.Get("rally");
+        if (rally.Items.Count != 2)
+            throw new FormatException("The Legion's rally point is a pair [x, y].");
+        map.Rally(rally.Items[0].Integer, rally.Items[1].Integer);
     }
 }

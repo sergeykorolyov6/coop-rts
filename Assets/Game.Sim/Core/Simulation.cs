@@ -21,6 +21,30 @@ public sealed class Simulation
         StateHash = _hasher.Compute(State);
     }
 
+    // save-load.md, T5: everything the match has changed, as bytes; FromSnapshot brings it back.
+    // Taken between ticks only.
+    public byte[] WriteSnapshot() => Snapshot.Write(State);
+
+    // The match of this setup as the snapshot left it. log: every command of the match so far (the
+    // replay recorded later starts at tick 0); those for ticks still ahead wait for their tick.
+    // Throws InvalidDataException when the snapshot is of another match or version.
+    public static Simulation FromSnapshot(MatchSetup setup, byte[] snapshot, IReadOnlyList<ICommand> log)
+    {
+        var simulation = new Simulation(setup);
+        Snapshot.Read(simulation.State, snapshot);
+        foreach (ICommand command in log)
+        {
+            if (command.Tick < simulation.State.Tick)
+                simulation._log.Add(command);
+            else if (simulation.State.HasPlayer(command.PlayerId))
+                simulation.Enqueue(command);
+            else
+                throw new System.IO.InvalidDataException($"Command from unknown player {command.PlayerId}.");
+        }
+        simulation.StateHash = simulation._hasher.Compute(simulation.State);
+        return simulation;
+    }
+
     public SimState State { get; }
 
     // Events raised during the last Tick().

@@ -446,7 +446,7 @@ namespace Game.Presentation
         {
             if (ownerId == state.CreepPlayerId)
                 return _creepColor;
-            if (ownerId == state.LegionPlayerId)
+            if (state.IsLegionPlayer(ownerId))
                 return _legionColor;
             if (ownerId == state.NeutralPlayerId)
                 return _neutralColor;

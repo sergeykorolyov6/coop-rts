@@ -19,4 +19,6 @@
 | R | повернуть здание при размещении | `PlacementController` |
 | Delete | снести выделенное здание | `BuildingPanel` |
 | Shift | приказ в очередь | `OrderController`, `PlacementController` |
+| Alt + левый клик по земле или по миникарте | метка для союзников (`mechanics/coop-tools.md`) | `SelectionController`, `Minimap` |
+| Кнопки «+50 осн.» и «+50 втор.» у союзника под кошельком (Shift — в пять раз больше) | передать союзнику ресурс | `Hud` |
 | Esc | отменить размещение или прицел, иначе меню паузы | `PlacementController`, `AbilityPanel`, `GameMenu` |

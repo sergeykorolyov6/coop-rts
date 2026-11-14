@@ -9,11 +9,12 @@ namespace Game.Presentation
     // Drives a match at Simulation.TicksPerSecond from Unity's frame loop: alone, or in a network
     // game (network.md) only as far as the lockstep allows. Every command of the local player goes
     // through Submit. Polls the network session in the lobby too, and starts the match the host started.
-    // save-load.md: a save loads by replaying its commands a slice per frame ("Загрузка… N %"); a replay
+    // save-load.md: a save loads at once from its snapshot (T5); when the snapshot does not fit this
+    // version of the game, by replaying its commands a slice per frame ("Загрузка… N %"). A replay
     // plays a whole recorded match at the chosen speed without orders; a match's recording is kept as
     // a replay when it ends or the player leaves it.
-    // The match is the mission GameSession names (mission.md): humans 1..N allied, the Legion 9,
-    // creeps 10, neutral buildings 11 (MissionLauncher). Without one the main menu shows (GameMenu).
+    // The match is the mission GameSession names (mission.md): humans 1..N allied, the Legion's bases 9
+    // and 12, 13, …, creeps 10, neutral buildings 11 (MissionLauncher). Without one the main menu shows (GameMenu).
     public sealed class SimRunner : MonoBehaviour
     {
         // Caps catch-up after a long frame (breakpoint, alt-tab) so the editor does not freeze.
@@ -149,11 +150,13 @@ namespace Game.Presentation
             SaveGame? save = GameSession.PendingSave ?? GameSession.Replay;
             try
             {
-                // A save starts at tick 0 too and is played up to its tick in Update, a slice a frame.
-                _simulation = save != null ? save.BeginReplay(setup, Codec) : new Simulation(setup);
+                // save-load.md, T5: a save comes back from its snapshot at once. Without one that fits
+                // it starts at tick 0, like a replay, and is played up to its tick in Update, a slice a frame.
+                Simulation? restored = GameSession.Replay == null ? GameSession.PendingSave?.TryRestoreSnapshot(setup, Codec) : null;
+                _simulation = restored ?? (save != null ? save.BeginReplay(setup, Codec) : new Simulation(setup));
                 Ground.Map = _simulation.State.Map;
                 _replay = GameSession.Replay;
-                _loading = _replay == null ? GameSession.PendingSave : null;
+                _loading = _replay == null && restored == null ? GameSession.PendingSave : null;
             }
             catch (Exception e) when (e is System.IO.InvalidDataException || e is System.IO.EndOfStreamException || e is ArgumentException)
             {
@@ -184,7 +187,8 @@ namespace Game.Presentation
             _replayRecorded = true;
             try
             {
-                SaveStore.Write(SaveStore.Kind.Replay, SaveGame.Capture(_simulation, Mission.Id, Seed, Codec).Write());
+                // Watched from tick 0: no snapshot, the file stays small.
+                SaveStore.Write(SaveStore.Kind.Replay, SaveGame.Capture(_simulation, Mission.Id, Seed, Codec, snapshot: false).Write());
             }
             catch (System.IO.IOException e)
             {

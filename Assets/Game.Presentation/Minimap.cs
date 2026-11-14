@@ -9,7 +9,8 @@ namespace Game.Presentation
     // Minimap in the bottom-right corner: the fog-shaded ground (as MapView draws it), units and
     // buildings in their owners' colours (others only where the fog shows them), creep camps once
     // discovered (creep-camp.md), a trophy marker, a blinking ping where an own or ally building
-    // is attacked (drill.md, combat.md), and the camera's view. Click or drag moves the camera.
+    // is attacked (drill.md, combat.md), and the camera's view. Click or drag moves the camera;
+    // Alt + click marks the point for the allies (coop-tools.md).
     [RequireComponent(typeof(SimRunner), typeof(MapView), typeof(EntityView))]
     public sealed class Minimap : MonoBehaviour
     {
@@ -18,6 +19,11 @@ namespace Game.Presentation
 
         private const int PixelsPerCell = 3;
         private const float PingSeconds = 3f;
+
+        // coop-tools.md: how long an ally's mark stays, and how often one machine may place them.
+        public const float AllyPingSeconds = 6f;
+        private const float PingCooldownSeconds = 0.5f;
+        private float _nextPingTime;
 
         [SerializeField] private Hud? _hud;
         [SerializeField] private RtsCamera? _camera;
@@ -157,14 +163,25 @@ namespace Game.Presentation
             for (int i = _pings.Count - 1; i >= 0; i--)
             {
                 float age = Time.unscaledTime - _pings[i].Born;
-                if (age >= PingSeconds)
+                if (age >= _pings[i].Seconds)
                 {
                     _pings.RemoveAt(i);
                     continue;
                 }
                 // Blinks twice a second so it catches the eye.
-                if ((int)(age * 4f) % 2 == 0)
+                if ((int)(age * 4f) % 2 != 0)
+                    continue;
+                if (_pings[i].Ally)
+                {
+                    // An ally's mark: its colour, bigger than an alarm.
+                    Ring(_pings[i].X, _pings[i].Y, 6, _pings[i].Color);
+                    Ring(_pings[i].X, _pings[i].Y, 5, _pings[i].Color);
+                    Square(_pings[i].X, _pings[i].Y, 1, _pings[i].Color);
+                }
+                else
+                {
                     Ring(_pings[i].X, _pings[i].Y, 4, _pingColor);
+                }
             }
 
             _texture!.SetPixels32(_pixels);
@@ -178,11 +195,21 @@ namespace Game.Presentation
                 return;
             foreach (SimEvent e in events)
             {
-                // legion-ai.md: where the coming wave starts from.
-                if (e is WaveIncoming && simulation.State.Legion != null)
+                // legion-ai.md: where the coming wave starts from — the rally point of its base (T5: there may be several).
+                if (e is WaveIncoming incoming)
                 {
-                    LegionAi legion = simulation.State.Legion;
-                    _pings.Add(new Ping(legion.RallyX * PixelsPerCell + PixelsPerCell / 2, legion.RallyY * PixelsPerCell + PixelsPerCell / 2, Time.unscaledTime));
+                    foreach (LegionAi legion in simulation.State.Legions)
+                    {
+                        if (legion.PlayerId == incoming.LegionPlayerId)
+                            _pings.Add(new Ping(legion.RallyX * PixelsPerCell + PixelsPerCell / 2, legion.RallyY * PixelsPerCell + PixelsPerCell / 2, Time.unscaledTime));
+                    }
+                    continue;
+                }
+                // coop-tools.md: a mark a team player placed — in that player's colour.
+                if (e is Pinged ping && simulation.State.Relations.IsAlly(_localPlayer.PlayerId, ping.PlayerId))
+                {
+                    _pings.Add(new Ping(ping.X * PixelsPerCell / Grid.MilliPerCell, ping.Y * PixelsPerCell / Grid.MilliPerCell, Time.unscaledTime,
+                        AllyPingSeconds, _entities!.OwnerColor(simulation.State, ping.PlayerId), ally: true));
                     continue;
                 }
                 // legion-ai.md: the wave is out — mark what it goes for, so the team knows where to defend.
@@ -259,10 +286,33 @@ namespace Game.Presentation
             painter.Stroke();
         }
 
+        // coop-tools.md: the local player marks a point (in cells) for the allies. A command, so it
+        // reaches them over the network like any order; not more often than the cooldown.
+        public void PlacePing(float cellX, float cellY)
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (simulation == null || _localPlayer == null || Time.unscaledTime < _nextPingTime)
+                return;
+            _nextPingTime = Time.unscaledTime + PingCooldownSeconds;
+            int x = Mathf.Clamp(Mathf.RoundToInt(cellX * Grid.MilliPerCell), 0, simulation.State.Map.Width * Grid.MilliPerCell - 1);
+            int y = Mathf.Clamp(Mathf.RoundToInt(cellY * Grid.MilliPerCell), 0, simulation.State.Map.Height * Grid.MilliPerCell - 1);
+            _runner.Submit(new PingCommand(_localPlayer.PlayerId, simulation.State.Tick, x, y));
+        }
+
         private void OnPointerDown(PointerDownEvent evt)
         {
             if (evt.button != 0)
                 return;
+            if (evt.altKey)
+            {
+                if (_runner!.Simulation != null && _view != null)
+                {
+                    Rect rect = _view.contentRect;
+                    PlacePing(Mathf.Clamp01(evt.localPosition.x / rect.width) * _runner.Simulation.State.Map.Width,
+                        (1f - Mathf.Clamp01(evt.localPosition.y / rect.height)) * _runner.Simulation.State.Map.Height);
+                }
+                return;
+            }
             _dragging = true;
             _view!.CapturePointer(evt.pointerId);
             FocusAt(evt.localPosition);
@@ -276,6 +326,8 @@ namespace Game.Presentation
 
         private void OnPointerUp(PointerUpEvent evt)
         {
+            if (!_dragging)
+                return;
             _dragging = false;
             _view!.ReleasePointer(evt.pointerId);
         }
@@ -332,16 +384,24 @@ namespace Game.Presentation
 
         private readonly struct Ping
         {
-            public Ping(int x, int y, float born)
+            public Ping(int x, int y, float born, float seconds = PingSeconds, Color32 color = default, bool ally = false)
             {
                 X = x;
                 Y = y;
                 Born = born;
+                Seconds = seconds;
+                Color = color;
+                Ally = ally;
             }
 
             public int X { get; }
             public int Y { get; }
             public float Born { get; }
+            public float Seconds { get; }
+
+            // An ally's mark (coop-tools.md) is drawn in the ally's colour; an alarm in the alarm colour.
+            public Color32 Color { get; }
+            public bool Ally { get; }
         }
     }
 }

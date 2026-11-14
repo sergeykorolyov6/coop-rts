@@ -20,6 +20,42 @@
     ]
   },
   {
+    "id": "canyons2",
+    "name_ru": "Каньоны — вдвоём",
+    "map": "canyons",
+    "players": 2,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "blue_walls",
+      "red_lightning"
+    ],
+    "colors": [
+      "blue",
+      "red"
+    ]
+  },
+  {
+    "id": "canyons4",
+    "name_ru": "Каньоны — вчетвером",
+    "map": "canyons",
+    "players": 4,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "blue_walls",
+      "red_lightning",
+      "brown_scavengers",
+      "yellow_star"
+    ],
+    "colors": [
+      "blue",
+      "red",
+      "brown",
+      "yellow"
+    ]
+  },
+  {
     "id": "coop",
     "name_ru": "Логово Серых Существ",
     "map": "coop",

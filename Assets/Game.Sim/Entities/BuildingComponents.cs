@@ -3,7 +3,8 @@ namespace Game.Sim;
 // Gives a building the behaviour of its kind (drill, conveyor, storage, factory, stock) when placed.
 internal static class BuildingComponents
 {
-    public static void Attach(SimState state, Building building)
+    // link: a new bridge end looks for its other end; one restored from a snapshot keeps its links.
+    public static void Attach(SimState state, Building building, bool link = true)
     {
         switch (building.Stats.Behavior)
         {
@@ -16,7 +17,8 @@ internal static class BuildingComponents
                 break;
             case BuildingBehavior.Bridge:
                 building.Bridge = new ConveyorBridge();
-                ConveyorSystem.LinkNewBridgeEnd(state, building);
+                if (link)
+                    ConveyorSystem.LinkNewBridgeEnd(state, building);
                 break;
             case BuildingBehavior.Storage:
                 building.Storage = new Storage();

@@ -79,6 +79,11 @@ namespace Game.Presentation
                     case AbilityUsed used:
                         Spell(state, used);
                         break;
+                    // coop-tools.md: a mark for the allies — a pillar in the player's colour and rings on the ground.
+                    case Pinged ping:
+                        Mark(Ground.Lift(new Vector3(ping.X / (float)Game.Sim.Grid.MilliPerCell, 0f, ping.Y / (float)Game.Sim.Grid.MilliPerCell)),
+                            _entities!.OwnerColor(state, ping.PlayerId));
+                        break;
                 }
             }
         }
@@ -256,6 +261,21 @@ namespace Game.Presentation
         {
             Transform disc = Take(_discs, PrimitiveType.Cylinder, Color.Lerp(color, Color.black, 0.25f));
             Add(new Anim(disc, _discs, seconds) { From = at + Vector3.up * 0.03f, To = at + Vector3.up * 0.03f, ScaleFrom = new Vector3(0.2f, 0.02f, 0.2f), ScaleTo = new Vector3(radius * 2f, 0.005f, radius * 2f), Delay = delay, Ease = true });
+        }
+
+        // Seen from across the screen for as long as the minimap blinks (Minimap.AllyPingSeconds).
+        private void Mark(Vector3 at, Color color)
+        {
+            Transform pillar = Take(_cubes, PrimitiveType.Cube, color);
+            Add(new Anim(pillar, _cubes, Minimap.AllyPingSeconds)
+            {
+                From = at + Vector3.up * 3f,
+                To = at + Vector3.up * 3f,
+                ScaleFrom = new Vector3(0.25f, 6f, 0.25f),
+                ScaleTo = new Vector3(0.05f, 6f, 0.05f),
+            });
+            for (int i = 0; i < (int)Minimap.AllyPingSeconds; i++)
+                Disc(at, 2.5f, color, 1f, delay: i);
         }
 
         // A quick flash: a sphere that swells and vanishes.

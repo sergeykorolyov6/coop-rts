@@ -30,6 +30,7 @@
 - Когда в спеке «кто первый» может случиться в один тик — порядок детерминированный (по id сущности), никогда не по порядку прихода команд по сети.
 - Рандом — только `DeterministicRng` с seed из состояния матча.
 - Каждый тик считается `StateHash` (xxHash по ключевым полям) — используется для отлова десинка в тестах и в сети.
+- Всё изменяемое состояние матча пишется ещё и в `Snapshot` (сохранения, `mechanics/save-load.md`, T5): новое поле — и в `StateHasher`, и в `Snapshot`. Забытое ловят `SnapshotTests`: восстановленный матч должен идти шаг в шаг с оригиналом.
 - Новая фракция или здание с уже известным поведением — строка в `factions.csv` / `buildings.csv`, без правки кода. В Sim не сравнивать `Stats.Id` с константами: поведение — колонка `behavior`, умения юнита — теги.
 - Всё, что балансируется (статы, стоимость, тайминги, волны), лежит в данных. Брат пишет числа в человеческих единицах (секунды, ед./с, клетки) в `Docs/Design/*.csv`, конвертер `python3 Tools/csv2json.py` переводит их в тики и милли-единицы → `Assets/Data/*.json` (дробь после перевода — ошибка, не округление), Sim загружает только целые через `GameData.Parse`. Новая колонка CSV — сначала в схему конвертера. Конвертер же проверяет карты (достижимость стартов, руды и лагерей, рампы, здания на одном уровне) — карту с ошибкой он не пропустит. JSON не правят руками: хук сверяет его с CSV (`--check`). Не хардкодить числа в логике.
 
@@ -110,6 +111,10 @@
 | сетевой кооп: хост, игрок, ход, задержка ввода, лобби, место, рассинхронизация (`network.md`) | `Relay` (хост: лобби, сбор ходов, сверка хешей), `LockstepClient`, `LockstepSettings` (`TurnTicks`, `DelayTurns`), `LobbyEntry`, `MatchStart`, `NetNotice` (`Desync`, `PlayerLeft`, `HostLost`); транспорт `IConnection` (`TcpConnection`, `LoopbackConnection`), `TcpServer`, `TcpConnector`; в Presentation `NetSession`, `SimRunner.Submit` |
 | играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (все четыре есть) |
 | неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
+| несколько баз Легиона, игроки базы, спящая база, расчётное время прихода волны (`legion-ai.md`, T5) | `MapSetup.LegionBases` (`LegionBaseSetup`), `MatchSetup.LegionPlayerIds`, `SimState.Legions`, `SimState.IsLegionPlayer`, `MissionLauncher.LegionPlayerIdFor` (9, 12, 13, …); `LegionAi.TargetPlayerIds`, `IsDormant`; `LegionAi.NextWaveArrivalTick`, `WaveIncoming.ArrivalTick`, `WaveLaunched.ArrivalTick`, `LegionPlayerId` в событиях волн |
+| снимок состояния (`save-load.md`, T5) | `Snapshot`, `Simulation.WriteSnapshot`, `Simulation.FromSnapshot`, `SaveGame.Snapshot`, `SaveGame.TryRestoreSnapshot`; `MapState.LayoutChecksum`, `SimState.Seed` |
+| метка для союзника, передача ресурса (`coop-tools.md`) | `PingCommand`, событие `Pinged`; `GiveResourcesCommand`, событие `ResourcesGiven` |
+| карта «Каньоны» (первая большая, T5) | миссии `canyons2`, `canyons4`; `maps/canyons.txt` из `Tools/make_canyons_map.py` (заготовка: после первой ручной правки карты генератор удалить) |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.
 

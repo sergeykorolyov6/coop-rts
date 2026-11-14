@@ -16,7 +16,7 @@ public sealed class MapSetup
     private readonly bool[] _ramp;
     private readonly List<PlayerStart> _starts = new List<PlayerStart>();
     private readonly List<CreepCampSetup> _camps = new List<CreepCampSetup>();
-    private readonly List<BaseSlotSetup> _legionSlots = new List<BaseSlotSetup>();
+    private readonly List<LegionBaseSetup> _legionBases = new List<LegionBaseSetup>();
     private readonly List<NeutralBuildingSetup> _neutrals = new List<NeutralBuildingSetup>();
 
     public MapSetup(int width, int height)
@@ -44,11 +44,8 @@ public sealed class MapSetup
     // neutral-buildings.md: neutral drills, caves, lighthouses standing from the start.
     public IReadOnlyList<NeutralBuildingSetup> Neutrals => _neutrals;
 
-    // legion-ai.md: the Legion's base in rebuild order, and where its army gathers.
-    public IReadOnlyList<BaseSlotSetup> LegionSlots => _legionSlots;
-    public bool HasRally { get; private set; }
-    public int RallyX { get; private set; }
-    public int RallyY { get; private set; }
+    // legion-ai.md: the Legion's bases — one on most maps, several on a big one (T5).
+    public IReadOnlyList<LegionBaseSetup> LegionBases => _legionBases;
 
     public bool IsBlocked(int x, int y) => _blocked[Index(x, y)];
 
@@ -132,8 +129,23 @@ public sealed class MapSetup
     public MapSetup LegionSlot(string buildingTypeId, int cellX, int cellY, Direction direction = Direction.Right)
     {
         Index(cellX, cellY);
-        _legionSlots.Add(new BaseSlotSetup(buildingTypeId, cellX, cellY, direction));
+        CurrentBase()._slots.Add(new BaseSlotSetup(buildingTypeId, cellX, cellY, direction));
         return this;
+    }
+
+    // Starts the next base: the LegionSlot, LegionLine and Rally calls that follow describe it.
+    public MapSetup LegionBase()
+    {
+        CurrentBase();
+        _legionBases.Add(new LegionBaseSetup());
+        return this;
+    }
+
+    private LegionBaseSetup CurrentBase()
+    {
+        if (_legionBases.Count == 0)
+            _legionBases.Add(new LegionBaseSetup());
+        return _legionBases[_legionBases.Count - 1];
     }
 
     // A straight conveyor line from (x1, y1) to (x2, y2), every cell facing the end.
@@ -163,9 +175,10 @@ public sealed class MapSetup
     public MapSetup Rally(int cellX, int cellY)
     {
         Index(cellX, cellY);
-        HasRally = true;
-        RallyX = cellX;
-        RallyY = cellY;
+        LegionBaseSetup legionBase = CurrentBase();
+        legionBase.HasRally = true;
+        legionBase.RallyX = cellX;
+        legionBase.RallyY = cellY;
         return this;
     }
 

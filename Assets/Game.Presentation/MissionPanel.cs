@@ -66,14 +66,20 @@ namespace Game.Presentation
             if (_objective == null || simulation == null)
                 return;
             SimState state = simulation.State;
-            LegionAi? legion = state.Legion;
+            // legion-ai.md, T5: the nearest wave of all the bases (a dormant base has none).
+            LegionAi? legion = null;
+            foreach (LegionAi ai in state.Legions)
+            {
+                if (ai.NextWaveTick != int.MaxValue && (legion == null || ai.NextWaveTick < legion.NextWaveTick))
+                    legion = ai;
+            }
 
             // Only what the team has seen: the base hides in the fog until scouted.
             int seen = 0;
             int me = _localPlayer!.PlayerId;
             foreach (Building b in state.Buildings)
             {
-                if (b.OwnerId == state.LegionPlayerId && !b.IsDead && (b.Stats.Behavior == BuildingBehavior.Headquarters || b.Factory != null)
+                if (state.IsLegionPlayer(b.OwnerId) && !b.IsDead && (b.Stats.Behavior == BuildingBehavior.Headquarters || b.Factory != null)
                     && state.Fog.IsDiscovered(me, b.CellX, b.CellY))
                     seen++;
             }
@@ -85,8 +91,13 @@ namespace Game.Presentation
                 text += $"\nНайдено и ещё стоит: {seen}";
             if (state.Goal == MissionGoal.KillBoss && state.FindBoss() is Unit boss && state.Fog.IsVisible(me, boss.CellX, boss.CellY))
                 text += $"\nВожак: {boss.Hp} / {boss.MaxHp}";
-            if (state.Outcome == MissionOutcome.InProgress && legion != null && legion.NextWaveTick != int.MaxValue)
+            if (state.Outcome == MissionOutcome.InProgress && legion != null)
+            {
                 text += $"\nВолна {legion.NextWave} через {DisplayNames.Clock(legion.NextWaveTick - state.Tick)}";
+                // Known once the wave is warned of: the way from its base at the pace of its slowest unit.
+                if (legion.NextWaveArrivalTick != int.MaxValue && legion.NextWaveArrivalTick > legion.NextWaveTick)
+                    text += $", дойдёт ≈ через {DisplayNames.Clock(legion.NextWaveArrivalTick - state.Tick)}";
+            }
             // The clock stops when the mission ends; the sim keeps ticking behind the banner.
             text += $"\nВремя миссии: {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
             string keys = state.FindHero(me) != null ? "Tab — строитель · G — герой" : "Tab — строитель";

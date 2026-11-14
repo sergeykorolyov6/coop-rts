@@ -25,6 +25,9 @@ public sealed class DeterministicRng
 
     public ulong State => _state;
 
+    // save-load.md, T5: goes on from where a snapshot left the sequence.
+    internal void Restore(ulong state) => _state = state;
+
     public uint NextUInt()
     {
         ulong old = _state;

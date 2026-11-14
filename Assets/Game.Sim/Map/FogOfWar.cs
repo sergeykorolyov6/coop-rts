@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 
 namespace Game.Sim;
 
@@ -77,6 +78,54 @@ public sealed class FogOfWar
     internal bool[] DiscoveredByIndex(int playerIndex) => _discovered[playerIndex];
 
     internal void SetBlind(int playerId) => _blind[IndexOf(playerId)] = true;
+
+    // save-load.md, T5: what every player sees and has seen, a bit a cell. Sight is written too,
+    // not worked out again: it is as of the last tick, and what a unit may strike depends on it.
+    internal void WriteSnapshot(BinaryWriter w)
+    {
+        for (int i = 0; i < _players.Count; i++)
+        {
+            if (_blind[i])
+                continue;
+            WriteBits(w, _visible[i]);
+            WriteBits(w, _discovered[i]);
+        }
+    }
+
+    internal void ReadSnapshot(BinaryReader r)
+    {
+        for (int i = 0; i < _players.Count; i++)
+        {
+            if (_blind[i])
+                continue;
+            ReadBits(r, _visible[i]);
+            ReadBits(r, _discovered[i]);
+        }
+    }
+
+    private static void WriteBits(BinaryWriter w, bool[] cells)
+    {
+        for (int c = 0; c < cells.Length; c += 8)
+        {
+            byte bits = 0;
+            for (int k = 0; k < 8 && c + k < cells.Length; k++)
+            {
+                if (cells[c + k])
+                    bits |= (byte)(1 << k);
+            }
+            w.Write(bits);
+        }
+    }
+
+    private static void ReadBits(BinaryReader r, bool[] cells)
+    {
+        for (int c = 0; c < cells.Length; c += 8)
+        {
+            byte bits = r.ReadByte();
+            for (int k = 0; k < 8 && c + k < cells.Length; k++)
+                cells[c + k] = (bits & (1 << k)) != 0;
+        }
+    }
 
     // A player without fog (creeps, the neutral owner): its units look with their own eyes (Sight).
     public bool IsBlind(int playerId) => _blind[IndexOf(playerId)];

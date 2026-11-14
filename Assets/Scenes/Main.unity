@@ -625,6 +625,7 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 81f77b1858424d4883d3ad33ee73b844, type: 3}
   - {fileID: 4900000, guid: 6d78d652fafca4767b011f5b50f75ce5, type: 3}
   - {fileID: 4900000, guid: 282c130834dfe4c9781984e795e74672, type: 3}
+  - {fileID: 4900000, guid: 2a235ab18e7c4747b3a7b2e45ad3c355, type: 3}
   _missionId: 
   _tick: 0
   _stateHash: 
