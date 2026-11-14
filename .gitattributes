@@ -1,0 +1,3 @@
+# Tools write these files with LF on every OS, and Tools/test_maps.py compares them byte for byte:
+# without this line a Windows checkout (core.autocrlf) turns them into CRLF and the test fails.
+Docs/Design/maps/*.tsj text eol=lf
