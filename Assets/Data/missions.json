@@ -1,5 +1,25 @@
 [
   {
+    "id": "bench256",
+    "name_ru": "Стенд 256×256 (проверка масштаба)",
+    "map": "bench256",
+    "players": 4,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "blue_walls",
+      "red_lightning",
+      "brown_scavengers",
+      "yellow_star"
+    ],
+    "colors": [
+      "blue",
+      "red",
+      "brown",
+      "yellow"
+    ]
+  },
+  {
     "id": "coop",
     "name_ru": "Логово Серых Существ",
     "map": "coop",

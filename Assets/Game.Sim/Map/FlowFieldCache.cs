@@ -7,9 +7,16 @@ namespace Game.Sim;
 internal sealed class FlowFieldCache
 {
     private readonly SortedDictionary<long, FlowField> _fields = new SortedDictionary<long, FlowField>();
-    private readonly MinHeap _heap = new MinHeap();
+    // Keys in the order the fields were made: the oldest goes first when the cache is full.
+    private readonly Queue<long> _order = new Queue<long>();
     private readonly List<int> _goals = new List<int>();
     private int _version = -1;
+
+    // Each field holds an int per map cell (256 KB on 256×256).
+    private const int Capacity = 128;
+
+    // Fields built since the match began: for the tick-cost probe, never part of the state.
+    public int Built { get; private set; }
 
     // To a single cell; if it is not passable, to the nearest passable cells around it.
     public FlowField ToCell(MapState map, int x, int y)
@@ -48,8 +55,13 @@ internal sealed class FlowFieldCache
     private FlowField Store(MapState map, long key)
     {
         _goals.Sort();
-        var field = new FlowField(map, _goals, _heap);
+        // Dropping a field never changes an answer (it is rebuilt the same), only what is kept in memory.
+        if (_fields.Count >= Capacity)
+            _fields.Remove(_order.Dequeue());
+        var field = new FlowField(map, _goals);
+        Built++;
         _fields.Add(key, field);
+        _order.Enqueue(key);
         return field;
     }
 
@@ -71,6 +83,7 @@ internal sealed class FlowFieldCache
         if (_version == map.Version)
             return;
         _fields.Clear();
+        _order.Clear();
         _version = map.Version;
     }
 }

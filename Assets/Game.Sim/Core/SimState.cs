@@ -21,6 +21,7 @@ public sealed class SimState
         NeutralPlayerId = setup.NeutralPlayerId;
         Goal = setup.Goal;
         Map = new MapState(setup.Map);
+        BuildingIndex = new BuildingIndex(Map.Width, Map.Height);
         Grid = new Grid(setup.MapWidth, setup.MapHeight);
         Rng = new DeterministicRng(setup.Seed);
         ResourceTypeCount = setup.ResourceTypeCount;
@@ -87,6 +88,12 @@ public sealed class SimState
 
     // Blows struck in the current tick, applied together after all units acted.
     internal List<PendingHit> PendingHits { get; } = new List<PendingHit>();
+
+    // Buildings by map bucket: derived from the building list, not part of the state hash.
+    internal BuildingIndex BuildingIndex { get; }
+
+    // Bumped whenever a building appears or is removed; BuildingIndex compares against it.
+    internal int BuildingListVersion { get; private set; }
 
     // Path cache: derived from the map, not part of the state hash.
     internal FlowFieldCache Paths { get; } = new FlowFieldCache();
@@ -221,6 +228,7 @@ public sealed class SimState
     {
         var building = new Building(NextEntityId++, ownerId, stats, cellX, cellY, direction, complete, Rules.ConstructionStartHpPercent);
         _buildings.Add(building);
+        BuildingListVersion++;
         Map.Occupy(building);
         BuildingComponents.Attach(this, building);
         return building;
@@ -238,7 +246,8 @@ public sealed class SimState
                 Map.Free(_buildings[i]);
             }
         }
-        _buildings.RemoveAll(b => b.IsDead);
+        if (_buildings.RemoveAll(b => b.IsDead) > 0)
+            BuildingListVersion++;
     }
 
     // Free walkable cells around a footprint, nearest ring first, in a fixed order

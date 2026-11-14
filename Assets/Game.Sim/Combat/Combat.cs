@@ -127,6 +127,11 @@ internal static class Combat
         long bestDist = long.MaxValue;
         foreach (Unit u in state.Units)
         {
+            // Outside the square around the point: no need for the root.
+            long reach = radius + u.Radius;
+            long dx = u.X - x, dy = u.Y - y;
+            if (dx > reach || dx < -reach || dy > reach || dy < -reach)
+                continue;
             if (u == unit || !IsValidTarget(state, unit, u))
                 continue;
             long d = Movement.Distance(x, y, u.X, u.Y) - u.Radius;
@@ -139,15 +144,23 @@ internal static class Combat
         if (best != null)
             return best;
 
-        foreach (Building b in state.Buildings)
+        // Only the buckets the radius reaches; a building may sit in several of them.
+        state.BuildingIndex.Range(x, y, radius, out int minBx, out int minBy, out int maxBx, out int maxBy);
+        for (int by = minBy; by <= maxBy; by++)
         {
-            if (!IsValidTarget(state, unit, b))
-                continue;
-            long d = Movement.DistanceToBuilding(x, y, b);
-            if (d <= radius && d < bestDist)
+            for (int bx = minBx; bx <= maxBx; bx++)
             {
-                best = b;
-                bestDist = d;
+                foreach (Building b in state.BuildingIndex.Bucket(state, bx, by))
+                {
+                    if (!IsValidTarget(state, unit, b))
+                        continue;
+                    long d = Movement.DistanceToBuilding(x, y, b);
+                    if (d <= radius && (d < bestDist || (d == bestDist && b.Id < best!.Id)))
+                    {
+                        best = b;
+                        bestDist = d;
+                    }
+                }
             }
         }
         return best;

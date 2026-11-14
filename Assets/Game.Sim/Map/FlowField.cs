@@ -17,65 +17,88 @@ public sealed class FlowField
 
     private readonly int[] _dist;
     private readonly int _width;
+    private readonly MapState _map;
+    private readonly MinHeap _heap = new MinHeap();
 
-    internal FlowField(MapState map, IReadOnlyList<int> goalCells, MinHeap heap)
+    // Distance of the last cell taken off the heap: every cell at or below it is final.
+    private int _frontier;
+
+    // The search runs outwards from the goals only as far as somebody asks (Settle): a unit
+    // chasing a target three cells away pays for a handful of cells, not for the whole map.
+    // Cells come off the heap in the same order as in a full search, so the answers are the same.
+    internal FlowField(MapState map, IReadOnlyList<int> goalCells)
     {
+        _map = map;
         _width = map.Width;
         Version = map.Version;
         _dist = new int[map.Width * map.Height];
         for (int i = 0; i < _dist.Length; i++)
             _dist[i] = Unreachable;
 
-        heap.Clear();
         foreach (int goal in goalCells)
         {
             if (_dist[goal] != 0)
             {
                 _dist[goal] = 0;
-                heap.Push(goal);
+                _heap.Push(goal);
             }
         }
+    }
 
+    // Map version the field was built for; stale once passability changes.
+    public int Version { get; }
+
+    public int DistanceAt(int x, int y)
+    {
+        int cell = y * _width + x;
+        Settle(cell);
+        return _dist[cell];
+    }
+
+    // Runs the search until the cell's distance is final. A tentative distance equal to the
+    // frontier is final too: nothing left on the heap is nearer, and every step costs more than zero.
+    private void Settle(int target)
+    {
+        MapState map = _map;
         // Key = distance << 32 | cell: pops by distance, then by cell index.
-        while (heap.Count > 0)
+        while (_heap.Count > 0 && _dist[target] > _frontier)
         {
-            long key = heap.Pop();
+            long key = _heap.Pop();
             int cell = (int)(key & 0xFFFFFFFF);
             int dist = (int)(key >> 32);
             if (dist > _dist[cell])
                 continue;
+            _frontier = dist;
 
             int cx = cell % _width, cy = cell / _width;
             for (int d = 0; d < 8; d++)
             {
                 int nx = cx + Dx[d], ny = cy + Dy[d];
-                if (!map.IsPassable(nx, ny))
+                if (!map.InBounds(nx, ny))
                     continue;
+                // Most neighbours are already as near as this step would make them: ask the
+                // map about passability only for the few that are not.
                 bool diagonal = d >= 4;
-                if (diagonal && (!map.IsPassable(cx + Dx[d], cy) || !map.IsPassable(cx, cy + Dy[d])))
-                    continue;
                 int next = map.Index(nx, ny);
                 int nd = dist + (diagonal ? DiagonalCost : StraightCost);
-                if (nd < _dist[next])
-                {
-                    _dist[next] = nd;
-                    heap.Push(((long)nd << 32) | (uint)next);
-                }
+                if (nd >= _dist[next] || !map.IsPassable(nx, ny))
+                    continue;
+                if (diagonal && (!map.IsPassable(cx + Dx[d], cy) || !map.IsPassable(cx, cy + Dy[d])))
+                    continue;
+                _dist[next] = nd;
+                _heap.Push(((long)nd << 32) | (uint)next);
             }
         }
     }
-
-    // Map version the field was built for; stale once buildings appear or disappear.
-    public int Version { get; }
-
-    public int DistanceAt(int x, int y) => _dist[y * _width + x];
 
     // The neighbour to step into from (x, y), or false when (x, y) is a goal or cut off.
     internal bool TryNextCell(MapState map, int x, int y, out int nextX, out int nextY)
     {
         nextX = x;
         nextY = y;
-        int here = map.InBounds(x, y) ? _dist[map.Index(x, y)] : Unreachable;
+        // Neighbours nearer than this cell left the heap before it, so their distances are final;
+        // the rest are no nearer and are never chosen.
+        int here = map.InBounds(x, y) ? DistanceAt(x, y) : Unreachable;
         if (here == 0)
             return false;
 

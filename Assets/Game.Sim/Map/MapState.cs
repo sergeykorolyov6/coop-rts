@@ -80,23 +80,28 @@ public sealed class MapState
                 _walkableBuilding[Index(x, y)] = walkable;
             }
         }
-        Version++;
+        // A belt changes nothing for walkers: cached paths stay good.
+        if (!walkable)
+            Version++;
     }
 
     internal void Free(Building building)
     {
+        bool opened = false;
         for (int y = building.CellY; y < building.CellY + building.Height; y++)
         {
             for (int x = building.CellX; x < building.CellX + building.Width; x++)
             {
                 if (_buildingAt[Index(x, y)] == building.Id)
                 {
+                    opened |= !_walkableBuilding[Index(x, y)];
                     _buildingAt[Index(x, y)] = 0;
                     _walkableBuilding[Index(x, y)] = false;
                 }
             }
         }
-        Version++;
+        if (opened)
+            Version++;
     }
 
     // Deposits are 4-connected patches of one resource type, numbered in row-major order

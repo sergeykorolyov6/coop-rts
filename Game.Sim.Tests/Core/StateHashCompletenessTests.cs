@@ -19,6 +19,7 @@ public class StateHashCompletenessTests
         "Unit.StepX", "Unit.StepY",                // this tick's own step, reset at the start of every tick
         "Building.WorkersThisTick",                // counted again every tick (BuildersLastTick is hashed)
         "LegionAi.NextWaveTick",                   // follows from NextWave, for the HUD timer
+        "SimState.BuildingListVersion",            // stamp for BuildingIndex, a cache over the (hashed) building list
         "Unit.Order",                              // an immutable value: its fields are checked as UnitOrder
     };
 
