@@ -35,6 +35,7 @@ namespace Game.Presentation
         private Color32[] _baseColors = new Color32[0];
         private Color32[] _shaded = new Color32[0];
         private int _shadedTick = -1;
+        private ulong _rockChecksum;
         private int _shadedPlayer = -1;
 
         // Fog-shaded colour of a cell as on the ground this frame; the minimap draws the same.
@@ -88,6 +89,16 @@ namespace Game.Presentation
             Simulation? simulation = _runner != null ? _runner.Simulation : null;
             if (simulation == null || _texture == null)
                 return;
+            MapState map = simulation.State.Map;
+            if (map.RockChecksum != _rockChecksum)
+            {
+                // terrain.md: a dug-out cell is ground or ore now.
+                _rockChecksum = map.RockChecksum;
+                for (int y = 0; y < map.Height; y++)
+                    for (int x = 0; x < map.Width; x++)
+                        _baseColors[y * map.Width + x] = CellColor(map, x, y);
+                _shadedTick = -1;
+            }
             if (simulation.State.Tick != _shadedTick || _localPlayer!.PlayerId != _shadedPlayer)
                 Shade(simulation.State);
         }

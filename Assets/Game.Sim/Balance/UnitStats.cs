@@ -28,6 +28,7 @@ public sealed class UnitStats
         BuildTimeTicks = row.GetInt("build_time_ticks");
         ProducedAt = row.GetString("produced_at");
         SizeMilli = row.GetInt("size_mc");
+        DigPerTick = row.GetInt("dig_per_tick");
         _tags = row.GetStringList("tags");
         _abilities = row.GetStringList("abilities");
     }
@@ -55,6 +56,11 @@ public sealed class UnitStats
     public string ProducedAt { get; }
 
     public int SizeMilli { get; }
+
+    // terrain.md: rock hp broken per tick by a unit tagged digger.
+    public int DigPerTick { get; }
+
+    public bool IsDigger => HasTag(UnitTags.Digger);
     public IReadOnlyList<string> Tags => _tags;
 
     public bool HasTag(string tag) => _tags.Contains(tag);

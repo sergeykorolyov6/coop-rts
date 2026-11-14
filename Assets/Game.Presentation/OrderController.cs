@@ -27,6 +27,7 @@ namespace Game.Presentation
 
         private readonly List<int> _workers = new List<int>();
         private readonly List<int> _others = new List<int>();
+        private readonly List<int> _diggers = new List<int>();
 
         private SimRunner? _runner;
         private SelectionController? _selection;
@@ -42,7 +43,7 @@ namespace Game.Presentation
 
         private AbilityPanel? _abilities;
 
-        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally }
+        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally, Dig }
 
         private bool _showingTip;
 
@@ -113,6 +114,9 @@ namespace Game.Presentation
                 targetId = building.Id;
                 return Intent.Attack;
             }
+            // terrain.md: a miner in the selection and seen destructible rock — dig a tunnel to it.
+            if (_diggers.Count > 0 && state.Map.IsDestructibleRock(cellX, cellY) && state.Fog.IsDiscovered(playerId, cellX, cellY))
+                return Intent.Dig;
             if (_workers.Count == 0)
                 return Intent.None;
 
@@ -166,6 +170,12 @@ namespace Game.Presentation
                 _ => null,
             };
 
+            if (intent == Intent.Dig)
+            {
+                // Only the miners dig; the rest of the selection stays where it is.
+                _runner!.Submit(new DigCommand(playerId, tick, _diggers.ToArray(), cellX, cellY, queued));
+                return;
+            }
             if (intent == Intent.Attack)
                 _runner!.Submit(new AttackCommand(playerId, tick, Concat(_workers, _others), targetId, queued));
             else if (workerCommand != null)
@@ -187,6 +197,7 @@ namespace Game.Presentation
                 Intent.Deliver => "ПКМ — сдать груз в этот штаб",
                 Intent.Repair => state.FindBuilding(targetId) is { IsComplete: false } ? "ПКМ — помочь достроить (строитель)" : "ПКМ — чинить",
                 Intent.Carry => $"ПКМ — нести трофей (осталось {Trophy(state, targetId)})",
+                Intent.Dig => "ПКМ — прокопать ход к этой клетке (шахтёры)",
                 Intent.Mine => $"ПКМ — копать: {state.Rules.ManualCargo} ед. за {DisplayNames.Seconds(state.Rules.ManualCargo * state.Rules.ManualMiningTicksPerUnit)}, строитель сам носит в штаб",
                 _ => null,
             };
@@ -217,12 +228,15 @@ namespace Game.Presentation
         {
             _workers.Clear();
             _others.Clear();
+            _diggers.Clear();
             foreach (int id in _selection!.Selected)
             {
                 Unit? unit = state.FindUnit(id);
                 if (unit == null)
                     continue;
                 (unit.CanRepair ? _workers : _others).Add(id);
+                if (unit.Stats.IsDigger)
+                    _diggers.Add(id);
             }
         }
 

@@ -13,4 +13,7 @@ public enum UnitOrderKind : byte
 
     // legion-ai.md: walk to a point, fighting whatever enemy comes into sight on the way.
     AttackMove,
+
+    // terrain.md: dig out the rock cell (X, Y).
+    Dig,
 }

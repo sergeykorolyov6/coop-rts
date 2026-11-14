@@ -67,6 +67,9 @@ internal static class UnitSystem
                 case UnitOrderKind.CarryTrophy:
                     ManualMining.TickCarryTrophy(state, unit, events);
                     break;
+                case UnitOrderKind.Dig:
+                    Digging.TickDig(state, unit, events);
+                    break;
             }
         }
         Construction.EndTick(state, events);

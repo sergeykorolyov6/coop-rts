@@ -19,4 +19,12 @@ public sealed class Deposit
 
     // Cell indices (y * width + x), ascending.
     public IReadOnlyList<int> Cells => _cells;
+
+    // terrain.md: ore dug out of rock joins the deposit.
+    internal void Add(int cell)
+    {
+        int at = _cells.BinarySearch(cell);
+        if (at < 0)
+            _cells.Insert(~at, cell);
+    }
 }

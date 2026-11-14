@@ -26,5 +26,6 @@ public static class GameCommands
         codec.Register(DemolishCommand.Id, DemolishCommand.Read);
         codec.Register(UseAbilityCommand.Id, UseAbilityCommand.Read);
         codec.Register(ChooseHeroPathCommand.Id, ChooseHeroPathCommand.Read);
+        codec.Register(DigCommand.Id, DigCommand.Read);
     }
 }

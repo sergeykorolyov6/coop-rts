@@ -40,6 +40,7 @@ namespace Game.Presentation
             {
                 OrderController.Intent.Attack => _attack,
                 OrderController.Intent.Mine => _mine,
+                OrderController.Intent.Dig => _mine,
                 OrderController.Intent.Carry => _carry,
                 OrderController.Intent.Deliver => _deliver,
                 OrderController.Intent.Repair => _repair,

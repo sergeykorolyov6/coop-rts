@@ -13,6 +13,7 @@ public sealed class MapState
     private readonly TerrainStats?[] _terrain;
     private readonly byte[] _level;
     private readonly bool[] _ramp;
+    private readonly int[] _rockHp;
     private readonly List<Deposit> _deposits = new List<Deposit>();
 
     internal MapState(MapSetup setup)
@@ -28,6 +29,7 @@ public sealed class MapState
         _terrain = new TerrainStats?[count];
         _level = new byte[count];
         _ramp = new bool[count];
+        _rockHp = new int[count];
         for (int y = 0; y < Height; y++)
         {
             for (int x = 0; x < Width; x++)
@@ -38,6 +40,9 @@ public sealed class MapState
                 _level[y * Width + x] = (byte)setup.LevelAt(x, y);
                 _ramp[y * Width + x] = setup.IsRamp(x, y);
                 HasLevels |= _level[y * Width + x] != 0 || _ramp[y * Width + x];
+                TerrainStats? terrain = _terrain[y * Width + x];
+                if (terrain != null && terrain.Destructible)
+                    _rockHp[y * Width + x] = terrain.Hp;
             }
         }
         FindDeposits();
@@ -106,6 +111,77 @@ public sealed class MapState
         return !diagonal
             || (LevelsJoin(fromX, fromY, toX, fromY) && LevelsJoin(toX, fromY, toX, toY)
                 && LevelsJoin(fromX, fromY, fromX, toY) && LevelsJoin(fromX, toY, toX, toY));
+    }
+
+    // terrain.md: what is left of destructible rock, 0 for anything else.
+    public int RockHp(int x, int y) => _rockHp[Index(x, y)];
+
+    public bool IsDestructibleRock(int x, int y) => InBounds(x, y) && _rockHp[Index(x, y)] > 0;
+
+    // Rock of any kind stops sight; the rock cell itself is seen (terrain.md, decision 111).
+    public bool IsOpaque(int x, int y) => _blocked[Index(x, y)];
+
+    // A fold of every rock cell's damage, for StateHash: equal on every machine that dug the same.
+    public ulong RockChecksum { get; private set; }
+
+    // Digs `amount` off the rock; true when this blow broke it — the cell is ground now, with the
+    // rock's ore in it if it held any. Paths are rebuilt (Version).
+    internal bool DamageRock(int x, int y, int amount)
+    {
+        int i = Index(x, y);
+        int before = _rockHp[i];
+        if (before <= 0 || amount <= 0)
+            return false;
+        int after = before > amount ? before - amount : 0;
+        RockChecksum ^= Mix(i, before) ^ Mix(i, after);
+        _rockHp[i] = after;
+        if (after > 0)
+            return false;
+
+        TerrainStats rock = _terrain[i]!;
+        _terrain[i] = null;
+        _blocked[i] = false;
+        if (rock.OreType != MapSetup.NoOre)
+            AddOre(x, y, rock.OreType);
+        Version++;
+        return true;
+    }
+
+    private static ulong Mix(int cell, int hp)
+    {
+        ulong v = ((ulong)(uint)cell << 32) | (uint)hp;
+        v ^= v >> 33;
+        v *= 0xff51afd7ed558ccdUL;
+        v ^= v >> 33;
+        v *= 0xc4ceb9fe1a85ec53UL;
+        return v ^ (v >> 33);
+    }
+
+    // terrain.md, decision 113: the side neighbour's deposit of the same resource with the lowest
+    // id takes the cell; otherwise it starts a deposit of its own.
+    private void AddOre(int x, int y, int type)
+    {
+        int i = Index(x, y);
+        _ore[i] = type;
+        int best = 0;
+        for (int d = 0; d < 4; d++)
+        {
+            int nx = x + (d == 0 ? 1 : d == 1 ? -1 : 0), ny = y + (d == 2 ? 1 : d == 3 ? -1 : 0);
+            if (!InBounds(nx, ny))
+                continue;
+            int n = Index(nx, ny);
+            if (_ore[n] == type && _depositAt[n] != 0 && (best == 0 || _depositAt[n] < best))
+                best = _depositAt[n];
+        }
+        if (best != 0)
+        {
+            _depositAt[i] = best;
+            _deposits[best - 1].Add(i);
+            return;
+        }
+        int id = _deposits.Count + 1;
+        _depositAt[i] = id;
+        _deposits.Add(new Deposit(id, type, new List<int> { i }));
     }
 
     // Resource type of ore in the cell, or MapSetup.NoOre.

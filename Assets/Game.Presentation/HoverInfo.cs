@@ -123,6 +123,16 @@ namespace Game.Presentation
                         return $"Нейтральный {DisplayNames.Building(poi.Stats.Id).ToLowerInvariant()}: подведите юнита на {seconds} с — станет вашим";
                 }
             }
+            // terrain.md: what the rock is and whether a miner can get through it.
+            TerrainStats? rock = map.TerrainAt(cellX, cellY);
+            if (rock != null)
+            {
+                if (!rock.Destructible)
+                    return "Скала: не пройти и не прокопать";
+                string inside = rock.OreType == Game.Sim.Resources.Primary ? "\nВнутри — основной ресурс"
+                    : rock.OreType == Game.Sim.Resources.Secondary ? "\nВнутри — второй ресурс" : "";
+                return $"{rock.NameRu} · {map.RockHp(cellX, cellY)}/{rock.Hp}{inside}\nПрокопает шахтёр: выделите и ПКМ";
+            }
             int depositId = map.DepositAt(cellX, cellY);
             if (depositId == 0)
                 return null;

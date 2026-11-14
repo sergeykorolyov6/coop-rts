@@ -80,7 +80,18 @@ public class MapLayersTests
     [Test]
     public void Terrain_TwoKindsWithOneSymbol_IsAnError()
     {
-        const string twice = "[{\"id\":\"a\",\"symbol\":\"#\",\"passable\":0,\"destructible\":0},{\"id\":\"b\",\"symbol\":\"#\",\"passable\":0,\"destructible\":1}]";
-        Assert.Throws<FormatException>(() => GameData.Parse(new GameDataSources { Terrain = twice }));
+        const string twice = "[{\"id\":\"a\",\"name_ru\":\"\",\"symbol\":\"#\",\"passable\":0,\"destructible\":0,\"hp\":0,\"ore\":\"\"},"
+            + "{\"id\":\"b\",\"name_ru\":\"\",\"symbol\":\"#\",\"passable\":0,\"destructible\":1,\"hp\":100,\"ore\":\"\"}]";
+        var ex = Assert.Throws<FormatException>(() => GameData.Parse(new GameDataSources { Terrain = twice }));
+        Assert.That(ex!.Message, Does.Contain("share the symbol"));
+    }
+
+    [Test]
+    public void Terrain_DestructibleWithoutHp_OrOreInEternalRock_IsAnError()
+    {
+        const string noHp = "[{\"id\":\"a\",\"name_ru\":\"\",\"symbol\":\"%\",\"passable\":0,\"destructible\":1,\"hp\":0,\"ore\":\"\"}]";
+        Assert.Throws<FormatException>(() => GameData.Parse(new GameDataSources { Terrain = noHp }));
+        const string oreInRock = "[{\"id\":\"a\",\"name_ru\":\"\",\"symbol\":\"#\",\"passable\":0,\"destructible\":0,\"hp\":0,\"ore\":\"primary\"}]";
+        Assert.Throws<FormatException>(() => GameData.Parse(new GameDataSources { Terrain = oreInRock }));
     }
 }

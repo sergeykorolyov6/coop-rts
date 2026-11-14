@@ -106,6 +106,16 @@ namespace Game.Presentation
                 return root;
             }
 
+            if (stats.HasTag(UnitTags.Digger))
+            {
+                // terrain.md: the miner — a low body with a drill cone sticking out in front.
+                Add(root, part, renderers, PrimitiveType.Cube, owner, new Vector3(0f, s * 0.3f, 0f), new Vector3(s * 0.8f, s * 0.55f, s * 0.75f));
+                Add(root, part, renderers, PrimitiveType.Cube, light, new Vector3(0f, s * 0.7f, -s * 0.1f), new Vector3(s * 0.4f, s * 0.28f, s * 0.36f));
+                Transform drill = Add(root, part, renderers, PrimitiveType.Cylinder, Metal, new Vector3(0f, s * 0.32f, s * 0.6f), new Vector3(s * 0.3f, s * 0.28f, s * 0.3f));
+                drill.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                return root;
+            }
+
             if (stats.HasTag(UnitTags.Worker))
             {
                 // builder.md: the player's builder is bigger, with an antenna, so it stands out of the army.
@@ -344,7 +354,7 @@ namespace Game.Presentation
             return root;
         }
 
-        private static void Add(Transform root, PartFactory part, List<MeshRenderer> renderers, PrimitiveType type, Color color, Vector3 position, Vector3 scale)
+        private static Transform Add(Transform root, PartFactory part, List<MeshRenderer> renderers, PrimitiveType type, Color color, Vector3 position, Vector3 scale)
         {
             Transform t = part(type, color);
             t.SetParent(root, worldPositionStays: false);
@@ -352,6 +362,7 @@ namespace Game.Presentation
             // Unity's capsule and cylinder are 2 units tall at scale 1: for them callers pass half the height.
             t.localScale = scale;
             renderers.Add(t.GetComponent<MeshRenderer>());
+            return t;
         }
     }
 }

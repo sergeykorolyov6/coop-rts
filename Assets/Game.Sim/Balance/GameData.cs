@@ -272,6 +272,8 @@ public sealed class GameData
                 if (!TryGetAbility(a, out _))
                     throw new FormatException($"units.json: \"{u.Id}\" has unknown ability \"{a}\".");
             }
+            if (u.IsDigger != (u.DigPerTick > 0))
+                throw new FormatException($"units.json: \"{u.Id}\": a unit tagged digger digs (dig_rate > 0), nothing else does.");
             if (u.ProducedAt.Length > 0 && !TryGetBuilding(u.ProducedAt, out _))
                 throw new FormatException($"units.json: \"{u.Id}\" is produced at unknown building \"{u.ProducedAt}\".");
         }

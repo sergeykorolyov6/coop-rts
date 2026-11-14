@@ -26,4 +26,9 @@ public enum RejectReason : byte
     UnevenGround,
     OnRamp,
     NoVision,
+
+    // terrain.md: no miner selected; the cell is not destructible rock; no way to dig through to it.
+    NoDigger,
+    NothingToDig,
+    CannotDig,
 }

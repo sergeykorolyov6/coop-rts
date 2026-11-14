@@ -64,6 +64,11 @@ def cells_per_second_to_milli_per_tick(text: str) -> int:
     return _whole(_number(text) * MILLI_PER_CELL / TICKS_PER_SECOND, "милли-клеток за тик")
 
 
+def per_second_to_per_tick(text: str) -> int:
+    """Amount per second -> amount per tick (terrain.md: 20 rock hp/s = 1 per tick)."""
+    return _whole(_number(text) / TICKS_PER_SECOND, f"{text}/s per tick")
+
+
 def rate_to_ticks_per_unit(text: str) -> int:
     # 0,125 ед./с → 1 ед. каждые 160 тиков: an integer accumulator threshold, exact.
     rate = _number(text)
@@ -152,6 +157,8 @@ UNITS = {
     "tags": ("tags", id_list),
     # factions.md: ability ids from abilities.csv.
     "abilities": ("abilities", id_list),
+    # terrain.md: rock hp a digger breaks per second (0 — does not dig).
+    "dig_rate": ("dig_per_tick", per_second_to_per_tick),
     # UI only: what flies at the target (arrow, shell, stone, bolt, spit; empty — a short streak).
     "projectile": ("projectile", string),
     "description": ("description", string),
@@ -336,6 +343,9 @@ TERRAIN = {
     "symbol": ("symbol", string),
     "passable": ("passable", int_),
     "destructible": ("destructible", int_),
+    # terrain.md: how much digging breaks it, and the ore left in its place (primary, secondary, empty).
+    "hp": ("hp", int_),
+    "ore": ("ore", string),
     "description": ("description", string),
     "notes": None,
 }

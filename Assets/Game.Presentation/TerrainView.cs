@@ -18,6 +18,11 @@ namespace Game.Presentation
             new Color(0.42f, 0.39f, 0.35f),
             new Color(0.30f, 0.29f, 0.28f),
         };
+        [Header("Rock kinds (terrain.md)")]
+        [SerializeField] private Color _softRockColor = new Color(0.50f, 0.40f, 0.30f);
+        [SerializeField] private Color _hardRockColor = new Color(0.40f, 0.43f, 0.52f);
+        [Tooltip("Eternal rock: darker than anything a miner can dig.")]
+        [SerializeField, Range(0f, 1f)] private float _eternalDarkening = 0.35f;
         [SerializeField] private Color _primaryOreColor = new Color(0.95f, 0.62f, 0.25f);
         [SerializeField] private Color _secondaryOreColor = new Color(0.40f, 0.80f, 0.95f);
         [SerializeField, Range(0f, 1f)] private float _rememberedBrightness = 0.5f;
@@ -32,6 +37,7 @@ namespace Game.Presentation
         private Transform? _root;
         private Material? _baseMaterial;
         private int _shownTick = -1;
+        private ulong _rockChecksum;
         private int _shownPlayer = -1;
 
         // Start, not Awake: SimRunner creates the Simulation in its Awake.
@@ -51,12 +57,41 @@ namespace Game.Presentation
                 for (int x = 0; x < map.Width; x++)
                 {
                     if (map.IsBlocked(x, y))
-                        _cells.Add(Rocks(x, y));
+                        _cells.Add(Rocks(x, y, map.TerrainAt(x, y)));
                     else if (map.OreAt(x, y) != MapSetup.NoOre)
                         _cells.Add(Nuggets(x, y, map.OreAt(x, y)));
                 }
             }
+            _rockChecksum = map.RockChecksum;
             Refresh(simulation.State);
+        }
+
+        // terrain.md: dug rock settles as it loses strength and disappears when dug out; ore found
+        // under it gets nuggets. Only when some rock changed (the checksum the sim keeps for its hash).
+        private void UpdateRocks(MapState map)
+        {
+            if (map.RockChecksum == _rockChecksum)
+                return;
+            _rockChecksum = map.RockChecksum;
+            int count = _cells.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Cell cell = _cells[i];
+                if (cell.IsOre || cell.Gone || cell.MaxHp == 0)
+                    continue;
+                int hp = map.RockHp(cell.X, cell.Y);
+                if (hp > 0)
+                {
+                    cell.Root.localScale = new Vector3(1f, 0.45f + 0.55f * hp / cell.MaxHp, 1f);
+                    continue;
+                }
+                cell.Gone = true;
+                cell.Root.gameObject.SetActive(false);
+                cell.Root.localScale = Vector3.one;
+                int ore = map.OreAt(cell.X, cell.Y);
+                if (ore != MapSetup.NoOre)
+                    _cells.Add(Nuggets(cell.X, cell.Y, ore));
+            }
         }
 
         private void LateUpdate()
@@ -70,9 +105,12 @@ namespace Game.Presentation
 
         private void Refresh(SimState state)
         {
+            UpdateRocks(state.Map);
             int playerId = _localPlayer!.PlayerId;
             foreach (Cell cell in _cells)
             {
+                if (cell.Gone)
+                    continue;
                 CellLook look = !state.Fog.IsDiscovered(playerId, cell.X, cell.Y) ? CellLook.Hidden
                     : state.Fog.IsVisible(playerId, cell.X, cell.Y) ? CellLook.Lit
                     : CellLook.Dim;
@@ -97,11 +135,18 @@ namespace Game.Presentation
         // A low rounded base sunk into the ground, a big tilted block breaking the silhouette and
         // a shard or two around it, sized and turned by the cell's hash: neighbouring blocked cells
         // merge into ridges. Neither pure cubes (read as crates) nor pure spheres (read as eggs).
-        private Cell Rocks(int x, int y)
+        private Cell Rocks(int x, int y, TerrainStats? terrain)
         {
-            var cell = new Cell(x, y, isOre: false, CellRoot(x, y, "Rocks"));
+            var cell = new Cell(x, y, isOre: false, CellRoot(x, y, "Rocks")) { MaxHp = terrain?.Hp ?? 0 };
             uint h = Hash(x, y);
             Color main = _rockColors[h % (uint)_rockColors.Length];
+            // terrain.md: what can be dug reads apart from eternal rock, and soft from hard.
+            if (terrain == null || !terrain.Destructible)
+                main = Color.Lerp(main, Color.black, _eternalDarkening);
+            else if (terrain.Id == "hard_rock")
+                main = Color.Lerp(main, _hardRockColor, 0.7f);
+            else
+                main = Color.Lerp(main, _softRockColor, 0.7f);
             float width = 1.05f + Unit(h, 2) * 0.25f;
             AddPart(cell, PrimitiveType.Sphere, Color.Lerp(main, Color.black, 0.15f), new Vector3(0f, 0.05f, 0f),
                 new Vector3(width, 0.45f + Unit(h, 1) * 0.2f, width * 0.9f), Unit(h, 6) * 180f, 0f);
@@ -119,6 +164,17 @@ namespace Game.Presentation
                 Color shard = Color.Lerp(main, Color.white, 0.1f);
                 AddPart(cell, PrimitiveType.Cube, shard, offset + new Vector3(0f, 0.12f + size * 0.3f, 0f),
                     new Vector3(size, size * (0.8f + Unit(h, 16 + i) * 0.6f), size * 0.8f), angle, 25f + Unit(h, 18 + i) * 20f);
+            }
+            // Rock with ore inside shows specks of the resource's colour.
+            if (terrain != null && terrain.OreType != MapSetup.NoOre)
+            {
+                Color speck = terrain.OreType == Game.Sim.Resources.Primary ? _primaryOreColor : _secondaryOreColor;
+                for (int i = 0; i < 3; i++)
+                {
+                    float angle = Unit(h, 30 + i) * 360f;
+                    Vector3 at = Quaternion.Euler(0f, angle, 0f) * new Vector3(0f, 0.35f + Unit(h, 33 + i) * 0.2f, 0.28f);
+                    AddPart(cell, PrimitiveType.Cube, speck, at, Vector3.one * (0.12f + Unit(h, 36 + i) * 0.06f), angle, 30f);
+                }
             }
             return cell;
         }
@@ -223,6 +279,10 @@ namespace Game.Presentation
             public List<MeshRenderer> Renderers { get; } = new List<MeshRenderer>();
             public List<Color> Colors { get; } = new List<Color>();
             public CellLook Look { get; set; } = CellLook.Unset;
+
+            // terrain.md: full strength of destructible rock (0 for anything else), and dug out.
+            public int MaxHp { get; set; }
+            public bool Gone { get; set; }
         }
     }
 }

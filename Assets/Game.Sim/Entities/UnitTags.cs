@@ -13,6 +13,9 @@ public static class UnitTags
     // heights.md: a ranged attacker gets the high-ground range bonus.
     public const string Ranged = "ranged";
 
+    // terrain.md: digs destructible rock (the miner).
+    public const string Digger = "digger";
+
     // mission.md: killing every unit with this tag wins a kill_boss mission.
     public const string Boss = "boss";
 

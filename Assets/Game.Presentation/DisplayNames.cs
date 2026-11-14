@@ -57,6 +57,9 @@ namespace Game.Presentation
                 case RejectReason.UnevenGround: return "Площадка на разных уровнях";
                 case RejectReason.OnRamp: return "На рампе строить нельзя";
                 case RejectReason.NoVision: return "Нет обзора";
+                case RejectReason.NoDigger: return "Нет шахтёра";
+                case RejectReason.NothingToDig: return "Нечего копать";
+                case RejectReason.CannotDig: return "Не прокопать: мешает скала";
                 case RejectReason.FactoryStockLow: return "На складе здания не хватает ресурсов — подведите ленту от бура или склада";
                 default:
                     bool drill = buildingId != null && Data != null && Data.TryGetBuilding(buildingId, out BuildingStats? stats) && stats!.Behavior == BuildingBehavior.Drill;

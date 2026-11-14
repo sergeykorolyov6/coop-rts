@@ -11,6 +11,10 @@ public sealed class FogOfWar
     private readonly int _width;
     private readonly int _height;
     private readonly MapState _map;
+
+    // Scratch for Reveal: which cells of the square around the viewer the line of sight reaches.
+    private bool[] _lit = new bool[0];
+    private readonly List<LineTable?> _tables = new List<LineTable?>();
     private readonly bool[][] _ownSight;
     private readonly bool[][] _visible;
     private readonly bool[][] _discovered;
@@ -153,7 +157,10 @@ public sealed class FogOfWar
         }
     }
 
-    // Cells whose centers lie within the radius of the point and are not above the eyes (heights.md).
+    // Cells whose centers lie within the radius of the point, are not above the eyes (heights.md) and
+    // are not hidden behind rock (terrain.md): a cell is lit when the cell before it on the line from
+    // the viewer's cell is lit and is not rock. The table walks the cells ring by ring, so that one
+    // always comes first.
     private void Reveal(int playerIndex, int x, int y, int radius, int eyeLevel)
     {
         bool levels = _map.HasLevels;
@@ -161,18 +168,79 @@ public sealed class FogOfWar
             return;
         bool[] sight = _ownSight[playerIndex];
         long r2 = (long)radius * radius;
-        int minX = System.Math.Max(0, Grid.MilliToCell(x - radius)), maxX = System.Math.Min(_width - 1, Grid.MilliToCell(x + radius));
-        int minY = System.Math.Max(0, Grid.MilliToCell(y - radius)), maxY = System.Math.Min(_height - 1, Grid.MilliToCell(y + radius));
-        for (int cy = minY; cy <= maxY; cy++)
+        int ox = Grid.MilliToCell(x), oy = Grid.MilliToCell(y);
+        LineTable table = Table(radius / Grid.MilliPerCell + 1);
+        if (_lit.Length < table.Size)
+            _lit = new bool[table.Size];
+        bool[] lit = _lit;
+        int[] dxs = table.Dx, dys = table.Dy, parents = table.Parent;
+        for (int k = 0; k < dxs.Length; k++)
         {
-            long dy = Grid.CellCenter(cy) - y;
-            for (int cx = minX; cx <= maxX; cx++)
+            int cx = ox + dxs[k], cy = oy + dys[k];
+            bool on;
+            if (!InBounds(cx, cy))
+                on = false;
+            else
             {
-                long dx = Grid.CellCenter(cx) - x;
-                if (dx * dx + dy * dy <= r2 && (!levels || _map.LevelAt(cx, cy) <= eyeLevel))
-                    sight[cy * _width + cx] = true;
+                int p = parents[k];
+                on = p < 0 || (lit[p] && !_map.IsOpaque(ox + dxs[p], oy + dys[p]));
+            }
+            lit[k] = on;
+            if (!on)
+                continue;
+            long ddx = Grid.CellCenter(cx) - x, ddy = Grid.CellCenter(cy) - y;
+            if (ddx * ddx + ddy * ddy <= r2 && (!levels || _map.LevelAt(cx, cy) <= eyeLevel))
+                sight[cy * _width + cx] = true;
+        }
+    }
+
+    private LineTable Table(int reach)
+    {
+        while (_tables.Count <= reach)
+            _tables.Add(null);
+        return _tables[reach] ??= new LineTable(reach);
+    }
+
+    // The square of `reach` cells around a viewer, ring by ring; for each cell, the position of the
+    // cell before it on the line of sight (-1: next to the viewer, always lit).
+    private sealed class LineTable
+    {
+        public LineTable(int reach)
+        {
+            int side = 2 * reach + 1;
+            Size = side * side;
+            Dx = new int[Size];
+            Dy = new int[Size];
+            Parent = new int[Size];
+            var position = new int[Size];
+            int k = 0;
+            for (int n = 0; n <= reach; n++)
+            {
+                for (int dy = -n; dy <= n; dy++)
+                {
+                    bool edgeRow = dy == -n || dy == n;
+                    for (int dx = -n; dx <= n; dx += edgeRow || n == 0 ? 1 : 2 * n)
+                    {
+                        Dx[k] = dx;
+                        Dy[k] = dy;
+                        position[(dy + reach) * side + dx + reach] = k;
+                        if (n <= 1)
+                            Parent[k] = -1;
+                        else
+                        {
+                            (int px, int py) = Sight.LineParent(dx, dy);
+                            Parent[k] = position[(py + reach) * side + px + reach];
+                        }
+                        k++;
+                    }
+                }
             }
         }
+
+        public int Size { get; }
+        public int[] Dx { get; }
+        public int[] Dy { get; }
+        public int[] Parent { get; }
     }
 
     private bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < _width && y < _height;

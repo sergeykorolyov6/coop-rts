@@ -172,12 +172,12 @@ internal static class CreepCampSystem
         int eyes = map.InBounds(cx, cy) ? map.EyeLevel(cx, cy) : 0;
         foreach (Unit u in state.Units)
         {
-            if (!u.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, u.OwnerId) && InRadius(camp, u) && Sight.SeesFromLevel(state, state.CreepPlayerId, eyes, u))
+            if (!u.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, u.OwnerId) && InRadius(camp, u) && Sight.SeesFrom(state, state.CreepPlayerId, cx, cy, eyes, u))
                 return true;
         }
         foreach (Building b in state.Buildings)
         {
-            if (!b.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, b.OwnerId) && !b.Stats.Invulnerable && InRadius(camp, b) && Sight.SeesFromLevel(state, state.CreepPlayerId, eyes, b))
+            if (!b.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, b.OwnerId) && !b.Stats.Invulnerable && InRadius(camp, b) && Sight.SeesFrom(state, state.CreepPlayerId, cx, cy, eyes, b))
                 return true;
         }
         return false;

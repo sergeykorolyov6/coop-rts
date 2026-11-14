@@ -26,6 +26,7 @@ internal sealed class StateHasher
         _writer.Write(state.Grid.Width);
         _writer.Write(state.Grid.Height);
         _writer.Write(state.ResourceTypeCount);
+        _writer.Write(state.Map.RockChecksum);
 
         _writer.Write(state.Players.Count);
         foreach (Player player in state.Players)

@@ -5,6 +5,8 @@
     "symbol": "C",
     "passable": 0,
     "destructible": 1,
+    "hp": 300,
+    "ore": "secondary",
     "description": "Порода со вторым ресурсом: редкая награда в глубине."
   },
   {
@@ -13,6 +15,8 @@
     "symbol": ".",
     "passable": 1,
     "destructible": 0,
+    "hp": 0,
+    "ore": "",
     "description": "Обычная земля: по ней ходят и на ней строят."
   },
   {
@@ -21,6 +25,8 @@
     "symbol": "@",
     "passable": 0,
     "destructible": 1,
+    "hp": 400,
+    "ore": "",
     "description": "Долгий проход: копать можно, но стоит ли."
   },
   {
@@ -29,6 +35,8 @@
     "symbol": "R",
     "passable": 0,
     "destructible": 1,
+    "hp": 200,
+    "ore": "primary",
     "description": "Порода с основным ресурсом: награда за раскопки."
   },
   {
@@ -37,6 +45,8 @@
     "symbol": "#",
     "passable": 0,
     "destructible": 0,
+    "hp": 0,
+    "ore": "",
     "description": "Вечная скала: не пройти и не разрушить. Каркас карты."
   },
   {
@@ -45,6 +55,8 @@
     "symbol": "%",
     "passable": 0,
     "destructible": 1,
+    "hp": 100,
+    "ore": "",
     "description": "Завал: копатель пробивает быстро. Короткий путь или вход в карман."
   }
 ]

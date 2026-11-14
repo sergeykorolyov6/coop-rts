@@ -22,6 +22,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Строитель Мусорщиков."
   },
@@ -47,6 +48,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "stone",
     "description": "Мортира: бьёт только здания, зато с 8 клеток и вдвое дешевле осадного."
   },
@@ -71,6 +73,7 @@
       "repairer"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Дешёвый ремонтник: сам чинит здания и юнитов рядом."
   },
@@ -95,6 +98,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Дешёвый ближний боец: берёт числом."
   },
@@ -119,6 +123,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "shell",
     "description": "Дробовик: сильно бьёт юнитов вблизи, по зданиям почти бесполезен."
   },
@@ -145,6 +150,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Строитель — сам игрок: строит всё, копает руду вручную, носит трофеи, чинит по приказу. Один; погиб — вернётся у штаба через 15 с. Tab — выделить."
   },
@@ -170,6 +176,7 @@
       "armored"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Прирученный зверь из пещеры: крепче тяжёлого, бьёт вблизи как осадный."
   },
@@ -194,6 +201,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "spit",
     "description": "Плевун из пещеры: вдвое сильнее стрелка, плюётся на 5 клеток."
   },
@@ -219,6 +227,7 @@
       "creep"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Большой крип: страж лагеря, крепкий и больно бьёт."
   },
@@ -245,6 +254,7 @@
       "boss"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Вожак Серых Существ — цель миссии «Логово». Очень крепкий, рядом два больших крипа."
   },
@@ -270,6 +280,7 @@
       "creep"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Малый крип Серых Существ: охраняет лагерь, нападает на всё рядом."
   },
@@ -295,6 +306,7 @@
       "armored"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "shell",
     "description": "Танк: броня 2 срезает урон стрелков почти вдвое, бьёт тяжёлым снарядом. Дорогой, стоит второй ресурс."
   },
@@ -319,6 +331,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Ближний бой, держит удар. Стоит впереди стрелков и принимает урон на себя."
   },
@@ -344,6 +357,7 @@
       "armored"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Громила Легиона: крепкий, ломает оборону, по зданиям урон вдвое."
   },
@@ -368,6 +382,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "arrow",
     "description": "Стрелок Легиона — основа волны."
   },
@@ -393,6 +408,7 @@
       "fast"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Быстрый и дешёвый: режет буры и ленты, пока армия игрока далеко."
   },
@@ -418,8 +434,34 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Рабочий Легиона: отстраивает разрушенную базу и ставит буры."
+  },
+  {
+    "id": "miner",
+    "name_ru": "Шахтёр",
+    "faction": "common",
+    "hp": 140,
+    "armor": 1,
+    "damage": 0,
+    "damage_vs_buildings": 0,
+    "attack_range_mc": 0,
+    "attack_cooldown_ticks": 0,
+    "move_speed_mc_per_tick": 120,
+    "vision_mc": 6000,
+    "cost_primary": 30,
+    "cost_secondary": 0,
+    "build_time_ticks": 300,
+    "produced_at": "factory",
+    "size_mc": 600,
+    "tags": [
+      "digger"
+    ],
+    "abilities": [],
+    "dig_per_tick": 1,
+    "projectile": "",
+    "description": "Копает разрушаемую породу: ПКМ по породе — прокладывает ход к этой клетке. Под рудной породой открывается руда. Не сражается."
   },
   {
     "id": "repairer",
@@ -442,6 +484,7 @@
       "repairer"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Сам ищет повреждённые свои и союзные здания и юнитов в 8 клетках и чинит их за ресурсы владельца. Не строит и не воюет."
   },
@@ -467,6 +510,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "bolt",
     "description": "Осада Молний: бьёт здания разрядом с 7 клеток — дальше турели Легиона. Хрупкий, прикрывайте."
   },
@@ -493,6 +537,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Строитель Молний: быстрее и слабее строителя Синих Стен, возвращается через 10 с."
   },
@@ -520,6 +565,7 @@
     "abilities": [
       "rl_overdrive"
     ],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Передний край Молний: крепкий ближний боец с Перегрузкой (Z). Вдвое быстрее тяжёлого Синих, вдвое слабее его."
   },
@@ -547,6 +593,7 @@
     "abilities": [
       "rl_overdrive"
     ],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Дешёвый быстрый боец ближнего боя. Перегрузка (Z): 5 с вдвое злее и быстрее за 10 % прочности. Сильны стаей, а раненых отводите — они лечатся сами."
   },
@@ -573,6 +620,7 @@
     "abilities": [
       "rl_blink"
     ],
+    "dig_per_tick": 0,
     "projectile": "bolt",
     "description": "Стрелок с Рывком (Z): прыжок до 6 клеток. Уводите раненого из-под удара и возвращайте — первый удар после паузы двойной."
   },
@@ -598,6 +646,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Самый быстрый, видит дальше всех. Ищет месторождения, лагеря и базу врага; воевать не должен."
   },
@@ -622,6 +671,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "arrow",
     "description": "Основной стрелок: бьёт с 4 клеток. За пехотой и турелями сильнее всего."
   },
@@ -647,6 +697,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "stone",
     "description": "Осада: по зданиям урон втрое, бьёт с 8 клеток — дальше турели. Против юнитов слаб, его надо прикрывать."
   },
@@ -671,6 +722,7 @@
       "repairer"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Послушник: сам лечит юнитов и чинит здания рядом."
   },
@@ -695,6 +747,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "arrow",
     "description": "Лучник: бьёт с 5 клеток стрелами. Рядом с героем бьёт сильнее."
   },
@@ -721,6 +774,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Строитель Жёлтой Звезды."
   },
@@ -746,6 +800,7 @@
       "ranged"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "stone",
     "description": "Катапульта: камни по зданиям с 8 клеток."
   },
@@ -781,6 +836,7 @@
       "ys_inspire",
       "ys_grace"
     ],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Герой — один, сильнее любого юнита. Растёт в уровнях за опыт с врагов рядом; погиб — вернётся через 30 с с уровнем. Выберите путь — Воин, Маг или Покровитель. Свои юниты рядом бьют сильнее. G — выделить."
   },
@@ -805,6 +861,7 @@
       "melee"
     ],
     "abilities": [],
+    "dig_per_tick": 0,
     "projectile": "",
     "description": "Средний ближний боец. Рядом с героем бьёт сильнее."
   }
