@@ -152,6 +152,7 @@ public class HeroPathTests
         Path(sim, "ys_support");
         Unit hero = Hero(sim);
         Place(hero, 20, 14);
+        sim.State.Fog.Update(sim.State);   // the hero was moved by hand: a point must be in sight (heights.md)
         sim.Order(new UseAbilityCommand(Yellow, sim.State.Tick, new[] { hero.Id }, "ys_heal", Center(40), Center(14)));
         AbilityUsed used = sim.RunCollecting<AbilityUsed>(1).Single();
         Assert.That(used.X - hero.X, Is.EqualTo(Cells(7)));
@@ -164,6 +165,7 @@ public class HeroPathTests
         Path(sim, "ys_mage");
         Unit hero = Hero(sim);
         Place(hero, 20, 14);
+        sim.State.Fog.Update(sim.State);
         sim.Order(new UseAbilityCommand(Yellow, sim.State.Tick, new[] { hero.Id }, "ys_bolt", Center(26), Center(14)));
         sim.Tick();
         Assert.That(sim.Events.OfType<CommandRejected>().Single().Reason, Is.EqualTo(RejectReason.AbilityNotReady));

@@ -36,6 +36,22 @@
     ]
   },
   {
+    "id": "heights",
+    "name_ru": "Высоты (проверочная карта)",
+    "map": "heights",
+    "players": 2,
+    "legion": 1,
+    "goal": "destroy_legion",
+    "factions": [
+      "blue_walls",
+      "red_lightning"
+    ],
+    "colors": [
+      "blue",
+      "red"
+    ]
+  },
+  {
     "id": "m2",
     "name_ru": "Чёрный Легион — Синие Стены",
     "map": "m2",

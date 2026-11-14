@@ -163,7 +163,7 @@ namespace Game.Presentation
                 CreepCamp camp = state.CreepCamps[i];
                 if (_alerts.Count <= i)
                     _alerts.Add(CreateAlert());
-                var centre = new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 2.6f, camp.CenterMilliY / (float)Grid.MilliPerCell);
+                Vector3 centre = Ground.Lift(new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 2.6f, camp.CenterMilliY / (float)Grid.MilliPerCell));
                 bool alerted = camp.State == CreepCampState.Alerted && state.Fog.IsDiscovered(playerId, camp.CenterX, camp.CenterY)
                     && _camera.WorldToViewportPoint(centre).z > 0f;
                 _alerts[i].style.display = alerted ? DisplayStyle.Flex : DisplayStyle.None;

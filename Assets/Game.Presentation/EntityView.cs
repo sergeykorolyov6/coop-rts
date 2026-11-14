@@ -406,7 +406,7 @@ namespace Game.Presentation
         }
 
         private static Vector3 CellCentre(Building building) =>
-            new Vector3(building.CellX + building.Width * 0.5f, 0f, building.CellY + building.Height * 0.5f);
+            Ground.Lift(new Vector3(building.CellX + building.Width * 0.5f, 0f, building.CellY + building.Height * 0.5f));
 
         // Direction.Up is +Y in cells, which is +Z in the world.
         private static Quaternion DirectionRotation(Direction direction) => direction switch
@@ -467,7 +467,7 @@ namespace Game.Presentation
             resourceType == Game.Sim.Resources.Primary ? _primaryCargoColor : _secondaryCargoColor;
 
         private static Vector3 ToWorld(int milliX, int milliY) =>
-            new Vector3(milliX / (float)Grid.MilliPerCell, 0f, milliY / (float)Grid.MilliPerCell);
+            Ground.Lift(new Vector3(milliX / (float)Grid.MilliPerCell, 0f, milliY / (float)Grid.MilliPerCell));
 
         private void OnDestroy()
         {

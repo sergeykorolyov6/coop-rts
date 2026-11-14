@@ -10,6 +10,7 @@ public sealed class FogOfWar
     private readonly IReadOnlyList<Player> _players;
     private readonly int _width;
     private readonly int _height;
+    private readonly MapState _map;
     private readonly bool[][] _ownSight;
     private readonly bool[][] _visible;
     private readonly bool[][] _discovered;
@@ -18,8 +19,10 @@ public sealed class FogOfWar
     // never used, so the update skips them — on a big map that is most of the fog's cost.
     private readonly bool[] _blind;
 
-    internal FogOfWar(IReadOnlyList<Player> players, int width, int height)
+    internal FogOfWar(IReadOnlyList<Player> players, MapState map)
     {
+        int width = map.Width, height = map.Height;
+        _map = map;
         _players = players;
         _width = width;
         _height = height;
@@ -71,6 +74,9 @@ public sealed class FogOfWar
 
     internal void SetBlind(int playerId) => _blind[IndexOf(playerId)] = true;
 
+    // A player without fog (creeps, the neutral owner): its units look with their own eyes (Sight).
+    public bool IsBlind(int playerId) => _blind[IndexOf(playerId)];
+
     internal void Update(SimState state)
     {
         for (int i = 0; i < _players.Count; i++)
@@ -79,7 +85,7 @@ public sealed class FogOfWar
         foreach (Unit u in state.Units)
         {
             if (!u.IsDead)
-                Reveal(IndexOf(u.OwnerId), u.X, u.Y, u.Stats.VisionMilli);
+                Reveal(IndexOf(u.OwnerId), u.X, u.Y, u.Stats.VisionMilli, Sight.EyeLevel(_map, u));
         }
         foreach (Building b in state.Buildings)
         {
@@ -91,10 +97,22 @@ public sealed class FogOfWar
             if (b.Stats.Behavior == BuildingBehavior.Lighthouse)
             {
                 if (b.LitForPlayerId != 0)
-                    Reveal(IndexOf(b.LitForPlayerId), cx, cy, b.Stats.VisionMilli);
+                    Reveal(IndexOf(b.LitForPlayerId), cx, cy, b.Stats.VisionMilli, Sight.EyeLevel(_map, b));
                 continue;
             }
-            Reveal(IndexOf(b.OwnerId), cx, cy, b.Stats.VisionMilli);
+            Reveal(IndexOf(b.OwnerId), cx, cy, b.Stats.VisionMilli, Sight.EyeLevel(_map, b));
+        }
+
+        // heights.md: whoever struck is seen by the victim's team for a while — its own cell only.
+        foreach (Unit u in state.Units)
+        {
+            if (!u.IsDead && u.RevealedToPlayerId != 0 && state.Tick < u.RevealedUntilTick && InBounds(u.CellX, u.CellY))
+                Show(u.RevealedToPlayerId, u.CellX, u.CellY, 1, 1);
+        }
+        foreach (Building b in state.Buildings)
+        {
+            if (!b.IsDead && b.RevealedToPlayerId != 0 && state.Tick < b.RevealedUntilTick)
+                Show(b.RevealedToPlayerId, b.CellX, b.CellY, b.Width, b.Height);
         }
 
         for (int i = 0; i < _players.Count; i++)
@@ -123,9 +141,22 @@ public sealed class FogOfWar
         }
     }
 
-    // Cells whose centers lie within the radius of the point.
-    private void Reveal(int playerIndex, int x, int y, int radius)
+    private void Show(int playerId, int x, int y, int w, int h)
     {
+        int index = IndexOf(playerId);
+        if (_blind[index])
+            return;
+        for (int cy = y; cy < y + h; cy++)
+        {
+            for (int cx = x; cx < x + w; cx++)
+                _ownSight[index][cy * _width + cx] = true;
+        }
+    }
+
+    // Cells whose centers lie within the radius of the point and are not above the eyes (heights.md).
+    private void Reveal(int playerIndex, int x, int y, int radius, int eyeLevel)
+    {
+        bool levels = _map.HasLevels;
         if (radius <= 0 || _blind[playerIndex])
             return;
         bool[] sight = _ownSight[playerIndex];
@@ -138,7 +169,7 @@ public sealed class FogOfWar
             for (int cx = minX; cx <= maxX; cx++)
             {
                 long dx = Grid.CellCenter(cx) - x;
-                if (dx * dx + dy * dy <= r2)
+                if (dx * dx + dy * dy <= r2 && (!levels || _map.LevelAt(cx, cy) <= eyeLevel))
                     sight[cy * _width + cx] = true;
             }
         }

@@ -68,7 +68,7 @@ namespace Game.Presentation
             {
                 _plate ??= CreateMarker(PrimitiveType.Cube, "SelectionPlate");
                 _plate.localScale = new Vector3(building.Width + 0.3f, 0.01f, building.Height + 0.3f);
-                _plate.position = new Vector3(building.CellX + building.Width * 0.5f, 0.02f, building.CellY + building.Height * 0.5f);
+                _plate.position = Ground.Lift(new Vector3(building.CellX + building.Width * 0.5f, 0.02f, building.CellY + building.Height * 0.5f));
                 _plate.GetComponent<MeshRenderer>().sharedMaterial = building.OwnerId == _localPlayer!.PlayerId ? _material : InspectMaterial(_plate);
             }
             _plate?.gameObject.SetActive(building != null);

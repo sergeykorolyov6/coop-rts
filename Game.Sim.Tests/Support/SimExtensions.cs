@@ -41,8 +41,14 @@ internal static class SimExtensions
     public static int Cells(int cells) => cells * Grid.MilliPerCell;
 
     // A unit standing in the centre of cell (cx, cy).
-    public static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy) =>
-        sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
+    // The fog is brought up to date at once, as it is after any tick of a match: what a unit
+    // may strike depends on what its team sees (heights.md).
+    public static Unit Spawn(Simulation sim, int owner, string type, int cx, int cy)
+    {
+        Unit unit = sim.State.SpawnUnit(owner, sim.State.Data.Unit(type), Center(cx), Center(cy));
+        sim.State.Fog.Update(sim.State);
+        return unit;
+    }
 
     // Damaged "just now" for good: keeps Blue Walls' self-repair (factions.md) out of a test about
     // something else, such as the price of a repair.

@@ -28,6 +28,10 @@ public abstract class Entity
     public int LastDamagedTick { get; internal set; } = NeverTick;
     public int LastAttackerId { get; internal set; }
 
+    // heights.md, "раскрытие выстрелом": whoever struck is seen by the victim's team until this tick.
+    public int RevealedUntilTick { get; internal set; } = NeverTick;
+    public int RevealedToPlayerId { get; internal set; }
+
     // Tick of the last "attacked" alarm (combat.md, alerts.md: at most once per cooldown).
     internal int LastAlarmTick { get; set; } = NeverTick;
 

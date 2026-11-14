@@ -155,12 +155,19 @@ namespace Game.Presentation
             bool nearCamp = reason == null && InCampAggro(state, playerId, x, y, stats.SizeW, stats.SizeH);
             Color color = reason != null ? _blockedColor : nearCamp ? _warningColor : _okColor;
             bool drill = stats.Behavior == BuildingBehavior.Drill;
+            // heights.md: on uneven ground only the cells that spoil the site are red — a ramp, or a
+            // level other than the one most of the site stands on; the rest warn.
+            bool uneven = reason == RejectReason.UnevenGround || reason == RejectReason.OnRamp;
+            int siteLevel = uneven ? CommonLevel(state.Map, x, y, stats.SizeW, stats.SizeH) : 0;
             for (int cy = y; cy < y + stats.SizeH; cy++)
             {
                 for (int cx = x; cx < x + stats.SizeW; cx++)
                 {
                     bool ore = drill && reason == null && state.Map.InBounds(cx, cy) && state.Map.OreAt(cx, cy) != MapSetup.NoOre;
-                    PlaceTile(cx, cy, ore ? _oreColor : color);
+                    Color tile = ore ? _oreColor : color;
+                    if (uneven && state.Map.InBounds(cx, cy))
+                        tile = state.Map.IsRamp(cx, cy) || state.Map.LevelAt(cx, cy) != siteLevel ? _blockedColor : _warningColor;
+                    PlaceTile(cx, cy, tile);
                 }
             }
 
@@ -203,13 +210,18 @@ namespace Game.Presentation
 
             int count = _path.Count;
             RejectReason? first = null;
+            bool overCliff = false;
+            bool belt = _stats!.Behavior == BuildingBehavior.Conveyor;
             for (int i = 0; i < count; i++)
             {
                 Direction direction = LineDirection(i);
                 RejectReason? reason = PlacementPreview.Check(state, playerId, _stats!.Id, _path[i].x, _path[i].y, direction);
                 if (i == 0)
                     first = reason;
-                PlaceTile(_path[i].x, _path[i].y, reason == null ? _okColor : _blockedColor);
+                // heights.md: a belt hands nothing over a cliff — the cell just past it is marked.
+                bool cliff = belt && i > 0 && !state.Map.LevelsJoin(_path[i - 1].x, _path[i - 1].y, _path[i].x, _path[i].y);
+                overCliff |= cliff;
+                PlaceTile(_path[i].x, _path[i].y, reason != null ? _blockedColor : cliff ? _warningColor : _okColor);
                 if (_stats.Behavior == BuildingBehavior.Conveyor)
                     PlaceArrow(_path[i].x, _path[i].y, direction);
             }
@@ -221,6 +233,8 @@ namespace Game.Presentation
                 tip += $"\nСейчас хватает на {wallet / Mathf.Max(1, _stats.CostPrimary)} — остальное по мере дохода";
             if (first != null)
                 tip += "\n" + DisplayNames.Reject(first.Value, _stats.Id);
+            if (overCliff)
+                tip += "\nЧерез обрыв лента не передаёт: жёлтая клетка — за обрывом. Нужна рампа или мост";
             if (!_dragging)
                 tip += "\nЗажмите и тяните · R — поворот\nРесурс едет по стрелкам: конец ленты направьте в штаб";
 
@@ -282,6 +296,8 @@ namespace Game.Presentation
             string text = $"Мост — 2 × {_stats.CostPrimary} = {2 * _stats.CostPrimary}\nВторой конец";
             if (!inRange)
                 text += $"\nНа одной прямой, не дальше {range} клеток";
+            else if (end == null && !state.Map.LevelsJoin(start.x, start.y, cursor.x, cursor.y))
+                text += "\nМост перенесёт ресурс через обрыв";
             else if (end != null)
                 text += "\n" + DisplayNames.Reject(end.Value, id);
 
@@ -290,6 +306,27 @@ namespace Game.Presentation
                 Order(simulation, new[] { new BuildSite(start.x, start.y, direction), new BuildSite(cursor.x, cursor.y, direction) });
             }
             return text;
+        }
+
+        // The level most cells of the footprint stand on (ties: the lower one).
+        private static int CommonLevel(MapState map, int x, int y, int w, int h)
+        {
+            var counts = new int[MapSetup.MaxLevel + 1];
+            for (int cy = y; cy < y + h; cy++)
+            {
+                for (int cx = x; cx < x + w; cx++)
+                {
+                    if (map.InBounds(cx, cy) && !map.IsRamp(cx, cy))
+                        counts[map.LevelAt(cx, cy)]++;
+                }
+            }
+            int best = 0;
+            for (int level = 1; level < counts.Length; level++)
+            {
+                if (counts[level] > counts[best])
+                    best = level;
+            }
+            return best;
         }
 
         // Lines and bridges stay on the map even when the mouse leaves it.
@@ -392,7 +429,7 @@ namespace Game.Presentation
         {
             Transform tile = Pooled(_tiles, ref _tilesUsed, "GhostTile");
             tile.localScale = new Vector3(size, 0.04f, size);
-            tile.localPosition = new Vector3(x + 0.5f, 0.03f, y + 0.5f);
+            tile.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.03f, y + 0.5f));
             tile.localRotation = Quaternion.identity;
             tile.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(color);
         }
@@ -405,7 +442,7 @@ namespace Game.Presentation
             Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
             arrow.localRotation = rotation;
             arrow.localScale = new Vector3(0.18f, 0.06f, 0.45f);
-            arrow.localPosition = new Vector3(x + 0.5f, 0.07f, y + 0.5f) + rotation * new Vector3(0f, 0f, 0.18f);
+            arrow.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.07f, y + 0.5f)) + rotation * new Vector3(0f, 0f, 0.18f);
             arrow.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(Color.white);
         }
 

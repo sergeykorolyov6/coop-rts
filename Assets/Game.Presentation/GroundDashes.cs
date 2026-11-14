@@ -48,7 +48,7 @@ namespace Game.Presentation
             Transform t = _pool[_used++];
             t.gameObject.SetActive(true);
             Vector3 mid = (from + to) * 0.5f;
-            t.position = new Vector3(mid.x, 0.06f, mid.z);
+            t.position = Ground.Lift(new Vector3(mid.x, 0.06f, mid.z));
             Vector3 along = to - from;
             t.rotation = Quaternion.LookRotation(along.sqrMagnitude > 0f ? along : Vector3.forward);
             t.localScale = new Vector3(_width, 0.03f, along.magnitude);

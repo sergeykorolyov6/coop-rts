@@ -16,6 +16,7 @@ public sealed class GameRules
         "ai_think_interval_ticks", "ai_wave_repeat_ticks", "ai_wave_warning_ticks", "ai_defense_calm_ticks",
         "ai_rebuild_safe_radius_mc", "auto_repair_radius_mc", "factory_stock",
         "capture_time_ticks", "capture_radius_mc", "lighthouse_radius_mc", "demolish_time_pct", "build_speed_pct",
+        "high_ground_range_bonus_mc", "attack_reveal_ticks",
     };
 
     private readonly List<string> _read = new List<string>();
@@ -52,6 +53,8 @@ public sealed class GameRules
         LighthouseRadiusMilli = Read(root, "lighthouse_radius_mc");
         DemolishTimePercent = Read(root, "demolish_time_pct");
         BuildSpeedPercent = Read(root, "build_speed_pct");
+        HighGroundRangeBonusMilli = Read(root, "high_ground_range_bonus_mc");
+        AttackRevealTicks = Read(root, "attack_reveal_ticks");
 
         // An unknown key is a typo or a rule the sim does not implement yet; both should be loud.
         foreach (KeyValuePair<string, JsonNode> field in root.Fields)
@@ -107,6 +110,11 @@ public sealed class GameRules
     // Percent of build work one builder does per tick (100 — buildings.csv times as written);
     // building repair goes at the same pace (construction.md).
     public int BuildSpeedPercent { get; }
+
+    // heights.md: extra reach of a ranged attacker standing above its target; how long whoever
+    // struck stays seen by the victim's team.
+    public int HighGroundRangeBonusMilli { get; }
+    public int AttackRevealTicks { get; }
 
     internal static string ZeroJson()
     {

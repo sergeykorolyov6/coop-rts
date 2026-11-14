@@ -144,7 +144,7 @@ namespace Game.Presentation
         {
             var root = new GameObject($"{name} {x},{y}").transform;
             root.SetParent(_root, worldPositionStays: false);
-            root.localPosition = new Vector3(x + 0.5f, 0f, y + 0.5f);
+            root.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0f, y + 0.5f));
             return root;
         }
 

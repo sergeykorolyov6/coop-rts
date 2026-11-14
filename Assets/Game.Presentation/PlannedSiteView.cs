@@ -78,7 +78,7 @@ namespace Game.Presentation
         {
             Transform tile = Pooled(_tiles, ref _tilesUsed, "PlannedTile");
             tile.localScale = new Vector3(0.86f, 0.03f, 0.86f);
-            tile.localPosition = new Vector3(x + 0.5f, 0.02f, y + 0.5f);
+            tile.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.02f, y + 0.5f));
             tile.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(color);
         }
 
@@ -89,7 +89,7 @@ namespace Game.Presentation
             Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
             arrow.localRotation = rotation;
             arrow.localScale = new Vector3(0.16f, 0.05f, 0.42f);
-            arrow.localPosition = new Vector3(x + 0.5f, 0.05f, y + 0.5f) + rotation * new Vector3(0f, 0f, 0.18f);
+            arrow.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.05f, y + 0.5f)) + rotation * new Vector3(0f, 0f, 0.18f);
             arrow.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(Color.Lerp(color, Color.white, 0.6f));
         }
 

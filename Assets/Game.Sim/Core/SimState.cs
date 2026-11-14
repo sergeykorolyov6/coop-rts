@@ -69,7 +69,7 @@ public sealed class SimState
             b.GuardCampIndex = n.GuardCampIndex;
         }
 
-        Fog = new FogOfWar(_players, Map.Width, Map.Height);
+        Fog = new FogOfWar(_players, Map);
         if (CreepPlayerId != MatchSetup.NoPlayer)
             Fog.SetBlind(CreepPlayerId);
         if (NeutralPlayerId != MatchSetup.NoPlayer)
@@ -267,7 +267,8 @@ public sealed class SimState
 
         void TryAdd(int x, int y)
         {
-            if (Map.IsPassable(x, y) && !IsUnitInCell(x, y))
+            // heights.md: beside the building on its own level, never at the foot of its cliff.
+            if (Map.IsPassable(x, y) && Map.LevelsJoin(x, y, cellX, cellY) && !IsUnitInCell(x, y))
                 result.Add((x, y));
         }
     }

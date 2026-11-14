@@ -41,7 +41,9 @@ public class GameDataTests
       ""auto_repair_radius_mc"": 8000, ""factory_stock"": 150,
       ""capture_time_ticks"": 200, ""capture_radius_mc"": 2000, ""lighthouse_radius_mc"": 2000,
       ""demolish_time_pct"": 25,
-      ""build_speed_pct"": 150
+      ""build_speed_pct"": 150,
+      ""high_ground_range_bonus_mc"": 1000,
+      ""attack_reveal_ticks"": 40
     }";
 
     [Test]

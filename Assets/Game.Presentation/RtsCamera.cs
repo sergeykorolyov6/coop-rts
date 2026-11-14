@@ -33,6 +33,9 @@ namespace Game.Presentation
 
         private Camera? _camera;
         private Vector3 _focus;
+        // heights.md: the camera rides over the ground under its focus, so a plateau is seen from
+        // as far as the low ground; eased, or crossing a cliff would jerk the view.
+        private float _lift;
         private float _distance;
         private float _targetDistance;
         private float _yaw;
@@ -63,16 +66,40 @@ namespace Game.Presentation
         {
             _focus = new Vector3(point.x, 0f, point.z);
             ClampFocus();
+            _lift = Ground.Y(_focus.x, _focus.z);
             Apply();
         }
 
-        // Where the screen point hits the ground plane (y = 0); false above the horizon.
+        // Where the screen point hits the ground; false above the horizon. With heights (heights.md)
+        // the ground is steps: the ray is tried against each level's plane from the top down, and
+        // the first hit that lands in a cell of that very level is what the player points at.
         public bool GroundPoint(Vector2 screen, out Vector3 point)
         {
             point = default;
             if (_camera == null)
                 return false;
             Ray ray = _camera.ScreenPointToRay(screen);
+            MapState? map = Ground.Map;
+            if (map != null && map.HasLevels)
+            {
+                for (int level = MapSetup.MaxLevel; level >= 0; level--)
+                {
+                    // A ramp is a slope from its level to the next: half way up is close enough to pick its cell.
+                    for (int half = 1; half >= 0; half--)
+                    {
+                        float height = (level + half * 0.5f) * Ground.LevelHeight;
+                        if (!new Plane(Vector3.up, new Vector3(0f, height, 0f)).Raycast(ray, out float at))
+                            continue;
+                        Vector3 hit = ray.GetPoint(at);
+                        int cx = Mathf.FloorToInt(hit.x), cy = Mathf.FloorToInt(hit.z);
+                        if (map.InBounds(cx, cy) && map.LevelAt(cx, cy) == level && map.IsRamp(cx, cy) == (half == 1))
+                        {
+                            point = hit;
+                            return true;
+                        }
+                    }
+                }
+            }
             if (!new Plane(Vector3.up, Vector3.zero).Raycast(ray, out float enter))
                 return false;
             point = ray.GetPoint(enter);
@@ -193,7 +220,8 @@ namespace Game.Presentation
         private void Apply()
         {
             Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            transform.SetPositionAndRotation(_focus - rotation * Vector3.forward * _distance, rotation);
+            _lift = Mathf.Lerp(_lift, Ground.Y(_focus.x, _focus.z), 1f - Mathf.Exp(-6f * Time.unscaledDeltaTime));
+            transform.SetPositionAndRotation(_focus + Vector3.up * _lift - rotation * Vector3.forward * _distance, rotation);
         }
 
         private static bool InsideScreen(Vector2 p) =>

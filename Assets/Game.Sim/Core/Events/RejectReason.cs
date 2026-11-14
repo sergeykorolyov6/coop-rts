@@ -21,4 +21,9 @@ public enum RejectReason : byte
 
     // factions.md: the hero's path is chosen once a mission.
     HeroPathChosen,
+
+    // heights.md: the footprint lies on two levels; on a ramp; the ability's point is not in sight.
+    UnevenGround,
+    OnRamp,
+    NoVision,
 }

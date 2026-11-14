@@ -29,11 +29,21 @@ internal static class AbilitySystem
     }
 
     // True when the unit used it.
-    public static bool TryUse(SimState state, Unit unit, AbilityStats ability, int x, int y, List<SimEvent>? events = null)
+    public static bool TryUse(SimState state, Unit unit, AbilityStats ability, int x, int y, List<SimEvent>? events = null) =>
+        TryUse(state, unit, ability, x, y, events, out _);
+
+    // noVision: the ability was ready, but its point is not in the team's sight (heights.md).
+    public static bool TryUse(SimState state, Unit unit, AbilityStats ability, int x, int y, List<SimEvent>? events, out bool noVision)
     {
+        noVision = false;
         if (!IsReady(state, unit, ability))
             return false;
         (int cx, int cy) = ability.AtPoint ? Aim(unit, ability, x, y) : (unit.X, unit.Y);
+        if (ability.AtPoint && !InSight(state, unit.OwnerId, cx, cy))
+        {
+            noVision = true;
+            return false;
+        }
         bool used = ability.Kind switch
         {
             AbilityKind.Blink => Blink(state, unit, ability, cx, cy),
@@ -50,6 +60,14 @@ internal static class AbilitySystem
         events?.Add(new AbilityUsed(state.Tick, unit.OwnerId, unit.Id, ability.Id,
             ability.Kind == AbilityKind.Blink ? unit.X : cx, ability.Kind == AbilityKind.Blink ? unit.Y : cy));
         return true;
+    }
+
+    private static bool InSight(SimState state, int playerId, int x, int y)
+    {
+        if (state.Fog.IsBlind(playerId))
+            return true;
+        int cx = Grid.MilliToCell(x), cy = Grid.MilliToCell(y);
+        return state.Map.InBounds(cx, cy) && state.Fog.IsVisible(playerId, cx, cy);
     }
 
     // A longer boost replaces a shorter one; they never add up.
@@ -140,7 +158,8 @@ internal static class AbilitySystem
         {
             int tx = unit.X + (int)(dx * d / dist), ty = unit.Y + (int)(dy * d / dist);
             int cx = Grid.MilliToCell(tx), cy = Grid.MilliToCell(ty);
-            if (!state.Map.InBounds(cx, cy) || !state.Map.IsPassable(cx, cy))
+            // heights.md: over a cliff is fine, into the unseen is not.
+            if (!state.Map.InBounds(cx, cy) || !state.Map.IsPassable(cx, cy) || !InSight(state, unit.OwnerId, tx, ty))
                 continue;
             unit.X = tx;
             unit.Y = ty;

@@ -73,25 +73,8 @@ internal static class TurretSystem
     private static bool CanShoot(SimState state, Building turret, Entity? target) =>
         target != null && !target.IsDead
         && state.Relations.IsEnemy(turret.OwnerId, target.OwnerId) && !Combat.IsInvulnerable(target)
-        && EdgeDistance(turret, target) <= turret.Stats.AttackRangeMilli
-        && IsVisible(state, turret.OwnerId, target);
-
-    // Never into the fog: the cell a unit stands in, or any cell of a building, is seen by the team.
-    private static bool IsVisible(SimState state, int playerId, Entity target)
-    {
-        if (target is Unit u)
-            return state.Map.InBounds(u.CellX, u.CellY) && state.Fog.IsVisible(playerId, u.CellX, u.CellY);
-        var b = (Building)target;
-        for (int y = b.CellY; y < b.CellY + b.Height; y++)
-        {
-            for (int x = b.CellX; x < b.CellX + b.Width; x++)
-            {
-                if (state.Fog.IsVisible(playerId, x, y))
-                    return true;
-            }
-        }
-        return false;
-    }
+        && EdgeDistance(turret, target) <= turret.Stats.AttackRangeMilli + Sight.HighGroundBonus(state, turret, target)
+        && Sight.IsVisibleTo(state, turret.OwnerId, target);
 
     // Edge to edge: from the turret's footprint to a unit's circle or another footprint.
     public static long EdgeDistance(Building turret, Entity target)

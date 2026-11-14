@@ -80,7 +80,8 @@ internal static class CaptureSystem
         {
             if (u.IsDead || !state.IsTeamPlayer(u.OwnerId) || (onlyPlayer != 0 && u.OwnerId != onlyPlayer))
                 continue;
-            if (InRadius(u, b, radius))
+            // heights.md: from the building's own level, not from under its cliff.
+            if (InRadius(u, b, radius) && Sight.LevelAdjacent(state.Map, u, b))
                 return u;
         }
         return null;

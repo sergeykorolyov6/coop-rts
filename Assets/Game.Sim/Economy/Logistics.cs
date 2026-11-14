@@ -46,6 +46,10 @@ internal static class Logistics
     {
         if (receiver.IsDead || !receiver.IsComplete)
             return false;
+        // heights.md: a resource passes between neighbours only where a unit could step; a bridge
+        // links its two ends by itself and so carries over a cliff.
+        if (!state.Map.LevelsJoin(giver.CellX, giver.CellY, receiver.CellX, receiver.CellY))
+            return false;
         bool own = giver.OwnerId == receiver.OwnerId;
         bool ally = state.Relations.IsAlly(giver.OwnerId, receiver.OwnerId);
         if (!ally)

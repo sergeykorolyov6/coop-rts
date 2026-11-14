@@ -31,7 +31,7 @@
 - Рандом — только `DeterministicRng` с seed из состояния матча.
 - Каждый тик считается `StateHash` (xxHash по ключевым полям) — используется для отлова десинка в тестах и в сети.
 - Новая фракция или здание с уже известным поведением — строка в `factions.csv` / `buildings.csv`, без правки кода. В Sim не сравнивать `Stats.Id` с константами: поведение — колонка `behavior`, умения юнита — теги.
-- Всё, что балансируется (статы, стоимость, тайминги, волны), лежит в данных. Брат пишет числа в человеческих единицах (секунды, ед./с, клетки) в `Docs/Design/*.csv`, конвертер `python3 Tools/csv2json.py` переводит их в тики и милли-единицы → `Assets/Data/*.json` (дробь после перевода — ошибка, не округление), Sim загружает только целые через `GameData.Parse`. Новая колонка CSV — сначала в схему конвертера. JSON не правят руками: хук сверяет его с CSV (`--check`). Не хардкодить числа в логике.
+- Всё, что балансируется (статы, стоимость, тайминги, волны), лежит в данных. Брат пишет числа в человеческих единицах (секунды, ед./с, клетки) в `Docs/Design/*.csv`, конвертер `python3 Tools/csv2json.py` переводит их в тики и милли-единицы → `Assets/Data/*.json` (дробь после перевода — ошибка, не округление), Sim загружает только целые через `GameData.Parse`. Новая колонка CSV — сначала в схему конвертера. Конвертер же проверяет карты (достижимость стартов, руды и лагерей, рампы, здания на одном уровне) — карту с ошибкой он не пропустит. JSON не правят руками: хук сверяет его с CSV (`--check`). Не хардкодить числа в логике.
 
 ## Механики — только по спеке
 
@@ -102,9 +102,11 @@
 | Жёлтая Звезда: герой (Звёздный рыцарь), опыт, уровень, аура, Звездопад, Воодушевление; Подмастерье, Оруженосец, Лучник, Послушник, Катапульта; Святилище, Казарма, Сторожевая башня | тег `hero`, `ys_hero`, `HeroSystem`, `Player.HeroXp`/`HeroLevel`/`HeroRespawnTick`, `hero_levels.csv`, события `HeroDied`/`HeroRespawned`/`HeroLevelUp`; `ys_nova` (nova), `ys_inspire` (inspire); `ys_builder`, `ys_squire`, `ys_archer`, `ys_acolyte`, `ys_catapult`; `ys_hq`, `ys_barracks`, `ys_tower` |
 | путь героя (Воин, Маг, Покровитель); способность сработала; описание, снаряд, эффект | `HeroPathStats` (`hero_paths.csv`), `ChooseHeroPathCommand`, `Player.HeroPathId`; событие `AbilityUsed`; колонки `description`, `projectile` (юниты, здания), `effect` (способности) — только для UI |
 | источники данных для загрузки | `GameDataSources` → `GameData.Parse` |
-| замер стоимости тика, стенд масштаба | `TickCostProbe` (`dotnet test Game.Sim.Tests -c Release --filter TickCostProbe`); миссия `bench256` — карта из `Tools/make_bench_map.py`, не игровая |
+| замер стоимости тика, стенд масштаба | `TickCostProbe` (`dotnet test Game.Sim.Tests -c Release --filter TickCostProbe`); миссия `bench256` — карта из `Tools/make_bench_map.py`, не игровая; миссия `heights` — проверочная карта высот |
 | здания по корзинам карты (поиск цели) | `BuildingIndex`, `SimState.BuildingListVersion` |
-| план рельефа (кода ещё нет, этапы T3–T4 в `plan-terrain-and-factions.md`): уровень высоты, рампа, обрыв; тип местности, порода; копатель, копать | `MapState.LevelAt`, `Ramp`, `MapState.CanStep`; `TerrainStats` (`terrain.csv`); тег `digger`, колонка `dig_rate`, `DigCommand`, события `RockDamaged`, `RockDestroyed` |
+| уровень высоты, рампа; вид местности, порода (данные карты, T2 — на ходьбу, обзор и бой пока не влияют) | `MapState.LevelAt`, `MapState.IsRamp`, `MapSetup.MaxLevel`; `TerrainStats` (`terrain.csv`), `MapState.TerrainAt`, `GameData.TerrainBySymbol` |
+| высоты (`mechanics/heights.md`): шаг через обрыв, рядом по высоте, уровень стояния и глаз, кто кого видит; раскрытие выстрелом; преимущество высоты; отказы стройки и способностей; высота земли в Presentation | `MapState.CanStep`, `MapState.LevelsJoin`, `MapState.EyeLevel`, `Sight` (`StandLevel`, `EyeLevel`, `LevelAdjacent`, `Sees`, `HighGroundBonus`); `Entity.RevealedUntilTick`, `RevealedToPlayerId`, правило `attack_reveal`; тег `ranged`, правило `high_ground_range_bonus`; `RejectReason.UnevenGround`, `OnRamp`, `NoVision`; `Ground` (`Y`, `Lift`, `LevelHeight`) |
+| план породы (кода ещё нет, этап T4): копатель, копать | тег `digger`, колонка `dig_rate`, `DigCommand`, события `RockDamaged`, `RockDestroyed` |
 | сетевой кооп: хост, игрок, ход, задержка ввода, лобби, место, рассинхронизация (`network.md`) | `Relay` (хост: лобби, сбор ходов, сверка хешей), `LockstepClient`, `LockstepSettings` (`TurnTicks`, `DelayTurns`), `LobbyEntry`, `MatchStart`, `NetNotice` (`Desync`, `PlayerLeft`, `HostLost`); транспорт `IConnection` (`TcpConnection`, `LoopbackConnection`), `TcpServer`, `TcpConnector`; в Presentation `NetSession`, `SimRunner.Submit` |
 | играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (все четыре есть) |
 | неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
@@ -158,5 +160,6 @@ Docs/
     mechanics/         спеки механик (_TEMPLATE.md, drill.md, …)
     *.csv              таблицы чисел в человеческих единицах (rules.csv — общие числа механик)
     maps/*.txt         карты текстом (легенда в начале файла) → Assets/Data/maps/*.json
+    maps/*.tmj         или карта из редактора Tiled (Tools/tiled.py; набор тайлов cooprts.tsj/.png) — у карты один файл
 Tools/                 csv2json и прочие скрипты
 ```

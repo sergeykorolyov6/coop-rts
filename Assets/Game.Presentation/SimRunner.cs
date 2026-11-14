@@ -35,6 +35,8 @@ namespace Game.Presentation
         [SerializeField] private TextAsset? _heroLevelsJson;
         [Tooltip("Assets/Data/hero_paths.json: the hero's paths — Warrior, Mage, Supporter.")]
         [SerializeField] private TextAsset? _heroPathsJson;
+        [Tooltip("terrain.csv: kinds of rock the maps name by symbol.")]
+        [SerializeField] private TextAsset? _terrainJson;
 
         [Header("Missions (mission.md, save-load.md)")]
         [Tooltip("Assets/Data/missions.json")]
@@ -127,6 +129,7 @@ namespace Game.Presentation
                 Abilities = _abilitiesJson != null ? _abilitiesJson.text : "[]",
                 HeroLevels = _heroLevelsJson != null ? _heroLevelsJson.text : "[]",
                 HeroPaths = _heroPathsJson != null ? _heroPathsJson.text : "[]",
+                Terrain = _terrainJson != null ? _terrainJson.text : "[]",
             });
             Catalog = MissionCatalog.Parse(_missionsJson.text);
             DisplayNames.Data = Data;
@@ -148,6 +151,7 @@ namespace Game.Presentation
             {
                 // A save starts at tick 0 too and is played up to its tick in Update, a slice a frame.
                 _simulation = save != null ? save.BeginReplay(setup, Codec) : new Simulation(setup);
+                Ground.Map = _simulation.State.Map;
                 _replay = GameSession.Replay;
                 _loading = _replay == null ? GameSession.PendingSave : null;
             }
@@ -203,7 +207,7 @@ namespace Game.Presentation
         private IEnumerable<(string Name, string Text)> ContentFiles()
         {
             foreach (TextAsset? asset in new[] { _unitsJson, _buildingsJson, _creepCampsJson, _rulesJson, _legionJson, _wavesJson,
-                         _factionsJson, _abilitiesJson, _heroLevelsJson, _heroPathsJson, _missionsJson })
+                         _factionsJson, _abilitiesJson, _heroLevelsJson, _heroPathsJson, _missionsJson, _terrainJson })
             {
                 if (asset != null)
                     yield return (asset.name + ".json", asset.text);

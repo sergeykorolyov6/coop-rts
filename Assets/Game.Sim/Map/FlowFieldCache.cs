@@ -48,7 +48,9 @@ internal sealed class FlowFieldCache
             return field;
 
         _goals.Clear();
-        AddRing(map, x, y, w, h, 1);
+        // heights.md: work and blows reach a building only from its own level, so the way leads
+        // to the cells around it that have no cliff to it.
+        AddRing(map, x, y, w, h, 1, levelOf: true);
         return Store(map, key);
     }
 
@@ -65,14 +67,14 @@ internal sealed class FlowFieldCache
         return field;
     }
 
-    private void AddRing(MapState map, int x, int y, int w, int h, int ring)
+    private void AddRing(MapState map, int x, int y, int w, int h, int ring, bool levelOf = false)
     {
         for (int cy = y - ring; cy <= y + h - 1 + ring; cy++)
         {
             for (int cx = x - ring; cx <= x + w - 1 + ring; cx++)
             {
                 bool onRing = cy == y - ring || cy == y + h - 1 + ring || cx == x - ring || cx == x + w - 1 + ring;
-                if (onRing && map.IsPassable(cx, cy))
+                if (onRing && map.IsPassable(cx, cy) && (!levelOf || !map.InBounds(x, y) || map.LevelsJoin(cx, cy, x, y)))
                     _goals.Add(map.Index(cx, cy));
             }
         }

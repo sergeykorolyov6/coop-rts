@@ -123,6 +123,8 @@ internal sealed class StateHasher
         _writer.Write(e.IsDead);
         _writer.Write(e.LastDamagedTick);
         _writer.Write(e.LastAttackerId);
+        _writer.Write(e.RevealedUntilTick);
+        _writer.Write(e.RevealedToPlayerId);
     }
 
     private void WriteUnit(Unit u)

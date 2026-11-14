@@ -172,7 +172,7 @@ namespace Game.Presentation
         {
             if (!state.Data.TryGetAbility(used.AbilityId, out AbilityStats? ability))
                 return;
-            var at = new Vector3(used.X / (float)Game.Sim.Grid.MilliPerCell, 0f, used.Y / (float)Game.Sim.Grid.MilliPerCell);
+            Vector3 at = Ground.Lift(new Vector3(used.X / (float)Game.Sim.Grid.MilliPerCell, 0f, used.Y / (float)Game.Sim.Grid.MilliPerCell));
             float radius = Mathf.Max(0.5f, ability!.RadiusMilli / (float)Game.Sim.Grid.MilliPerCell);
             Vector3 caster = _entities!.TryGetUnitPosition(used.UnitId, out Vector3 drawn) ? drawn : at;
             switch (ability.Effect)

@@ -30,7 +30,11 @@ internal static class Combat
     public static void Engage(SimState state, Unit unit, Entity target)
     {
         unit.TargetId = target.Id;
-        if (EdgeDistance(unit, target) <= unit.Stats.AttackRangeMilli)
+        // heights.md: only a target the team sees; from above a ranged unit reaches farther; a melee
+        // unit never strikes across a cliff — it walks round instead.
+        bool melee = unit.Stats.AttackRangeMilli < Grid.MilliPerCell;
+        int range = unit.Stats.AttackRangeMilli + (unit.Stats.HasTag(UnitTags.Ranged) ? Sight.HighGroundBonus(state, unit, target) : 0);
+        if (EdgeDistance(unit, target) <= range && Sight.Sees(state, unit, target) && (!melee || Sight.LevelAdjacent(state.Map, unit, target)))
         {
             if (unit.AttackCooldown == 0)
             {
@@ -78,7 +82,7 @@ internal static class Combat
     public static void TickAttackMove(SimState state, Unit unit)
     {
         Entity? target = state.FindEntity(unit.TargetId);
-        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli)
+        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli || !Sight.Sees(state, unit, target!))
             target = CanAttack(unit) ? NearestEnemy(state, unit, unit.X, unit.Y, unit.Stats.VisionMilli) : null;
         if (target != null)
         {
@@ -110,7 +114,7 @@ internal static class Combat
             return;
 
         Entity? target = state.FindEntity(unit.TargetId);
-        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli)
+        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli || !Sight.Sees(state, unit, target!))
             target = NearestEnemy(state, unit, unit.X, unit.Y, unit.Stats.VisionMilli);
         if (target == null)
         {
@@ -132,7 +136,7 @@ internal static class Combat
             long dx = u.X - x, dy = u.Y - y;
             if (dx > reach || dx < -reach || dy > reach || dy < -reach)
                 continue;
-            if (u == unit || !IsValidTarget(state, unit, u))
+            if (u == unit || !IsValidTarget(state, unit, u) || !Sight.Sees(state, unit, u))
                 continue;
             long d = Movement.Distance(x, y, u.X, u.Y) - u.Radius;
             if (d <= radius && d < bestDist)
@@ -152,7 +156,7 @@ internal static class Combat
             {
                 foreach (Building b in state.BuildingIndex.Bucket(state, bx, by))
                 {
-                    if (!IsValidTarget(state, unit, b))
+                    if (!IsValidTarget(state, unit, b) || !Sight.Sees(state, unit, b))
                         continue;
                     long d = Movement.DistanceToBuilding(x, y, b);
                     if (d <= radius && (d < bestDist || (d == bestDist && b.Id < best!.Id)))
@@ -178,6 +182,13 @@ internal static class Combat
             target.Hp -= hit.Amount;
             target.LastDamagedTick = state.Tick;
             target.LastAttackerId = hit.AttackerId;
+            // heights.md: the one who struck shows itself to the victim's team.
+            Entity? attacker = state.FindEntity(hit.AttackerId);
+            if (attacker != null && state.Rules.AttackRevealTicks > 0)
+            {
+                attacker.RevealedUntilTick = state.Tick + state.Rules.AttackRevealTicks;
+                attacker.RevealedToPlayerId = target.OwnerId;
+            }
             events.Add(new HitLanded(state.Tick, hit.AttackerId, target.Id, hit.Amount));
 
             if (state.Tick - target.LastAlarmTick >= state.Rules.AttackAlarmCooldownTicks)

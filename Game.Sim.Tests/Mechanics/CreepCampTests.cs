@@ -278,7 +278,8 @@ public class CreepCampTests
     public void Edge_UndiscoveredCampEntered_AlertsAnyway_AndIsDiscovered()
     {
         var sim = Match();
-        Unit stranger = Spawn(sim, Setups.EnemyAi, "legion_worker", CX - 4, CY);
+        // Not through Spawn: that helper brings the fog up to date, and the point is that it is not yet.
+        Unit stranger = sim.State.SpawnUnit(Setups.EnemyAi, sim.State.Data.Unit("legion_worker"), Center(CX - 4), Center(CY));
         Assert.That(sim.State.Fog.IsDiscovered(Setups.EnemyAi, CX, CY), Is.False);
         sim.Run(2);
         Assert.That(Camp(sim).State, Is.EqualTo(CreepCampState.Alerted));

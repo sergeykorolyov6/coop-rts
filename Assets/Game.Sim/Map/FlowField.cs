@@ -4,7 +4,8 @@ namespace Game.Sim;
 
 // Distance to the nearest goal cell for every cell of the map; units walk downhill.
 // Integer costs: 10 per straight step, 14 per diagonal (≈ 10·√2). Diagonals may not cut
-// a blocked corner, so a unit never clips through the edge of a building.
+// a blocked corner, so a unit never clips through the edge of a building, and no step crosses
+// a cliff (heights.md, MapState.CanStep).
 public sealed class FlowField
 {
     public const int Unreachable = int.MaxValue;
@@ -83,7 +84,8 @@ public sealed class FlowField
                 int nd = dist + (diagonal ? DiagonalCost : StraightCost);
                 if (nd >= _dist[next] || !map.IsPassable(nx, ny))
                     continue;
-                if (diagonal && (!map.IsPassable(cx + Dx[d], cy) || !map.IsPassable(cx, cy + Dy[d])))
+                // The unit will walk the other way, from the neighbour into this cell.
+                if (!map.CanStep(nx, ny, cx, cy))
                     continue;
                 _dist[next] = nd;
                 _heap.Push(((long)nd << 32) | (uint)next);
@@ -108,7 +110,7 @@ public sealed class FlowField
             int nx = x + Dx[d], ny = y + Dy[d];
             if (!map.InBounds(nx, ny))
                 continue;
-            if (d >= 4 && (!map.IsPassable(x + Dx[d], y) || !map.IsPassable(x, y + Dy[d])))
+            if (!map.CanStep(x, y, nx, ny))
                 continue;
             int nd = _dist[map.Index(nx, ny)];
             if (nd < best)

@@ -166,7 +166,7 @@ namespace Game.Presentation
             if (_ring.Count == 0)
                 CreateRing();
             float radius = camp.Stats.AggroRadiusMilli / (float)Grid.MilliPerCell;
-            var centre = new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 0.05f, camp.CenterMilliY / (float)Grid.MilliPerCell);
+            Vector3 centre = Ground.Lift(new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 0.05f, camp.CenterMilliY / (float)Grid.MilliPerCell));
             float length = 2f * Mathf.PI * radius / RingSegments * 0.6f;
             for (int i = 0; i < RingSegments; i++)
             {

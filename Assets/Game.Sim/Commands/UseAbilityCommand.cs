@@ -47,10 +47,13 @@ public sealed class UseAbilityCommand : ICommand
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
             return;
         }
-        bool any = false;
+        bool any = false, unseen = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
-            any |= AbilitySystem.TryUse(state, unit, ability!, X, Y, events);
+        {
+            any |= AbilitySystem.TryUse(state, unit, ability!, X, Y, events, out bool noVision);
+            unseen |= noVision;
+        }
         if (!any)
-            events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.AbilityNotReady));
+            events.Add(new CommandRejected(state.Tick, PlayerId, unseen ? RejectReason.NoVision : RejectReason.AbilityNotReady));
     }
 }

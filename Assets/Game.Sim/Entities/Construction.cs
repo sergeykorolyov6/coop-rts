@@ -38,6 +38,21 @@ internal static class Construction
 
         if (stats.Behavior == BuildingBehavior.Drill && !anyOre)
             return RejectReason.NotAllowed;
+        // heights.md: one level under the whole building and no ramp; belts and bridges go anywhere.
+        if (map.HasLevels && !stats.IsBelt)
+        {
+            int level = map.LevelAt(x, y);
+            for (int cy = y; cy < y + stats.SizeH; cy++)
+            {
+                for (int cx = x; cx < x + stats.SizeW; cx++)
+                {
+                    if (map.IsRamp(cx, cy))
+                        return RejectReason.OnRamp;
+                    if (map.LevelAt(cx, cy) != level)
+                        return RejectReason.UnevenGround;
+                }
+            }
+        }
         return null;
     }
 
@@ -106,7 +121,8 @@ internal static class Construction
                 continue;
             }
 
-            if (Movement.DistanceToRectangle(unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH) > state.Rules.InteractRangeMilli)
+            if (Movement.DistanceToRectangle(unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH) > state.Rules.InteractRangeMilli
+                || !Sight.LevelAdjacent(state.Map, unit, plan.CellX, plan.CellY))
             {
                 Movement.StepToRectangle(state, unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH);
                 return;
@@ -182,7 +198,7 @@ internal static class Construction
 
         if (target is Building b)
         {
-            if (Movement.DistanceToBuilding(unit.X, unit.Y, b) > state.Rules.InteractRangeMilli)
+            if (Movement.DistanceToBuilding(unit.X, unit.Y, b) > state.Rules.InteractRangeMilli || !Sight.LevelAdjacent(state.Map, unit, b))
             {
                 Movement.StepToRectangle(state, unit, b.CellX, b.CellY, b.Width, b.Height);
                 return;
@@ -195,7 +211,7 @@ internal static class Construction
         {
             var patient = (Unit)target!;
             long gap = Movement.Distance(unit.X, unit.Y, patient.X, patient.Y) - unit.Radius - patient.Radius;
-            if (gap > state.Rules.InteractRangeMilli)
+            if (gap > state.Rules.InteractRangeMilli || !Sight.LevelAdjacent(state.Map, unit, patient))
             {
                 Movement.StepToPoint(state, unit, patient.X, patient.Y);
                 return;

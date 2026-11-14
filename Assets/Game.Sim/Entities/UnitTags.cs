@@ -10,6 +10,9 @@ public static class UnitTags
     public const string Builder = "builder";
     public const string Repairer = "repairer";
 
+    // heights.md: a ranged attacker gets the high-ground range bonus.
+    public const string Ranged = "ranged";
+
     // mission.md: killing every unit with this tag wins a kill_boss mission.
     public const string Boss = "boss";
 

@@ -150,7 +150,7 @@ internal static class ManualMining
             return CarryResult.Stopped;
         }
 
-        if (Movement.DistanceToBuilding(unit.X, unit.Y, hq) > state.Rules.InteractRangeMilli)
+        if (Movement.DistanceToBuilding(unit.X, unit.Y, hq) > state.Rules.InteractRangeMilli || !Sight.LevelAdjacent(state.Map, unit, hq))
         {
             Movement.StepToRectangle(state, unit, hq.CellX, hq.CellY, hq.Width, hq.Height);
             return CarryResult.Carrying;
@@ -191,7 +191,7 @@ internal static class ManualMining
     }
 
     private static bool InReachOfCell(SimState state, Unit unit, int x, int y) =>
-        Movement.DistanceToRectangle(unit, x, y, 1, 1) <= state.Rules.InteractRangeMilli;
+        Movement.DistanceToRectangle(unit, x, y, 1, 1) <= state.Rules.InteractRangeMilli && Sight.LevelAdjacent(state.Map, unit, x, y);
 
     private enum CarryResult
     {

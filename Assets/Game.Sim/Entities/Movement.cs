@@ -208,12 +208,17 @@ internal static class Movement
             if (pushX[i] == 0 && pushY[i] == 0)
                 continue;
             int nx = u.X + pushX[i], ny = u.Y + pushY[i];
-            if (state.Map.IsPassable(Grid.MilliToCell(nx), Grid.MilliToCell(u.Y)))
+            if (CanBePushedTo(state.Map, u, Grid.MilliToCell(nx), Grid.MilliToCell(u.Y)))
                 u.X = nx;
-            if (state.Map.IsPassable(Grid.MilliToCell(u.X), Grid.MilliToCell(ny)))
+            if (CanBePushedTo(state.Map, u, Grid.MilliToCell(u.X), Grid.MilliToCell(ny)))
                 u.Y = ny;
         }
     }
+
+    // heights.md: a push never moves a unit over a cliff.
+    private static bool CanBePushedTo(MapState map, Unit u, int cellX, int cellY) =>
+        map.IsPassable(cellX, cellY)
+        && ((cellX == u.CellX && cellY == u.CellY) || !map.InBounds(u.CellX, u.CellY) || map.LevelsJoin(u.CellX, u.CellY, cellX, cellY));
 
     private static void KeepRight(Unit u, long amount, ref int pushX, ref int pushY)
     {
@@ -244,7 +249,7 @@ internal static class Movement
                     for (int x = u.CellX - ring; x <= u.CellX + ring; x++)
                     {
                         bool onRing = y == u.CellY - ring || y == u.CellY + ring || x == u.CellX - ring || x == u.CellX + ring;
-                        if (!onRing || !state.Map.IsPassable(x, y) || field.DistanceAt(x, y) != 0)
+                        if (!onRing || !state.Map.IsPassable(x, y) || field.DistanceAt(x, y) != 0 || !state.Map.LevelsJoin(u.CellX, u.CellY, x, y))
                             continue;
                         long dist = Distance(u.X, u.Y, Grid.CellCenter(x), Grid.CellCenter(y));
                         if (dist < best)

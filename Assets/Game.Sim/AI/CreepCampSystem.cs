@@ -107,7 +107,7 @@ internal static class CreepCampSystem
         long bestDist = long.MaxValue;
         foreach (Unit u in state.Units)
         {
-            if (u.IsDead || !state.Relations.IsEnemy(creep.OwnerId, u.OwnerId) || !(InRadius(camp, u) || camp._attackers.Contains(u.Id)) || !Reachable(camp, creep, u))
+            if (u.IsDead || !state.Relations.IsEnemy(creep.OwnerId, u.OwnerId) || !((InRadius(camp, u) && Sight.Sees(state, creep, u)) || camp._attackers.Contains(u.Id)) || !Reachable(camp, creep, u))
                 continue;
             long d = Movement.DistanceSquared(creep.X, creep.Y, u.X, u.Y);
             if (d < bestDist)
@@ -121,7 +121,7 @@ internal static class CreepCampSystem
 
         foreach (Building b in state.Buildings)
         {
-            if (b.IsDead || !state.Relations.IsEnemy(creep.OwnerId, b.OwnerId) || b.Stats.Invulnerable || !(InRadius(camp, b) || camp._attackers.Contains(b.Id)) || !Reachable(camp, creep, b))
+            if (b.IsDead || !state.Relations.IsEnemy(creep.OwnerId, b.OwnerId) || b.Stats.Invulnerable || !((InRadius(camp, b) && Sight.Sees(state, creep, b)) || camp._attackers.Contains(b.Id)) || !Reachable(camp, creep, b))
                 continue;
             long d = Movement.DistanceToBuilding(creep.X, creep.Y, b);
             if (d < bestDist)
@@ -166,14 +166,18 @@ internal static class CreepCampSystem
 
     private static bool AnyIntruder(SimState state, CreepCamp camp)
     {
+        // heights.md: the camp rises only at what its creeps see — nothing above their level.
+        MapState map = state.Map;
+        int cx = Grid.MilliToCell(camp.CenterMilliX), cy = Grid.MilliToCell(camp.CenterMilliY);
+        int eyes = map.InBounds(cx, cy) ? map.EyeLevel(cx, cy) : 0;
         foreach (Unit u in state.Units)
         {
-            if (!u.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, u.OwnerId) && InRadius(camp, u))
+            if (!u.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, u.OwnerId) && InRadius(camp, u) && Sight.SeesFromLevel(state, state.CreepPlayerId, eyes, u))
                 return true;
         }
         foreach (Building b in state.Buildings)
         {
-            if (!b.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, b.OwnerId) && !b.Stats.Invulnerable && InRadius(camp, b))
+            if (!b.IsDead && state.Relations.IsEnemy(state.CreepPlayerId, b.OwnerId) && !b.Stats.Invulnerable && InRadius(camp, b) && Sight.SeesFromLevel(state, state.CreepPlayerId, eyes, b))
                 return true;
         }
         return false;

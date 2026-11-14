@@ -56,6 +56,9 @@ internal static class ConveyorSystem
         Building? front = FrontBuilding(state, belt.CellX + belt.Direction.Dx(), belt.CellY + belt.Direction.Dy());
         if (front == null || front.Conveyor == null || !front.IsComplete || front.OwnerId != belt.OwnerId)
             return null;
+        // heights.md: no belt-to-belt over a cliff.
+        if (!state.Map.LevelsJoin(belt.CellX, belt.CellY, front.CellX, front.CellY))
+            return null;
         return AcceptedInput(state, front) == belt ? front : null;
     }
 
