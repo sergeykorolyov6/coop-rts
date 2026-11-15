@@ -5,8 +5,9 @@ using UnityEngine.UIElements;
 
 namespace Game.Presentation
 {
-    // factions.md UI: what the selection is and does. One kind selected — its name, description
-    // (units.csv "description"), numbers and abilities; several kinds — how many of each.
+    // factions.md UI: the selection card — what the selection is and does. One kind selected — its
+    // icon, name, health, description (units.csv "description"), numbers and the hero's level;
+    // several kinds — a tile per kind with how many (a click keeps only that kind).
     // Someone else's unit picked for a look (ally, Legion, creep) shows the same, plus whose it is.
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class UnitInfo : MonoBehaviour
@@ -16,59 +17,40 @@ namespace Game.Presentation
         private SimRunner? _runner;
         private SelectionController? _selection;
         private LocalPlayer? _localPlayer;
-        private Label? _label;
+        private EntityView? _entities;
+        private VisualElement? _card;
         private string _shown = "";
+        private HudKit.Bar? _hp;
+        private Label? _hpText;
+        private Label? _extra;
+        private Unit? _single;
+        private int _shownHp = -1;
+        private string _shownExtra = "";
 
         private void Awake()
         {
             _runner = GetComponent<SimRunner>();
             _selection = GetComponent<SelectionController>();
             _localPlayer = GetComponent<LocalPlayer>();
+            _entities = GetComponent<EntityView>();
         }
 
         private void Start()
         {
             if (_hud?.BottomBar == null || _runner!.Simulation == null)
                 return;
-            _label = new Label { name = "UnitInfo", pickingMode = PickingMode.Ignore };
-            Hud.Panelise(_label);
-            _label.style.maxWidth = 340;
-            _label.style.whiteSpace = WhiteSpace.Normal;
-            _label.style.marginRight = 8;
-            _label.style.display = DisplayStyle.None;
-            _hud.BottomBar.Insert(0, _label);
+            _card = HudKit.Plate("UnitInfo", "hud-card", "hud-plate--main");
+            _card.style.display = DisplayStyle.None;
+            _hud.BottomBar.Insert(0, _card);
         }
 
         private void Update()
         {
             Simulation? simulation = _runner!.Simulation;
-            if (_label == null || simulation == null)
+            if (_card == null || simulation == null)
                 return;
-            string text = Describe(simulation.State);
-            if (text == _shown)
-                return;
-            _shown = text;
-            _label.text = text;
-            _label.style.display = text.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        // "HP 220 · броня 1 · урон 12 (здания 12) · дальность 0,5 · скорость 1,9 кл./с"
-        public static string StatsLine(UnitStats s)
-        {
-            string line = $"Прочность {s.Hp} · броня {s.Armor}";
-            if (s.Damage > 0 || s.DamageVsBuildings > 0)
-            {
-                line += $" · урон {s.Damage}";
-                if (s.DamageVsBuildings != s.Damage)
-                    line += $" (по зданиям {s.DamageVsBuildings})";
-                line += $" · дальность {Cells(s.AttackRangeMilli)}";
-            }
-            return line + $" · скорость {Cells(s.MoveSpeedMilliPerTick * Simulation.TicksPerSecond)} кл./с";
-        }
-
-        private string Describe(SimState state)
-        {
-            var counts = new List<(UnitStats Stats, int Count)>();
+            SimState state = simulation.State;
+            var counts = new List<(UnitStats Stats, List<int> Ids)>();
             Unit? first = null;
             foreach (int id in _selection!.Selected)
             {
@@ -78,44 +60,124 @@ namespace Game.Presentation
                 first ??= u;
                 int i = counts.FindIndex(c => c.Stats == u.Stats);
                 if (i < 0)
-                    counts.Add((u.Stats, 1));
+                    counts.Add((u.Stats, new List<int> { u.Id }));
                 else
-                    counts[i] = (u.Stats, counts[i].Count + 1);
+                    counts[i].Ids.Add(u.Id);
             }
             if (counts.Count == 0)
             {
                 Unit? other = state.FindUnit(_selection.InspectedUnitId);
-                return other != null && !other.IsDead ? Single(state, other, 1) : "";
-            }
-            if (counts.Count > 1)
-            {
-                var parts = new List<string>();
-                foreach ((UnitStats stats, int count) in counts)
-                    parts.Add($"{stats.NameRu} × {count}");
-                return "Выделено: " + string.Join(", ", parts);
+                first = other != null && !other.IsDead ? other : null;
             }
 
-            return Single(state, first!, counts[0].Count);
+            string key = first == null ? "" : counts.Count > 1 ? "many|" + Describe(counts) : $"one|{first.Id}|{(counts.Count > 0 ? counts[0].Ids.Count : 1)}|{_localPlayer!.PlayerId}";
+            if (key != _shown)
+            {
+                _shown = key;
+                _card.Clear();
+                _single = null;
+                _card.style.display = key.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                if (first != null && counts.Count > 1)
+                    BuildMany(counts);
+                else if (first != null)
+                    BuildSingle(state, first, counts.Count > 0 ? counts[0].Ids.Count : 1);
+            }
+            if (_single != null)
+                UpdateSingle(state, _single);
         }
 
-        // One kind: name, whose (when not ours), live HP of a lone unit, description, numbers, hero level.
-        private string Single(SimState state, Unit first, int count)
+        private static string Describe(List<(UnitStats Stats, List<int> Ids)> counts)
         {
-            UnitStats s = first.Stats;
-            string head = count > 1 ? $"{s.NameRu} × {count}" : $"{s.NameRu} · {first.Hp} / {first.MaxHp}";
-            string whose = DisplayNames.Whose(state, _localPlayer!.PlayerId, first.OwnerId);
-            if (whose.Length > 0)
-                head += $"\n{whose}";
-            string text = $"{head}\n{s.Description}\n{StatsLine(s)}";
-            if (first.IsHero)
-            {
-                Player owner = state.GetPlayer(first.OwnerId);
-                string path = state.HeroPath(first.OwnerId)?.NameRu ?? "путь не выбран";
-                text += $"\nУровень {owner.HeroLevel}, опыт {owner.HeroXp} · {path}";
-            }
-            return text;
+            var parts = new List<string>();
+            foreach ((UnitStats stats, List<int> ids) in counts)
+                parts.Add($"{stats.Id}:{ids.Count}");
+            return string.Join(",", parts);
         }
 
-        private static string Cells(int milli) => DisplayNames.Number(milli / (double)Game.Sim.Grid.MilliPerCell, "0.#");
+        private void BuildMany(List<(UnitStats Stats, List<int> Ids)> counts)
+        {
+            int total = 0;
+            foreach ((_, List<int> ids) in counts)
+                total += ids.Count;
+            HudKit.Text(_card!, $"ВЫДЕЛЕНО: {total}", "hud-caption");
+            VisualElement tiles = HudKit.Child(_card!, "hud-tiles");
+            foreach ((UnitStats stats, List<int> ids) in counts)
+            {
+                List<int> only = new List<int>(ids);
+                var tile = new Button(() => _selection!.SelectOnly(only));
+                tile.AddToClassList("hud-tile");
+                MenuDraw.Frame(tile);
+                HudKit.IconView(tile, stats.Id, stats.NameRu, "hud-tile__icon");
+                HudKit.Text(tile, ids.Count.ToString(), "hud-tile__count");
+                UnitStats tipStats = stats;
+                _hud!.AttachTip(tile, () => new HudTip { Title = $"{tipStats.NameRu} × {only.Count}", Body = "Щелчок — оставить в выделении только их." });
+                tiles.Add(tile);
+            }
+        }
+
+        // One kind: icon, name, whose (when not ours), health of a lone unit, description, numbers, hero level.
+        private void BuildSingle(SimState state, Unit unit, int count)
+        {
+            UnitStats s = unit.Stats;
+            VisualElement head = HudKit.Child(_card!, "hud-card__head");
+            HudKit.IconView(head, s.Id, s.NameRu, "hud-card__icon").style.unityBackgroundImageTintColor = Tint(state, unit.OwnerId);
+            VisualElement names = HudKit.Child(head, "hud-card__names");
+            HudKit.Text(names, count > 1 ? $"{s.NameRu} × {count}" : s.NameRu, "hud-title");
+            string whose = DisplayNames.Whose(state, _localPlayer!.PlayerId, unit.OwnerId);
+            Label owner = HudKit.Text(names, whose.Length > 0 ? whose.ToUpperInvariant() : FactionOf(state, unit.OwnerId), "hud-card__whose");
+            owner.EnableInClassList("hud-alarm", state.Relations.IsEnemy(_localPlayer.PlayerId, unit.OwnerId));
+            owner.EnableInClassList("hud-dim", !state.Relations.IsEnemy(_localPlayer.PlayerId, unit.OwnerId));
+
+            if (count == 1)
+            {
+                _single = unit;
+                _shownHp = -1;
+                _hp = HudKit.AddBar(_card!, "hud-bar--hp");
+                VisualElement hpRow = HudKit.Child(_card!, "hud-card__hp");
+                HudKit.Text(hpRow, "ПРОЧНОСТЬ", "hud-caption");
+                _hpText = HudKit.Text(hpRow, "", "hud-card__hp-text");
+            }
+            HudKit.Text(_card!, s.Description, "hud-dim").AddToClassList("hud-card__desc");
+            VisualElement stats = HudKit.Child(_card!, "hud-stats");
+            foreach ((string caption, string value) in EntityTips.UnitNumbers(s))
+                HudKit.Stat(stats, caption, value);
+            _extra = HudKit.Text(_card!, "", "hud-card__extra");
+            _shownExtra = "";
+            _extra.style.display = DisplayStyle.None;
+        }
+
+        private void UpdateSingle(SimState state, Unit unit)
+        {
+            if (unit.Hp != _shownHp)
+            {
+                _shownHp = unit.Hp;
+                float share = unit.Hp / (float)Mathf.Max(1, unit.MaxHp);
+                _hp!.Set(share);
+                _hp.SetColor(HudKit.HealthColor(share));
+                _hpText!.text = $"{unit.Hp} / {unit.MaxHp}";
+            }
+            string extra = "";
+            if (unit.IsHero)
+            {
+                Player owner = state.GetPlayer(unit.OwnerId);
+                string path = state.HeroPath(unit.OwnerId)?.NameRu ?? "путь не выбран";
+                extra = $"Уровень {owner.HeroLevel} · опыт {owner.HeroXp} · {path}";
+            }
+            if (extra != _shownExtra)
+            {
+                _shownExtra = extra;
+                _extra!.text = extra;
+                _extra.style.display = extra.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        // The icon in the owner's colour, a little lighter so a dark colour still reads on the plate.
+        private StyleColor Tint(SimState state, int ownerId)
+        {
+            Color color = _entities != null ? _entities.OwnerColor(state, ownerId) : Color.white;
+            return new StyleColor(Color.Lerp(color, Color.white, 0.35f));
+        }
+
+        private static string FactionOf(SimState state, int ownerId) => (state.GetPlayer(ownerId).Faction?.NameRu ?? "").ToUpperInvariant();
     }
 }

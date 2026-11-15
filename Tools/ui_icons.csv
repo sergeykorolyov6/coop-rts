@@ -1,0 +1,77 @@
+id,subject
+res_primary,a cluster of raw ore chunks and rough rock crystals
+res_secondary,a single faceted energy crystal shaped like a tall diamond with two small sparkles
+headquarters,a command headquarters: a fortified block building with an antenna mast and a landing pad on the roof
+factory,an industrial factory building with a large gate and a gantry crane on top
+drill,a mining drill rig on legs boring into rock
+conveyor,a straight conveyor belt segment with three arrow chevrons showing direction
+conveyor_bridge,two pylons joined by an arched bridge carrying a cargo box over a gap
+turret,a defensive gun turret with a twin barrel on a square base
+storage,a storage depot: a neat stack of cargo containers
+legion_factory,a menacing dark fortress factory with spikes and a furnace gate
+cave,a cave entrance in a rocky hill with two glowing eyes inside
+lighthouse,a tall beacon tower sending out light rays
+wall,a segment of fortified wall made of stacked heavy blocks
+rl_hq,a tall energy pylon crowned with a lightning bolt
+rl_factory,a forge anvil with a lightning bolt above it
+rl_tesla,a tesla coil tower with an electric arc on top
+legion_hq,a dark citadel with tall spiked towers
+legion_turret,a big spike-shaped defensive tower with a barbed tip
+bs_hq,a junkyard heap of scrap metal and pipes with a ragged flag on top
+bs_factory,a ramshackle workshop shed with a big wrench and a gear
+bs_drill_small,a small hand drill with a crank handle boring into a rock
+bs_pump,an oil can with a pump spout dripping oil drops
+bs_scrap_gun,a crude scrap cannon made of pipes on a pile of junk
+ys_hq,a shrine temple with columns and a star on the roof
+ys_barracks,a barracks building with crossed swords above the door
+ys_tower,a watchtower with a pointed roof and a narrow archer window
+scout,a fast light scout buggy with a radar dish
+infantry,a soldier with a big shield and a short blade, front view
+shooter,a futuristic armored soldier kneeling and aiming a long rifle, side view
+heavy,a heavy armored tank with a big cannon, side view
+siege,a siege artillery vehicle with a very long cannon raised high
+legion_worker,a hunched spiky robot worker with a pickaxe
+legion_raider,a fast spiky raider riding a hoverbike with blades
+legion_gunner,a spiky armored alien gunner holding a heavy rifle
+legion_brute,a huge hulking armored brute with giant fists
+creep_small,a small crouching alien creature with claws
+creep_big,a big horned alien beast
+builder,a builder engineer with a hard hat holding a wrench
+repairer,a small hovering repair drone with a wrench arm
+cave_beast,a massive tamed cave beast with horns and an armored back
+cave_spitter,an alien creature spitting a glob of acid, side view
+creep_boss,a giant roaring alien beast with a crown of horns
+rl_builder,a small builder robot with a lightning bolt on its chest
+rl_runner,a lightweight fighter sprinting with electric fists
+rl_striker,a gunner firing an electric bolt from a rifle with dash motion lines behind
+rl_lancer,a heavily armored warrior holding an electric lance
+rl_arc,a walker vehicle with a tesla cannon shooting an arc
+bs_builder,a scavenger carrying a big sack of scrap and a wrench
+bs_scrapper,a scavenger fighter swinging a crowbar
+bs_shotgun,a scavenger aiming a sawn-off shotgun
+bs_mortar,a mortar tube on a small wheeled cart made of scrap
+bs_repairbot,a tin can robot holding a welding torch
+ys_builder,a young apprentice builder holding a big hammer, a small star on his chest
+ys_hero,a star knight in armor raising a sword with a star above the helmet
+ys_squire,a squire with a round shield and a spear
+ys_archer,an archer drawing a bow, side view
+ys_acolyte,a hooded acolyte holding a staff topped with a star
+ys_catapult,a wooden catapult throwing a stone
+miner,a miner robot with a large drill arm digging into rock
+rl_blink,a figure dashing forward with speed lines and a lightning bolt
+rl_overdrive,a heart with a lightning bolt and two up arrows
+legion_frenzy,a fanged open mouth with drops
+ys_charge,a sword thrusting forward with speed lines and an impact burst
+ys_whirlwind,a sword spinning in a whirlwind circle
+ys_battlecry,a war horn with sound waves
+ys_bolt,a star-tipped arrow in flight
+ys_starfall,three falling stars with trails
+ys_meteor,a big meteor with a flaming trail falling down
+ys_heal,a plus cross with a sparkle
+ys_inspire,a raised banner flag with a star
+ys_grace,a big eight-pointed star radiating light rays with small plus signs around it
+ui_wave,a horned skull emblem
+ui_target,a target crosshair reticle
+ui_alert,a warning triangle with an exclamation mark
+ui_army,three soldier helmets in a row
+ui_time,an hourglass

@@ -81,11 +81,8 @@ namespace Game.Presentation
 
             var frame = new VisualElement { name = "Minimap" };
             Frame = frame;
-            Hud.Panelise(frame);
-            frame.style.position = Position.Absolute;
-            frame.style.right = 12;
-            frame.style.bottom = 12;
-            frame.style.paddingLeft = frame.style.paddingRight = frame.style.paddingTop = frame.style.paddingBottom = 4;
+            // Hud.uss #Minimap: pinned to the bottom right corner.
+            HudKit.MakePlate(frame);
             _view = new VisualElement();
             float aspect = simulation.State.Map.Height / (float)simulation.State.Map.Width;
             _view.style.width = _size;
@@ -106,7 +103,7 @@ namespace Game.Presentation
             _hud.Root.Add(frame);
             // The bottom bar stops left of the minimap: frame margin + view + padding + a gap.
             if (_hud.BottomBar != null)
-                _hud.BottomBar.style.right = 12 + _size + 8 + 12;
+                _hud.BottomBar.style.right = 12 + _size + 12 + 12;
         }
 
         private void LateUpdate()

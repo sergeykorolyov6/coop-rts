@@ -14,7 +14,6 @@ namespace Game.Presentation
         private static readonly int[] Speeds = { 1, 2, 4, 8 };
 
         [SerializeField] private Hud? _hud;
-        [SerializeField] private Color _activeColor = new Color(0.25f, 0.45f, 0.30f);
 
         private readonly List<Button> _speedButtons = new List<Button>();
 
@@ -34,17 +33,9 @@ namespace Game.Presentation
         {
             if (_hud?.Root == null || !_runner!.IsReplay)
                 return;
-            var bar = new VisualElement { name = "ReplayPanel" };
-            Hud.Panelise(bar);
-            // Under the wallet line, so the two never overlap in a narrow window.
-            Hud.PinTopCentre(bar, 36);
-            bar.style.flexDirection = FlexDirection.Row;
-            bar.style.alignItems = Align.Center;
-
-            _time = new Label { pickingMode = PickingMode.Ignore };
-            _time.style.marginRight = 8;
-            _time.style.minWidth = 300;
-            bar.Add(_time);
+            // Hud.uss #ReplayPanel: top centre, under the wallet line, so the two never overlap.
+            VisualElement bar = HudKit.Plate("ReplayPanel", "hud-plate--main");
+            _time = HudKit.Text(bar, "", "hud-text");
             _pause = AddButton(bar, "Пауза", () => _runner!.ReplaySpeed = _runner.ReplaySpeed == 0 ? 1 : 0);
             foreach (int speed in Speeds)
             {
@@ -58,8 +49,7 @@ namespace Game.Presentation
         {
             var button = new Button(onClick) { text = text };
             Hud.StyleButton(button);
-            button.style.height = 30;
-            button.style.minWidth = 44;
+            button.AddToClassList("replay-button");
             bar.Add(button);
             return button;
         }
@@ -80,7 +70,7 @@ namespace Game.Presentation
             }
             _pause!.text = _runner.ReplaySpeed == 0 ? "Дальше" : "Пауза";
             for (int i = 0; i < Speeds.Length; i++)
-                _speedButtons[i].style.backgroundColor = _runner.ReplaySpeed == Speeds[i] ? new StyleColor(_activeColor) : new StyleColor(Hud.ButtonColor);
+                _speedButtons[i].EnableInClassList("hud-button--on", _runner.ReplaySpeed == Speeds[i]);
         }
     }
 }

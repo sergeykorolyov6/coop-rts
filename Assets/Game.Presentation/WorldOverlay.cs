@@ -9,7 +9,7 @@ namespace Game.Presentation
     // UI pinned to things on the map, drawn on the HUD panel:
     // - HP bar over damaged units and buildings (combat.md);
     // - build bar over unfinished buildings: progress, how many build, "frozen" (drill.md);
-    // - buffer of own and ally drills, and "nowhere to give" when it is full and the drill stands (drill.md);
+    // - buffer of own and ally drills as a bar, and "nowhere to give" when it is full and the drill stands (drill.md);
     // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md);
     // - a red "!" over an alerted creep camp (creep-camp.md);
     // - capture progress over a neutral building, "guarded" while its camp lives (neutral-buildings.md);
@@ -138,10 +138,9 @@ namespace Game.Presentation
                 {
                     int cap = System.Math.Max(1, state.Rules.FactoryStock);
                     int primary = stock.Get(Game.Sim.Resources.Primary);
-                    // factions.md: an ammo turret shows its shells, a factory its stock of both resources.
-                    string text = building.Stats.Ammo > 0
-                        ? (primary < building.Stats.Ammo ? "нет боеприпасов — подведите ленту" : $"боеприпасы {primary}")
-                        : $"склад {primary} · {stock.Secondary}";
+                    // factions.md: an ammo turret says when its shells run out; a factory's stock is a
+                    // bar here and numbers on its panel (FactoryPanel) — words over every building clutter the map.
+                    string? text = building.Stats.Ammo > 0 && primary < building.Stats.Ammo ? "нет боеприпасов — подведите ленту" : null;
                     ShowBar(top + Vector3.down * 0.9f, width, primary / (float)cap,
                         building.Stats.Ammo > 0 && primary < building.Stats.Ammo ? _stoppedColor : _bufferColor, text);
                 }
@@ -150,7 +149,8 @@ namespace Game.Presentation
                 if (drill != null && building.IsComplete && state.Relations.IsAlly(playerId, building.OwnerId))
                 {
                     int capacity = state.Rules.DrillBuffer;
-                    string label = drill.IsStopped ? "полон — некуда отдавать" : $"буфер {drill.Buffer}/{capacity}";
+                    // drill.md: a working drill shows its buffer as a bar; words only when it stands.
+                    string? label = drill.IsStopped ? "полон — некуда отдавать" : null;
                     ShowBar(top + Vector3.down * 0.9f, width, drill.Buffer / (float)capacity, drill.IsStopped ? _stoppedColor : _bufferColor, label);
                 }
             }
@@ -262,7 +262,7 @@ namespace Game.Presentation
             var root = new VisualElement { pickingMode = PickingMode.Ignore };
             root.style.position = Position.Absolute;
             var track = new VisualElement { pickingMode = PickingMode.Ignore };
-            track.style.height = 7;
+            track.style.height = 5;
             track.style.backgroundColor = new Color(0f, 0f, 0f, 0.7f);
             track.style.borderTopWidth = track.style.borderBottomWidth = track.style.borderLeftWidth = track.style.borderRightWidth = 1;
             track.style.borderTopColor = track.style.borderBottomColor = track.style.borderLeftColor = track.style.borderRightColor = new Color(0f, 0f, 0f, 0.9f);
@@ -270,7 +270,7 @@ namespace Game.Presentation
             fill.style.height = Length.Percent(100f);
             track.Add(fill);
             var label = new Label { pickingMode = PickingMode.Ignore };
-            label.style.fontSize = 15;
+            label.style.fontSize = 12;
             label.style.unityFontStyleAndWeight = FontStyle.Bold;
             // A dark outline keeps white text readable over the bright owner colours.
             label.style.unityTextOutlineWidth = 0.3f;

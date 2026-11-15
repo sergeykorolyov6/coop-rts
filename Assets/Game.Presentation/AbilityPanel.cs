@@ -23,8 +23,7 @@ namespace Game.Presentation
         [SerializeField] private RtsCamera? _camera;
         [SerializeField] private Color _ringColor = new Color(0.98f, 0.85f, 0.30f);
 
-        private readonly List<Button> _buttons = new List<Button>();
-        private readonly List<string> _shown = new List<string>();
+        private readonly List<CommandButton> _buttons = new List<CommandButton>();
         private readonly List<string> _abilities = new List<string>();
         private readonly List<Button> _pathButtons = new List<Button>();
 
@@ -33,6 +32,8 @@ namespace Game.Presentation
         private LocalPlayer? _localPlayer;
         private VisualElement? _panel;
         private VisualElement? _paths;
+        private VisualElement? _grid;
+        private Label? _title;
         private GroundDashes? _ring;
         private string? _targeting;
         private int _endedFrame = -1;
@@ -53,27 +54,26 @@ namespace Game.Presentation
             Simulation? simulation = _runner!.Simulation;
             if (_hud?.BottomBar == null || simulation == null)
                 return;
-            _panel = new VisualElement { name = "AbilityPanel" };
-            _panel.style.flexDirection = FlexDirection.Row;
-            Hud.Panelise(_panel);
+            _panel = HudKit.Plate("AbilityPanel", "hud-commands");
+            VisualElement title = HudKit.Child(_panel, "hud-commands__title");
+            _title = HudKit.Text(title, "СПОСОБНОСТИ", "hud-caption");
             _panel.style.display = DisplayStyle.None;
             _hud.BottomBar.Add(_panel);
+            _grid = HudKit.Child(_panel, "hud-commands__grid");
 
-            _paths = new VisualElement { name = "HeroPaths" };
-            _paths.style.flexDirection = FlexDirection.Row;
-            _paths.Add(new Label("Путь героя:") { pickingMode = PickingMode.Ignore });
+            _paths = HudKit.Child(_panel, "hud-commands__grid");
+            _paths.name = "HeroPaths";
             foreach (HeroPathStats path in simulation.State.Data.HeroPaths)
             {
                 HeroPathStats p = path;
-                var button = new Button(() => Choose(p.Id)) { text = p.NameRu, userData = p.HeroUnitId };
-                button.style.width = 110;
-                button.style.height = 52;
-                Hud.StyleButton(button);
-                _hud.AttachTip(button, () => $"{p.NameRu}: {p.Description}\n{AbilityList(simulation.State, p)}");
-                _paths.Add(button);
-                _pathButtons.Add(button);
+                // The path's look is its first ability's icon.
+                string icon = p.Abilities.Count > 0 ? p.Abilities[0] : p.Id;
+                var button = new CommandButton(() => Choose(p.Id), icon, p.NameRu, "");
+                button.Button.userData = p.HeroUnitId;
+                _hud.AttachTip(button.Button, () => new HudTip { Title = $"Путь: {p.NameRu}", Body = $"{p.Description}\n{AbilityList(simulation.State, p)}", Note = "Выбирается один раз на игру." });
+                _paths.Add(button.Button);
+                _pathButtons.Add(button.Button);
             }
-            _panel.Add(_paths);
         }
 
         private void Update()
@@ -193,6 +193,9 @@ namespace Game.Presentation
         private void ShowPaths(SimState state, Unit? pathless)
         {
             _paths!.style.display = pathless != null ? DisplayStyle.Flex : DisplayStyle.None;
+            string title = pathless != null && _abilities.Count == 0 ? "ВЫБЕРИТЕ ПУТЬ ГЕРОЯ" : "СПОСОБНОСТИ";
+            if (_title!.text != title)
+                _title.text = title;
             foreach (Button b in _pathButtons)
                 b.style.display = pathless != null && (string)b.userData == pathless.Stats.Id ? DisplayStyle.Flex : DisplayStyle.None;
         }
@@ -202,36 +205,36 @@ namespace Game.Presentation
             while (_buttons.Count < _abilities.Count)
             {
                 int index = _buttons.Count;
-                var button = new Button(() => { if (index < _abilities.Count) Press(_abilities[index]); });
-                button.style.width = 120;
-                button.style.height = 52;
-                button.style.whiteSpace = WhiteSpace.Normal;
-                Hud.StyleButton(button);
-                _hud!.AttachTip(button, () => index < _abilities.Count ? Description(state, _abilities[index]) : "");
-                _panel!.Add(button);
+                string hotkey = index < Hotkeys.Length ? Hotkeys[index].ToString() : "";
+                var button = new CommandButton(() => { if (index < _abilities.Count) Press(_abilities[index]); }, "", "", hotkey);
+                _hud!.AttachTip(button.Button, () => index < _abilities.Count && state.Data.TryGetAbility(_abilities[index], out AbilityStats? a)
+                    ? EntityTips.Ability(a!, hotkey)
+                    : new HudTip());
+                _grid!.Add(button.Button);
                 _buttons.Add(button);
-                _shown.Add("");
             }
             for (int i = 0; i < _buttons.Count; i++)
             {
                 bool used = i < _abilities.Count;
-                _buttons[i].style.display = used ? DisplayStyle.Flex : DisplayStyle.None;
+                _buttons[i].Button.style.display = used ? DisplayStyle.Flex : DisplayStyle.None;
                 if (!used)
                     continue;
-                string text = Describe(state, _abilities[i], i, out bool ready);
-                if (text != _shown[i])
-                {
-                    _shown[i] = text;
-                    _buttons[i].text = text;
-                }
-                _buttons[i].style.opacity = ready ? 1f : 0.45f;
+                string id = _abilities[i];
+                string name = AbilityName(state, id);
+                _buttons[i].SetIcon(id, name);
+                _buttons[i].SetName(name);
+                Show(state, _buttons[i], id);
+                _buttons[i].SetActive(_targeting == id);
             }
         }
 
-        private string Describe(SimState state, string abilityId, int slot, out bool ready)
+        // How many of the selected have it ready ("2/3"), the cooldown left over the icon, or the
+        // hero's level it opens at.
+        private void Show(SimState state, CommandButton button, string abilityId)
         {
             int have = 0, readyCount = 0, soonest = int.MaxValue, needLevel = 0;
-            int minLevel = state.Data.TryGetAbility(abilityId, out AbilityStats? stats) ? stats!.MinLevel : 1;
+            AbilityStats? stats = state.Data.TryGetAbility(abilityId, out AbilityStats? found) ? found : null;
+            int minLevel = stats?.MinLevel ?? 1;
             foreach (int id in _selection!.Selected)
             {
                 Unit? u = state.FindUnit(id);
@@ -252,16 +255,17 @@ namespace Game.Presentation
                 else if (cooldown < soonest)
                     soonest = cooldown;
             }
-            ready = readyCount > 0;
-            string key = slot < Hotkeys.Length ? $" ({Hotkeys[slot]})" : "";
-            string status = ready ? $"готово: {readyCount}/{have}"
-                : soonest != int.MaxValue ? $"через {DisplayNames.Seconds(soonest)}"
-                : needLevel > 0 ? $"с ур. {needLevel}" : "не готово";
-            return $"{AbilityName(state, abilityId)}{key}\n{status}";
+            bool ready = readyCount > 0;
+            button.SetBlocked(!ready);
+            button.SetBadge(have > 1 ? $"{readyCount}/{have}" : "");
+            if (ready || soonest == int.MaxValue)
+            {
+                button.SetCooldown(needLevel > 0 && !ready ? 1f : 0f, needLevel > 0 && !ready ? $"ур. {needLevel}" : "");
+                return;
+            }
+            float share = stats != null && stats.CooldownTicks > 0 ? soonest / (float)stats.CooldownTicks : 1f;
+            button.SetCooldown(share, Mathf.CeilToInt(soonest / (float)Simulation.TicksPerSecond).ToString());
         }
-
-        private static string Description(SimState state, string abilityId) =>
-            state.Data.TryGetAbility(abilityId, out AbilityStats? a) ? $"{a!.NameRu}: {a.Description}" : abilityId;
 
         private static string AbilityList(SimState state, HeroPathStats path)
         {

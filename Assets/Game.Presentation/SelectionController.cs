@@ -88,10 +88,7 @@ namespace Game.Presentation
             if (_hud?.Root == null)
                 return;
             _box = new VisualElement { name = "SelectionBox", pickingMode = PickingMode.Ignore };
-            _box.style.position = Position.Absolute;
-            _box.style.backgroundColor = new Color(0.4f, 1f, 0.4f, 0.12f);
-            _box.style.borderTopWidth = _box.style.borderBottomWidth = _box.style.borderLeftWidth = _box.style.borderRightWidth = 1f;
-            _box.style.borderTopColor = _box.style.borderBottomColor = _box.style.borderLeftColor = _box.style.borderRightColor = new Color(0.4f, 1f, 0.4f, 0.9f);
+            // Hud.uss #SelectionBox.
             _box.style.display = DisplayStyle.None;
             _hud.Root.Add(_box);
         }
@@ -276,6 +273,9 @@ namespace Game.Presentation
             }
         }
 
+        // The selection card's tiles: a click keeps only that kind of unit.
+        public void SelectOnly(List<int> ids) => Select(ids, add: false);
+
         private void Select(List<int> ids, bool add)
         {
             SelectedBuildingId = 0;
@@ -328,9 +328,13 @@ namespace Game.Presentation
                         SelectArmy(simulation.State);
                 }) { name = "ArmyButton" };
                 Hud.StyleButton(_armyButton);
-                _armyButton.style.height = 34;
-                _armyButton.style.marginBottom = 4;
-                _hud?.AttachTip(_armyButton, () => "Выделить всех боевых юнитов (F2), дважды — камера к армии. Строитель и ремонтники — не армия.");
+                _armyButton.AddToClassList("hud-army");
+                _hud?.AttachTip(_armyButton, () => new HudTip
+                {
+                    Title = "Вся армия",
+                    Hotkey = "F2",
+                    Body = "Выделить всех своих боевых юнитов. Нажмите ещё раз — камера к армии. Строитель и ремонтники — не армия.",
+                });
                 frame.Insert(0, _armyButton);
             }
             int count = 0;

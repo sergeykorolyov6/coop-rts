@@ -7,9 +7,9 @@ using UnityEngine.UIElements;
 
 namespace Game.Presentation
 {
-    // Build menu while own builders are selected: a button per building the local player's faction
-    // builds (factions.csv, in its order) with its price and hotkey,
-    // grey when the wallet cannot pay (the sim pays on start, so this is a hint, not a lock:
+    // Build menu while own builders are selected: a command button per building the local player's
+    // faction builds (factions.csv, in its order) with its icon, price and hotkey,
+    // dimmed when the wallet cannot pay (the sim pays on start, so this is a hint, not a lock:
     // the button still works and the click is rejected with a reason).
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(PlacementController))]
     public sealed class BuildMenu : MonoBehaviour
@@ -38,16 +38,14 @@ namespace Game.Presentation
             new Entry { BuildingId = BuildingIds.SmallDrill, Hotkey = Key.N },
             new Entry { BuildingId = BuildingIds.Booster, Hotkey = Key.P },
         };
-        [SerializeField] private Color _activeColor = new Color(0.25f, 0.45f, 0.30f);
 
-        private readonly List<Button> _buttons = new List<Button>();
-        private readonly List<bool> _affordable = new List<bool>();
+        private readonly List<(CommandButton Button, BuildingStats Stats, Key Key)> _buttons = new List<(CommandButton, BuildingStats, Key)>();
 
         private SimRunner? _runner;
         private SelectionController? _selection;
         private PlacementController? _placement;
         private VisualElement? _panel;
-        private StyleColor _normalColor;
+        private VisualElement? _grid;
         private string _shownFaction = "";
 
         private void Awake()
@@ -61,13 +59,11 @@ namespace Game.Presentation
         {
             if (_hud?.BottomBar == null || _runner!.Simulation == null)
                 return;
-            _panel = new VisualElement { name = "BuildMenu" };
-            _panel.style.flexDirection = FlexDirection.Row;
-            // Wider than the bar (many buildings, a narrow window): the buttons wrap into two rows.
-            _panel.style.flexWrap = Wrap.Wrap;
-            _panel.style.flexShrink = 1;
-            Hud.Panelise(_panel);
-            _normalColor = Hud.ButtonColor;
+            _panel = HudKit.Plate("BuildMenu", "hud-commands");
+            VisualElement title = HudKit.Child(_panel, "hud-commands__title");
+            HudKit.Text(title, "СТРОЙКА", "hud-caption");
+            HudKit.Text(title, "ПКМ / ESC — ОТМЕНА", "hud-caption");
+            _grid = HudKit.Child(_panel, "hud-commands__grid");
             _hud.BottomBar.Add(_panel);
         }
 
@@ -83,29 +79,24 @@ namespace Game.Presentation
                 return;
 
             Player player = simulation.State.GetPlayer(_localPlayer.PlayerId);
-            // F1–F4 may switch to a player of another faction.
+            // Ctrl+F1–F4 may switch to a player of another faction.
             if ((player.Faction?.Id ?? "") != _shownFaction)
                 Rebuild(simulation.State, player.Faction);
             Wallet wallet = player.Wallet;
-            for (int i = 0; i < _buttons.Count; i++)
+            foreach ((CommandButton button, BuildingStats stats, _) in _buttons)
             {
-                var stats = (BuildingStats)_buttons[i].userData;
-                bool affordable = wallet.CanPay(stats.CostPrimary, stats.CostSecondary);
-                if (affordable != _affordable[i])
-                {
-                    _affordable[i] = affordable;
-                    _buttons[i].style.opacity = affordable ? 1f : 0.45f;
-                }
-                _buttons[i].style.backgroundColor = _placement!.BuildingId == stats.Id ? new StyleColor(_activeColor) : _normalColor;
+                bool shortPrimary = wallet.Get(Game.Sim.Resources.Primary) < stats.CostPrimary;
+                bool shortSecondary = wallet.Secondary < stats.CostSecondary;
+                HudKit.SetPrice(button.Price, stats.CostPrimary, stats.CostSecondary, shortPrimary, shortSecondary);
+                button.SetBlocked(shortPrimary || shortSecondary);
+                button.SetActive(_placement!.BuildingId == stats.Id);
             }
 
             Keyboard? keyboard = Keyboard.current;
             if (keyboard == null)
                 return;
-            foreach (Button button in _buttons)
+            foreach ((_, BuildingStats stats, Key key) in _buttons)
             {
-                var stats = (BuildingStats)button.userData;
-                Key key = HotkeyOf(stats);
                 if (key != Key.None && keyboard[key].wasPressedThisFrame)
                 {
                     _placement!.Begin(stats.Id);
@@ -117,34 +108,28 @@ namespace Game.Presentation
         private void Rebuild(SimState state, FactionStats? faction)
         {
             _shownFaction = faction?.Id ?? "";
-            foreach (Button old in _buttons)
-                old.RemoveFromHierarchy();
+            _grid!.Clear();
             _buttons.Clear();
-            _affordable.Clear();
             if (faction == null)
                 return;
             foreach (string id in faction.Buildings)
             {
                 if (!state.Data.TryGetBuilding(id, out BuildingStats? stats))
                     continue;
-                string price = stats!.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
-                Key key = HotkeyOf(stats);
-                var button = new Button(() => _placement!.Begin(id))
-                {
-                    text = $"{DisplayNames.Building(id)}\n{price}" + (key != Key.None ? $" · {key}" : ""),
-                    userData = stats,
-                };
-                // Wide enough for the longest name on one line ("Мастерская", "Сторожевая").
-                button.style.width = 108;
-                button.style.height = 52;
-                button.style.whiteSpace = WhiteSpace.Normal;
-                Hud.StyleButton(button);
+                Key key = HotkeyOf(stats!);
+                string hotkey = key != Key.None ? key.ToString() : "";
+                var button = new CommandButton(() => _placement!.Begin(id), id, stats!.NameRu, hotkey);
                 BuildingStats tipStats = stats;
-                _hud!.AttachTip(button, () => $"{tipStats.NameRu}: {tipStats.Description}");
-                _panel!.Add(button);
-                _buttons.Add(button);
-                _affordable.Add(true);
+                _hud!.AttachTip(button.Button, () => EntityTips.Building(tipStats, hotkey, CurrentWallet()));
+                _grid.Add(button.Button);
+                _buttons.Add((button, stats, key));
             }
+        }
+
+        private Wallet? CurrentWallet()
+        {
+            Simulation? simulation = _runner!.Simulation;
+            return simulation != null && _localPlayer != null ? simulation.State.GetPlayer(_localPlayer.PlayerId).Wallet : null;
         }
 
         private Key HotkeyOf(BuildingStats stats)

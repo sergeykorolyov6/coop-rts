@@ -1,0 +1,1256 @@
+/* The look of the in-game UI: the same family as the menu (Menu.uss) — dark plates with cut
+   corners (MenuDraw reads --frame-*), one cyan accent, Exo 2. Hud.cs and the panels build the
+   trees (HudKit, CommandButton) and name the classes; numbers that change every frame (bar
+   widths, positions) stay in code.
+   The theme imports this file (UI Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss).
+
+   Palette: accent 126 232 220 · text 222 236 242 · dim 128 150 162 · plate 5 9 14
+   warning 255 196 92 · alarm 255 104 92 · good 120 230 140
+   resources: primary 236 160 76 (ore) · secondary 104 190 244 (crystal) */
+
+.hud {
+    -unity-font-definition: url("Fonts/Exo2.ttf");
+    color: rgb(222, 236, 242);
+    font-size: 14px;
+}
+
+/* ---- Plates ---- */
+
+.hud-plate {
+    padding: 8px 12px;
+    color: rgb(222, 236, 242);
+    --frame-cut: 9;
+    --frame-fill: rgba(5, 9, 14, 0.9);
+    --frame-line: rgba(126, 232, 220, 0.26);
+}
+
+/* The big ones get the accent brackets on their cut corners. */
+.hud-plate--main {
+    --frame-accent: rgba(126, 232, 220, 0.85);
+}
+
+.hud-caption {
+    margin: 0 0 3px 0;
+    padding: 0;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgb(128, 150, 162);
+}
+
+.hud-title {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(238, 247, 250);
+}
+
+.hud-text {
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+}
+
+.hud-dim {
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    white-space: normal;
+    color: rgb(150, 172, 182);
+}
+
+.hud-good { color: rgb(120, 230, 140); }
+.hud-warning { color: rgb(255, 196, 92); }
+.hud-alarm { color: rgb(255, 104, 92); }
+.hud-accent { color: rgb(126, 232, 220); }
+
+.hud-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-rule {
+    height: 1px;
+    margin: 6px 0;
+    background-color: rgba(126, 232, 220, 0.18);
+}
+
+/* ---- Icons: white glyphs on transparency, tinted ---- */
+
+.hud-icon {
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgb(206, 238, 236);
+    align-items: center;
+    justify-content: center;
+}
+
+.hud-icon--letter {
+    border-width: 1px;
+    border-color: rgba(126, 232, 220, 0.4);
+}
+
+.hud-icon__letter {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(126, 232, 220);
+}
+
+/* Resources: a diamond each, in the resource's colour. */
+.hud-res {
+    width: 9px;
+    height: 9px;
+    margin: 0 4px 0 2px;
+    rotate: 45deg;
+    flex-shrink: 0;
+}
+
+.hud-res--primary {
+    background-color: rgb(236, 160, 76);
+}
+
+.hud-res--secondary {
+    background-color: rgb(104, 190, 244);
+}
+
+.hud-price {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.hud-price__value {
+    margin: 0 6px 0 0;
+    padding: 0;
+    font-size: 12px;
+    color: rgb(222, 236, 242);
+}
+
+.hud-price__value--short {
+    color: rgb(255, 120, 104);
+}
+
+.hud-price__time {
+    margin: 0 0 0 2px;
+    padding: 0;
+    font-size: 11px;
+    color: rgb(128, 150, 162);
+}
+
+/* ---- Bars ---- */
+
+.hud-bar {
+    height: 5px;
+    background-color: rgba(126, 232, 220, 0.1);
+    overflow: hidden;
+}
+
+.hud-bar__fill {
+    width: 0;
+    height: 100%;
+    background-color: rgb(126, 232, 220);
+}
+
+.hud-bar--hp {
+    height: 6px;
+    margin: 6px 0 2px 0;
+}
+
+/* ---- Stat cells ---- */
+
+.hud-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.hud-stat {
+    flex-grow: 1;
+    margin: 0 4px 4px 0;
+    padding: 3px 6px;
+    background-color: rgba(126, 232, 220, 0.05);
+    border-left-width: 2px;
+    border-left-color: rgba(126, 232, 220, 0.35);
+}
+
+.hud-stat__caption {
+    margin: 0;
+    padding: 0;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    color: rgb(128, 150, 162);
+}
+
+.hud-stat__value {
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+/* ---- Buttons ---- */
+
+.hud .unity-button {
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+}
+
+/* Every state the theme paints (its rules are .unity-button:hover:enabled and the like). */
+.hud .unity-button,
+.hud .unity-button:hover,
+.hud .unity-button:active,
+.hud .unity-button:focus,
+.hud .unity-button:hover:active,
+.hud .unity-button:hover:focus,
+.hud .unity-button:disabled {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.hud-button {
+    min-height: 28px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: rgb(214, 230, 236);
+    --frame-cut: 6;
+    --frame-fill: rgba(126, 232, 220, 0.05);
+    --frame-line: rgba(126, 232, 220, 0.32);
+}
+
+.hud .hud-button:hover {
+    color: rgb(255, 255, 255);
+    --frame-fill: rgba(126, 232, 220, 0.14);
+    --frame-line: rgba(126, 232, 220, 0.9);
+}
+
+.hud .hud-button:active {
+    --frame-fill: rgba(126, 232, 220, 0.26);
+}
+
+.hud .hud-button:disabled {
+    opacity: 0.4;
+}
+
+.hud-button--on,
+.hud .hud-button--on:hover {
+    color: rgb(226, 255, 250);
+    --frame-fill: rgba(126, 232, 220, 0.22);
+    --frame-line: rgb(126, 232, 220);
+}
+
+/* A command card's square button. */
+.hud-cmd {
+    width: 78px;
+    height: 80px;
+    margin: 0 5px 5px 0;
+    padding: 6px 2px 4px 2px;
+    align-items: center;
+    justify-content: flex-start;
+    color: rgb(222, 236, 242);
+    --frame-cut: 8;
+    --frame-fill: rgba(126, 232, 220, 0.04);
+    --frame-line: rgba(126, 232, 220, 0.22);
+}
+
+.hud .hud-cmd {
+    margin: 0 5px 5px 0;
+}
+
+.hud .hud-cmd:hover {
+    --frame-fill: rgba(126, 232, 220, 0.11);
+    --frame-line: rgba(126, 232, 220, 0.9);
+    --frame-accent: rgb(190, 255, 246);
+}
+
+.hud .hud-cmd:active {
+    --frame-fill: rgba(126, 232, 220, 0.22);
+}
+
+.hud-cmd--active,
+.hud .hud-cmd--active:hover {
+    --frame-fill: rgba(126, 232, 220, 0.2);
+    --frame-line: rgb(126, 232, 220);
+    --frame-accent: rgb(255, 255, 255);
+}
+
+.hud-cmd__icon {
+    width: 32px;
+    height: 32px;
+    margin-top: 4px;
+}
+
+.hud-cmd--blocked .hud-cmd__icon {
+    -unity-background-image-tint-color: rgb(110, 128, 136);
+}
+
+.hud-cmd--blocked .hud-cmd__name {
+    color: rgb(128, 150, 162);
+}
+
+.hud-cmd__name {
+    margin: 4px 0 0 0;
+    padding: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 74px;
+    -unity-text-align: middle-center;
+}
+
+.hud-cmd__price {
+    margin-top: 1px;
+}
+
+.hud-cmd__price .hud-price__value {
+    font-size: 11px;
+    margin-right: 3px;
+}
+
+.hud-cmd__price .hud-res {
+    width: 6px;
+    height: 6px;
+    margin: 0 3px 0 1px;
+}
+
+.hud-cmd__hotkey {
+    position: absolute;
+    left: 5px;
+    top: 3px;
+    margin: 0;
+    padding: 0;
+    font-size: 10px;
+    -unity-font-style: bold;
+    color: rgb(126, 232, 220);
+}
+
+.hud-cmd__badge {
+    position: absolute;
+    right: 5px;
+    top: 3px;
+    margin: 0;
+    padding: 0;
+    font-size: 10px;
+    color: rgb(222, 236, 242);
+}
+
+/* A cooldown: the dark part shrinks upwards as the ability comes back. */
+.hud-cmd__cooldown {
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    top: 1px;
+    height: 0;
+    background-color: rgba(2, 5, 9, 0.72);
+}
+
+.hud-cmd__cooldown-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 16px;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(255, 255, 255);
+}
+
+/* ---- The wallet (top left) ---- */
+
+#Wallet {
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 14px 6px 12px;
+}
+
+.hud-wallet__who {
+    margin-right: 16px;
+}
+
+.hud-wallet__player {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-pip {
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.hud-wallet__name {
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+
+.hud-wallet__faction {
+    margin: 1px 0 0 14px;
+    padding: 0;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgb(128, 150, 162);
+}
+
+.hud-resource {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 14px;
+    padding-left: 14px;
+    border-left-width: 1px;
+    border-left-color: rgba(126, 232, 220, 0.18);
+}
+
+.hud-resource__icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+}
+
+.hud-resource--primary .hud-resource__icon {
+    -unity-background-image-tint-color: rgb(236, 160, 76);
+}
+
+.hud-resource--secondary .hud-resource__icon {
+    -unity-background-image-tint-color: rgb(104, 190, 244);
+}
+
+.hud-resource__amount {
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    -unity-font-style: bold;
+}
+
+.hud-resource__income {
+    margin: 0 0 0 6px;
+    padding: 0;
+    font-size: 11px;
+    color: rgb(128, 150, 162);
+}
+
+.hud-resource__income--up {
+    color: rgb(120, 230, 140);
+}
+
+/* ---- Allies under the wallet ---- */
+
+#Allies {
+    position: absolute;
+    left: 12px;
+    top: 60px;
+    padding: 4px 10px;
+}
+
+.hud-ally {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+}
+
+.hud-ally__name {
+    min-width: 170px;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+
+.hud-ally__wallet {
+    flex-direction: row;
+    align-items: center;
+    min-width: 110px;
+}
+
+.hud-ally .hud-button {
+    min-height: 22px;
+    padding: 1px 8px;
+    font-size: 11px;
+}
+
+.hud .hud-ally .hud-button {
+    margin-left: 4px;
+}
+
+/* ---- The bottom bar: the selection card and the command cards ---- */
+
+#BottomBar {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap-reverse;
+}
+
+.hud .hud-card {
+    width: 340px;
+    margin-right: 8px;
+    padding: 10px 14px 10px 14px;
+}
+
+.hud-card__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-card__icon {
+    width: 44px;
+    height: 44px;
+    margin-right: 12px;
+}
+
+.hud-card__names {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.hud-card__whose {
+    margin: 2px 0 0 0;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.hud-card__hp {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.hud-card__hp-text {
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    color: rgb(150, 172, 182);
+}
+
+.hud-card__desc {
+    margin: 6px 0 0 0;
+}
+
+.hud-card__extra {
+    margin: 6px 0 0 0;
+    padding: 0;
+    font-size: 12px;
+    white-space: normal;
+    color: rgb(126, 232, 220);
+}
+
+.hud-card__button {
+    margin-top: 8px;
+}
+
+/* Several kinds selected: a tile each with how many. */
+.hud-tiles {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.hud-tile {
+    width: 50px;
+    height: 50px;
+    padding: 4px;
+    align-items: center;
+    justify-content: center;
+    --frame-cut: 6;
+    --frame-fill: rgba(126, 232, 220, 0.05);
+    --frame-line: rgba(126, 232, 220, 0.25);
+}
+
+.hud .hud-tile {
+    margin: 0 4px 4px 0;
+    padding: 4px;
+}
+
+.hud .hud-tile:hover {
+    --frame-fill: rgba(126, 232, 220, 0.14);
+    --frame-line: rgba(126, 232, 220, 0.9);
+}
+
+.hud-tile__icon {
+    width: 30px;
+    height: 30px;
+}
+
+.hud-tile__count {
+    position: absolute;
+    right: 4px;
+    bottom: 2px;
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    -unity-font-style: bold;
+}
+
+/* A command card: its title, then the buttons in rows. */
+.hud .hud-commands {
+    margin-right: 8px;
+    padding: 8px 6px 4px 11px;
+    flex-shrink: 1;
+}
+
+.hud-commands__title {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 4px 6px 0;
+}
+
+.hud-commands__title .hud-caption {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.hud-commands__grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 672px;
+}
+
+/* ---- The factory: stock, queue ---- */
+
+.hud-stock {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 4px 6px 0;
+}
+
+.hud-stock__bar {
+    width: 90px;
+    margin: 0 8px 0 0;
+}
+
+.hud-stock .hud-price__value {
+    min-width: 54px;
+}
+
+.hud-queue {
+    flex-direction: row;
+    align-items: center;
+    margin: 2px 4px 6px 0;
+}
+
+.hud-slot {
+    width: 34px;
+    height: 34px;
+    margin-right: 4px;
+    padding: 4px;
+    background-color: rgba(126, 232, 220, 0.05);
+    border-width: 1px;
+    border-color: rgba(126, 232, 220, 0.2);
+}
+
+.hud-slot__icon {
+    width: 100%;
+    height: 100%;
+}
+
+.hud-slot__fill {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 0;
+    background-color: rgb(126, 232, 220);
+}
+
+.hud-slot--first {
+    border-color: rgba(126, 232, 220, 0.7);
+}
+
+.hud-queue .hud-button {
+    min-height: 34px;
+}
+
+.hud-note {
+    margin: 0 4px 6px 0;
+    padding: 0;
+    font-size: 11px;
+    white-space: normal;
+    max-width: 420px;
+    color: rgb(128, 150, 162);
+}
+
+.hud-note--warning {
+    color: rgb(255, 196, 92);
+}
+
+/* ---- The objective (top right) ---- */
+
+#TopRight {
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    width: 300px;
+}
+
+#Objective {
+    padding: 10px 14px 10px 14px;
+}
+
+.hud-objective__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.hud-objective__icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    -unity-background-image-tint-color: rgb(126, 232, 220);
+}
+
+.hud-objective__head .hud-caption {
+    margin: 0;
+    color: rgb(126, 232, 220);
+}
+
+.hud-objective__found {
+    margin: 4px 0 0 0;
+}
+
+.hud-wave {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background-color: rgba(255, 104, 92, 0.06);
+    border-left-width: 2px;
+    border-left-color: rgba(255, 104, 92, 0.6);
+}
+
+.hud-wave__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-wave__icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    -unity-background-image-tint-color: rgb(255, 120, 104);
+}
+
+.hud-wave__title {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgb(255, 150, 136);
+}
+
+.hud-wave__timer {
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+}
+
+.hud-wave__bar {
+    margin: 6px 0 4px 0;
+    background-color: rgba(255, 104, 92, 0.14);
+}
+
+.hud-wave__bar .hud-bar__fill {
+    background-color: rgb(255, 120, 104);
+}
+
+.hud-wave--near .hud-wave__timer {
+    color: rgb(255, 120, 104);
+}
+
+.hud-objective__footer {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.hud-objective__footer .hud-dim {
+    font-size: 11px;
+}
+
+/* ---- First steps (under the objective) ---- */
+
+#FirstSteps {
+    margin-top: 8px;
+    padding: 10px 14px 8px 14px;
+}
+
+.hud-steps__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.hud-steps__head .hud-caption {
+    flex-grow: 1;
+    margin: 0;
+    color: rgb(126, 232, 220);
+}
+
+.hud-steps__head .hud-button {
+    min-height: 20px;
+    padding: 0 8px;
+    font-size: 10px;
+}
+
+.hud-step {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: 6px;
+}
+
+.hud-step__box {
+    width: 12px;
+    height: 12px;
+    margin: 3px 8px 0 0;
+    flex-shrink: 0;
+    border-width: 1px;
+    border-color: rgba(126, 232, 220, 0.55);
+}
+
+.hud-step__text {
+    flex-shrink: 1;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    white-space: normal;
+}
+
+.hud-step--done .hud-step__box {
+    background-color: rgb(120, 230, 140);
+    border-color: rgb(120, 230, 140);
+}
+
+.hud-step--done .hud-step__text {
+    color: rgb(110, 130, 140);
+}
+
+.hud-step--now .hud-step__box {
+    border-width: 2px;
+    border-color: rgb(126, 232, 220);
+}
+
+.hud-step--now .hud-step__text {
+    color: rgb(255, 255, 255);
+}
+
+/* ---- Notifications (left) ---- */
+
+#Notifications {
+    position: absolute;
+    left: 12px;
+    align-items: flex-start;
+}
+
+.hud-toast {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 5px;
+    padding: 5px 12px 5px 10px;
+    max-width: 460px;
+    opacity: 1;
+    translate: 0 0;
+    transition-property: opacity, translate;
+    transition-duration: 0.18s;
+    transition-timing-function: ease-out;
+    --frame-cut: 7;
+    --frame-fill: rgba(5, 9, 14, 0.86);
+    --frame-line: rgba(126, 232, 220, 0.18);
+    --frame-bar: rgb(126, 232, 220);
+}
+
+.hud-toast--entering {
+    opacity: 0;
+    translate: -16px 0;
+    transition-duration: 0s;
+}
+
+.hud-toast__text {
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    white-space: normal;
+}
+
+.hud-toast--warning {
+    --frame-bar: rgb(255, 196, 92);
+    --frame-line: rgba(255, 196, 92, 0.25);
+}
+
+.hud-toast--warning .hud-toast__text {
+    color: rgb(255, 222, 160);
+}
+
+.hud-toast--alarm {
+    --frame-bar: rgb(255, 104, 92);
+    --frame-line: rgba(255, 104, 92, 0.32);
+    --frame-fill: rgba(28, 6, 6, 0.86);
+}
+
+.hud-toast--alarm .hud-toast__text {
+    color: rgb(255, 196, 188);
+}
+
+/* ---- The wave banner (top centre) ---- */
+
+#WaveBanner {
+    position: absolute;
+    top: 84px;
+    left: 50%;
+    translate: -50% 0;
+    min-width: 420px;
+    align-items: center;
+    padding: 12px 34px 12px 34px;
+    opacity: 1;
+    transition-property: opacity, translate;
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out;
+    --frame-cut: 14;
+    --frame-fill: rgba(24, 5, 6, 0.9);
+    --frame-line: rgba(255, 104, 92, 0.55);
+    --frame-accent: rgb(255, 120, 104);
+}
+
+#WaveBanner.hud-banner--hidden {
+    opacity: 0;
+    translate: -50% -12px;
+}
+
+.hud-banner__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-banner__icon {
+    width: 26px;
+    height: 26px;
+    margin-right: 10px;
+    -unity-background-image-tint-color: rgb(255, 120, 104);
+}
+
+.hud-banner__title {
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    letter-spacing: 4px;
+    -unity-font-style: bold;
+    color: rgb(255, 150, 136);
+}
+
+.hud-banner__text {
+    margin: 6px 0 0 0;
+    padding: 0;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    color: rgb(255, 222, 216);
+}
+
+/* "Ожидание игроков…" in a network game. */
+#Waiting {
+    position: absolute;
+    top: 90px;
+    left: 50%;
+    translate: -50% 0;
+    padding: 8px 24px;
+}
+
+#Waiting > .hud-text {
+    font-size: 18px;
+    color: rgb(255, 196, 92);
+}
+
+/* ---- The end of the mission ---- */
+
+#MissionEnd {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(2, 4, 8, 0.35);
+}
+
+.hud-end {
+    min-width: 520px;
+    align-items: center;
+    padding: 26px 48px 22px 48px;
+    --frame-cut: 18;
+    --frame-fill: rgba(5, 9, 14, 0.94);
+    --frame-line: rgba(126, 232, 220, 0.4);
+    --frame-accent: rgb(126, 232, 220);
+}
+
+.hud-end__title {
+    margin: 0;
+    padding: 0;
+    font-size: 40px;
+    letter-spacing: 10px;
+    -unity-font-style: bold;
+}
+
+.hud-end__text {
+    margin: 10px 0 0 0;
+    padding: 0;
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.hud-end__hint {
+    margin: 16px 0 0 0;
+    padding: 0;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: rgb(128, 150, 162);
+}
+
+.hud-end--victory .hud-end__title {
+    color: rgb(140, 240, 160);
+}
+
+.hud-end.hud-end--victory {
+    --frame-line: rgba(120, 230, 140, 0.5);
+    --frame-accent: rgb(140, 240, 160);
+}
+
+.hud-end--defeat .hud-end__title {
+    color: rgb(255, 120, 104);
+}
+
+.hud-end.hud-end--defeat {
+    --frame-line: rgba(255, 104, 92, 0.5);
+    --frame-accent: rgb(255, 120, 104);
+}
+
+/* ---- Tips ---- */
+
+#CursorTip {
+    position: absolute;
+    max-width: 360px;
+    padding: 5px 10px;
+    font-size: 13px;
+    white-space: normal;
+    --frame-cut: 6;
+    --frame-fill: rgba(5, 9, 14, 0.94);
+    --frame-line: rgba(126, 232, 220, 0.35);
+}
+
+#CursorTip > .hud-text {
+    font-size: 13px;
+}
+
+#ButtonTip {
+    position: absolute;
+    width: 320px;
+    padding: 10px 14px;
+    --frame-cut: 9;
+    --frame-fill: rgba(5, 9, 14, 0.96);
+    --frame-line: rgba(126, 232, 220, 0.5);
+    --frame-accent: rgb(126, 232, 220);
+}
+
+.hud-tip__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-tip__title {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: rgb(238, 247, 250);
+}
+
+.hud-tip__key {
+    margin: 0 0 0 8px;
+    padding: 1px 6px;
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: rgb(126, 232, 220);
+    border-width: 1px;
+    border-color: rgba(126, 232, 220, 0.5);
+}
+
+.hud-tip__price {
+    justify-content: flex-start;
+    margin-top: 4px;
+}
+
+.hud-tip__body {
+    margin: 6px 0 0 0;
+    padding: 0;
+    font-size: 12px;
+    white-space: normal;
+    color: rgb(200, 216, 222);
+}
+
+.hud-tip__note {
+    margin: 6px 0 0 0;
+    padding: 0;
+    font-size: 11px;
+    white-space: normal;
+    color: rgb(255, 196, 92);
+}
+
+/* ---- Frame selection ---- */
+
+#SelectionBox {
+    position: absolute;
+    background-color: rgba(126, 232, 220, 0.08);
+    border-width: 1px;
+    border-color: rgba(126, 232, 220, 0.85);
+}
+
+/* ---- Minimap and its army button ---- */
+
+#Minimap {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    padding: 6px;
+    --frame-accent: rgba(126, 232, 220, 0.85);
+}
+
+#ArmyButton {
+    margin-bottom: 6px;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.hud .hud-army {
+    margin-bottom: 6px;
+}
+
+/* ---- Replay ---- */
+
+#ReplayPanel {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    translate: -50% 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 10px;
+}
+
+#ReplayPanel > .hud-text {
+    min-width: 320px;
+    margin-right: 10px;
+    font-size: 13px;
+}
+
+.hud .replay-button {
+    min-width: 46px;
+    margin-left: 4px;
+}
+
+/* ---- Help (F1) ---- */
+
+#Help {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(2, 4, 8, 0.55);
+}
+
+.hud-help {
+    width: 860px;
+    max-width: 94%;
+    max-height: 90%;
+    padding: 18px 24px 16px 24px;
+    --frame-cut: 18;
+    --frame-fill: rgba(5, 9, 14, 0.96);
+    --frame-line: rgba(126, 232, 220, 0.35);
+    --frame-accent: rgb(126, 232, 220);
+}
+
+.hud-help__title {
+    margin: 0 0 4px 0;
+    padding: 0;
+    font-size: 20px;
+    letter-spacing: 5px;
+    color: rgb(126, 232, 220);
+}
+
+.hud-help__columns {
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.hud-help__column {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 20px;
+}
+
+.hud-help__step {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.hud-help__number {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    -unity-text-align: middle-center;
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: rgb(5, 9, 14);
+    background-color: rgb(126, 232, 220);
+}
+
+.hud-help__step-text {
+    flex-shrink: 1;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    white-space: normal;
+}
+
+.hud-key-row {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
+.hud-key {
+    min-width: 108px;
+    margin: 0 10px 0 0;
+    padding: 1px 6px;
+    font-size: 11px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(126, 232, 220);
+    border-width: 1px;
+    border-color: rgba(126, 232, 220, 0.45);
+}
+
+.hud-key-row > .hud-dim {
+    flex-shrink: 1;
+    font-size: 12px;
+    color: rgb(200, 216, 222);
+}
+
+.hud-help__footer {
+    margin-top: 10px;
+    -unity-text-align: middle-center;
+}

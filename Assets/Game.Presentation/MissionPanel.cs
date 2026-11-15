@@ -6,21 +6,34 @@ using UnityEngine.UIElements;
 namespace Game.Presentation
 {
     // mission.md / legion-ai.md UI: the objective and the next wave's timer in the top right
-    // corner, and the victory or defeat screen when the sim says the mission ended.
-    // For missions with a goal (missions.csv); free play shows nothing.
+    // corner (with a bar that runs out as the wave comes), and the victory or defeat screen when
+    // the sim says the mission ended. For missions with a goal (missions.csv); free play shows nothing.
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class MissionPanel : MonoBehaviour
     {
         [SerializeField] private Hud? _hud;
-        [SerializeField] private Color _victoryColor = new Color(0.55f, 0.95f, 0.55f);
-        [SerializeField] private Color _defeatColor = new Color(1.00f, 0.45f, 0.40f);
+        [Tooltip("Seconds before a wave goes out when its timer turns red.")]
+        [SerializeField] private float _nearSeconds = 30f;
 
         private SimRunner? _runner;
         private LocalPlayer? _localPlayer;
-        private Label? _objective;
-        private Label? _end;
-        private string _shown = "";
+        private VisualElement? _objective;
+        private Label? _goal;
+        private Label? _found;
+        private VisualElement? _wave;
+        private Label? _waveTitle;
+        private Label? _waveTimer;
+        private Label? _waveArrival;
+        private HudKit.Bar? _waveBar;
+        private Label? _clock;
+        private VisualElement? _end;
+        private string _shownFound = "";
+        private string _shownWave = "";
+        private string _shownClock = "";
         private int _endTick = -1;
+        // The wave the timer counts to and when the count began: the bar is the share left.
+        private int _waveTick = -1;
+        private int _waveCountFrom;
 
         private void Awake()
         {
@@ -34,30 +47,39 @@ namespace Game.Presentation
 
         private void Start()
         {
-            if (_hud?.Root == null || _runner!.Simulation == null || _runner.Simulation.State.Goal == MissionGoal.None)
+            if (_hud?.TopRight == null || _runner!.Simulation == null || _runner.Simulation.State.Goal == MissionGoal.None)
                 return;
+            SimState state = _runner.Simulation.State;
 
-            _objective = new Label { name = "Objective", pickingMode = PickingMode.Ignore };
-            _objective.style.position = Position.Absolute;
-            _objective.style.right = 12;
-            _objective.style.top = 8;
-            Hud.Panelise(_objective);
-            _objective.style.unityTextAlign = TextAnchor.UpperRight;
-            _hud.Root.Add(_objective);
+            _objective = HudKit.Plate("Objective", "hud-plate--main");
+            _objective.pickingMode = PickingMode.Ignore;
+            VisualElement head = HudKit.Child(_objective, "hud-objective__head");
+            HudKit.IconView(head, "ui_target", "◎", "hud-objective__icon");
+            HudKit.Text(head, "ЦЕЛЬ МИССИИ", "hud-caption");
+            _goal = HudKit.Text(_objective, state.Goal == MissionGoal.KillBoss
+                ? "Победите вожака Серых Существ — его логово на северо-востоке."
+                : "Найдите и уничтожьте штабы и заводы Чёрного Легиона.", "hud-text");
+            _found = HudKit.Text(_objective, "", "hud-dim");
+            _found.AddToClassList("hud-objective__found");
+            _found.style.display = DisplayStyle.None;
 
-            _end = new Label { name = "MissionEnd", pickingMode = PickingMode.Ignore };
-            _end.style.position = Position.Absolute;
-            // A banner across the screen: no transforms, so it centres on any resolution.
-            _end.style.left = 0;
-            _end.style.right = 0;
-            _end.style.top = Length.Percent(35);
-            Hud.Panelise(_end);
-            _end.style.fontSize = 36;
-            _end.style.paddingLeft = _end.style.paddingRight = 32;
-            _end.style.paddingTop = _end.style.paddingBottom = 16;
-            _end.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _wave = HudKit.Child(_objective, "hud-wave");
+            VisualElement waveHead = HudKit.Child(_wave, "hud-wave__head");
+            HudKit.IconView(waveHead, "ui_wave", "!", "hud-wave__icon");
+            _waveTitle = HudKit.Text(waveHead, "", "hud-wave__title");
+            _waveTimer = HudKit.Text(waveHead, "", "hud-wave__timer");
+            _waveBar = HudKit.AddBar(_wave, "hud-wave__bar");
+            _waveArrival = HudKit.Text(_wave, "", "hud-dim");
+            _wave.style.display = DisplayStyle.None;
+
+            VisualElement footer = HudKit.Child(_objective, "hud-objective__footer");
+            _clock = HudKit.Text(footer, "", "hud-dim");
+            HudKit.Text(footer, "F1 — КАК ИГРАТЬ", "hud-dim").AddToClassList("hud-accent");
+            _hud.TopRight.Insert(0, _objective);
+
+            _end = new VisualElement { name = "MissionEnd", pickingMode = PickingMode.Ignore };
             _end.style.display = DisplayStyle.None;
-            _hud.Root.Add(_end);
+            _hud.Root!.Add(_end);
         }
 
         private void Update()
@@ -83,30 +105,50 @@ namespace Game.Presentation
                     && state.Fog.IsDiscovered(me, b.CellX, b.CellY))
                     seen++;
             }
-
-            string text = state.Goal == MissionGoal.KillBoss
-                ? "Цель: победите вожака Серых Существ (логово на северо-востоке)"
-                : "Цель: уничтожьте штаб и заводы Чёрного Легиона";
-            if (seen > 0)
-                text += $"\nНайдено и ещё стоит: {seen}";
+            string found = seen > 0 ? $"Найдено и ещё стоит: {seen}" : "";
             if (state.Goal == MissionGoal.KillBoss && state.FindBoss() is Unit boss && state.Fog.IsVisible(me, boss.CellX, boss.CellY))
-                text += $"\nВожак: {boss.Hp} / {boss.MaxHp}";
-            if (state.Outcome == MissionOutcome.InProgress && legion != null)
+                found = $"Вожак: {boss.Hp} / {boss.MaxHp}";
+            else if (seen == 0 && state.Goal == MissionGoal.DestroyLegion)
+                found = "База Легиона ещё не найдена — пошлите разведчика.";
+            if (found != _shownFound)
             {
-                text += $"\nВолна {legion.NextWave} через {DisplayNames.Clock(legion.NextWaveTick - state.Tick)}";
+                _shownFound = found;
+                _found!.text = found;
+                _found.style.display = found.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            bool waveShown = state.Outcome == MissionOutcome.InProgress && legion != null;
+            _wave!.style.display = waveShown ? DisplayStyle.Flex : DisplayStyle.None;
+            if (waveShown)
+            {
+                if (legion!.NextWaveTick != _waveTick)
+                {
+                    _waveTick = legion.NextWaveTick;
+                    _waveCountFrom = state.Tick;
+                }
+                int left = legion.NextWaveTick - state.Tick;
+                float share = _waveTick > _waveCountFrom ? left / (float)(_waveTick - _waveCountFrom) : 0f;
+                _waveBar!.Set(share);
+                _wave.EnableInClassList("hud-wave--near", left <= _nearSeconds * Simulation.TicksPerSecond);
                 // Known once the wave is warned of: the way from its base at the pace of its slowest unit.
-                if (legion.NextWaveArrivalTick != int.MaxValue && legion.NextWaveArrivalTick > legion.NextWaveTick)
-                    text += $", дойдёт ≈ через {DisplayNames.Clock(legion.NextWaveArrivalTick - state.Tick)}";
+                string arrival = legion.NextWaveArrivalTick != int.MaxValue && legion.NextWaveArrivalTick > legion.NextWaveTick
+                    ? $"Дойдёт до цели ≈ через {DisplayNames.Clock(legion.NextWaveArrivalTick - state.Tick)}"
+                    : "Легион пришлёт отряд к одной из баз команды.";
+                string wave = $"{legion.NextWave}|{DisplayNames.Clock(left)}|{arrival}";
+                if (wave != _shownWave)
+                {
+                    _shownWave = wave;
+                    _waveTitle!.text = $"ВОЛНА {legion.NextWave} ЧЕРЕЗ";
+                    _waveTimer!.text = DisplayNames.Clock(left);
+                    _waveArrival!.text = arrival;
+                }
             }
             // The clock stops when the mission ends; the sim keeps ticking behind the banner.
-            text += $"\nВремя миссии: {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
-            string keys = state.FindHero(me) != null ? "Tab — строитель · G — герой" : "Tab — строитель";
-            // network.md: no player switching in a network game.
-            text += state.TeamPlayerIds.Count > 1 && !_runner!.IsNetwork ? $"\n{keys} · F2 — армия · Ctrl+F1–F4 — игрок · Esc — меню" : $"\n{keys} · F2 — армия · Esc — меню";
-            if (text != _shown)
+            string clock = $"ВРЕМЯ {DisplayNames.Clock(_endTick >= 0 ? _endTick : state.Tick)}";
+            if (clock != _shownClock)
             {
-                _shown = text;
-                _objective.text = text;
+                _shownClock = clock;
+                _clock!.text = clock;
             }
         }
 
@@ -122,11 +164,17 @@ namespace Game.Presentation
                 bool won = ended.Outcome == MissionOutcome.Victory;
                 SimState? state = _runner!.Simulation?.State;
                 string goal = state != null && state.Goal == MissionGoal.KillBoss ? "Вожак Серых Существ повержен" : "База Чёрного Легиона уничтожена";
-                _end.text = won
-                    ? $"Победа!\n{goal} за {DisplayNames.Clock(ended.Tick)}\nEsc — меню"
-                    : $"Поражение\nУ команды не осталось ни штаба, ни строителя ({DisplayNames.Clock(ended.Tick)})\nEsc — меню";
-                _end.style.color = won ? _victoryColor : _defeatColor;
+                _end.Clear();
+                VisualElement plate = HudKit.Plate("EndPlate", "hud-end", won ? "hud-end--victory" : "hud-end--defeat");
+                plate.pickingMode = PickingMode.Ignore;
+                HudKit.Text(plate, won ? "ПОБЕДА" : "ПОРАЖЕНИЕ", "hud-end__title");
+                HudKit.Text(plate, won
+                    ? $"{goal} за {DisplayNames.Clock(ended.Tick)}."
+                    : $"У команды не осталось ни штаба, ни строителя ({DisplayNames.Clock(ended.Tick)}).", "hud-end__text");
+                HudKit.Text(plate, "ESC — МЕНЮ · ЗАПИСЬ МАТЧА СОХРАНИТСЯ В РЕПЛЕЯХ", "hud-end__hint");
+                _end.Add(plate);
                 _end.style.display = DisplayStyle.Flex;
+                _end.BringToFront();
             }
         }
     }

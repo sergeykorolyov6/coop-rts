@@ -46,6 +46,7 @@ namespace Game.Presentation
 
         private SimRunner? _runner;
         private AbilityPanel? _abilities;
+        private Guide? _guide;
         private EntityView? _entities;
 
         private bool _main;
@@ -73,6 +74,7 @@ namespace Game.Presentation
         {
             _runner = GetComponent<SimRunner>();
             _abilities = GetComponent<AbilityPanel>();
+            _guide = GetComponent<Guide>();
             _entities = GetComponent<EntityView>();
         }
 
@@ -134,7 +136,7 @@ namespace Game.Presentation
                 return;
             if (_open)
                 Close();
-            else if ((_placement == null || !_placement.IsBusy) && (_abilities == null || !_abilities.IsBusy))
+            else if ((_placement == null || !_placement.IsBusy) && (_abilities == null || !_abilities.IsBusy) && (_guide == null || !_guide.IsBusy))
                 ShowPause();
         }
 
