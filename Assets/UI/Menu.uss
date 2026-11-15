@@ -1,0 +1,688 @@
+/* The menu's look. GameMenu.cs builds the tree and names the classes; MenuDraw.cs draws what USS
+   cannot: a frame with cut corners reads the --frame-* properties of its element, so a rule with
+   :hover or a class here changes the frame too.
+   The panel's theme imports this file (UI Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss).
+
+   Palette: accent 126 232 220, text 222 236 242, dim 128 150 162, plate 6 11 17.
+   Font: Exo 2 (Fonts/Exo2.ttf, the variable file of Google Fonts; Unity takes its Regular). */
+
+.menu {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    color: rgb(222, 236, 242);
+    font-size: 14px;
+    -unity-font-definition: url("Fonts/Exo2.ttf");
+}
+
+.menu--main {
+    background-color: rgb(5, 7, 11);
+}
+
+/* Over a mission: the game stays visible, dimmed. */
+.menu--pause {
+    background-color: rgba(3, 6, 11, 0.74);
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- The main menu: backdrop, title and sections on the left, the open section beside them ---- */
+
+.menu-backdrop {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("Art/menu_bg_b.png");
+    background-size: cover;
+    background-position: center;
+}
+
+.menu-shade {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.menu-layout {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: row;
+    padding: 46px 56px 30px 56px;
+}
+
+.menu-side {
+    width: 320px;
+    flex-shrink: 0;
+}
+
+.menu-stage {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 44px;
+    align-items: flex-start;
+}
+
+.menu-emblem {
+    flex-direction: row;
+    margin: 8px 0 20px 5px;
+}
+
+.menu-emblem__pip {
+    width: 9px;
+    height: 9px;
+    margin-right: 14px;
+    rotate: 45deg;
+}
+
+.menu-logo {
+    flex-direction: row;
+}
+
+.menu-logo__word {
+    margin: 0;
+    padding: 0;
+    font-size: 52px;
+    letter-spacing: 7px;
+    -unity-font-style: bold;
+    color: rgb(238, 247, 250);
+}
+
+.menu-logo__word--accent {
+    margin-left: 12px;
+    color: rgb(126, 232, 220);
+    text-shadow: 0 0 12px rgba(126, 232, 220, 0.3);
+}
+
+.menu-tagline {
+    margin: 4px 0 0 2px;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgb(128, 150, 162);
+}
+
+.menu-rule {
+    height: 1px;
+    margin: 22px 0 26px 0;
+    background-color: rgba(126, 232, 220, 0.28);
+}
+
+.menu-rule__mark {
+    position: absolute;
+    left: 0;
+    top: -1px;
+    width: 46px;
+    height: 3px;
+    background-color: rgb(126, 232, 220);
+}
+
+.menu-spacer {
+    flex-grow: 1;
+}
+
+.menu-footnote {
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(128, 150, 162, 0.7);
+}
+
+/* ---- Buttons: Unity's own background and border are off, MenuDraw draws the frame.
+   The theme's state rules are three parts long (.unity-button:hover:enabled), so the menu's
+   state rules start with .menu to win over them. ---- */
+
+.menu .unity-button {
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+}
+
+/* Every state the theme paints, and nothing but the paint: margins stay each button's own. */
+.menu .unity-button,
+.menu .unity-button:hover,
+.menu .unity-button:active,
+.menu .unity-button:focus,
+.menu .unity-button:hover:active,
+.menu .unity-button:hover:focus,
+.menu .unity-button:disabled {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.menu-nav__item {
+    height: 46px;
+    margin-bottom: 9px;
+    padding: 0 16px 0 24px;
+    font-size: 15px;
+    letter-spacing: 3px;
+    -unity-text-align: middle-left;
+    color: rgb(176, 198, 208);
+    transition-property: color, translate;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
+    --frame-cut: 11;
+    --frame-fill: rgba(6, 11, 17, 0.62);
+    --frame-line: rgba(126, 232, 220, 0.2);
+    --frame-bar: rgba(126, 232, 220, 0);
+}
+
+.menu .menu-nav__item {
+    margin-bottom: 9px;
+}
+
+.menu .menu-nav__item:hover {
+    color: rgb(255, 255, 255);
+    translate: 6px 0;
+    --frame-fill: rgba(126, 232, 220, 0.06);
+    --frame-line: rgba(126, 232, 220, 0.7);
+    --frame-bar: rgb(126, 232, 220);
+}
+
+.menu .menu-nav__item:active {
+    color: rgb(255, 255, 255);
+    --frame-fill: rgba(126, 232, 220, 0.16);
+}
+
+.menu .menu-nav__item--active,
+.menu .menu-nav__item--active:hover {
+    color: rgb(214, 255, 248);
+    translate: 6px 0;
+    --frame-fill: rgba(126, 232, 220, 0.09);
+    --frame-line: rgba(126, 232, 220, 0.85);
+    --frame-bar: rgb(190, 255, 246);
+}
+
+.menu-nav:disabled .menu-nav__item {
+    opacity: 0.38;
+}
+
+.menu-nav__index {
+    position: absolute;
+    right: 14px;
+    top: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 10px;
+    letter-spacing: 1px;
+    -unity-text-align: middle-right;
+    color: rgba(126, 232, 220, 0.45);
+}
+
+.menu-button {
+    min-height: 40px;
+    padding: 6px 16px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    color: rgb(214, 230, 236);
+    transition-property: color;
+    transition-duration: 0.12s;
+    --frame-cut: 9;
+    --frame-fill: rgba(126, 232, 220, 0.03);
+    --frame-line: rgba(126, 232, 220, 0.34);
+}
+
+.menu .menu-button {
+    margin-bottom: 8px;
+}
+
+.menu .menu-button:hover {
+    color: rgb(255, 255, 255);
+    --frame-fill: rgba(126, 232, 220, 0.09);
+    --frame-line: rgba(126, 232, 220, 0.9);
+}
+
+.menu .menu-button:active {
+    color: rgb(255, 255, 255);
+    --frame-fill: rgba(126, 232, 220, 0.2);
+}
+
+.menu .menu-button:disabled {
+    opacity: 0.4;
+}
+
+/* The one that goes on: continue, start, create. */
+.menu-button--primary {
+    color: rgb(226, 255, 250);
+    --frame-fill: rgba(126, 232, 220, 0.11);
+    --frame-line: rgba(126, 232, 220, 0.85);
+    --frame-accent: rgb(190, 255, 246);
+}
+
+.menu .menu-button--primary:hover {
+    --frame-fill: rgba(126, 232, 220, 0.19);
+    --frame-line: rgb(190, 255, 246);
+    --frame-accent: rgb(255, 255, 255);
+}
+
+.menu .menu-button--primary:active {
+    --frame-fill: rgba(126, 232, 220, 0.3);
+}
+
+/* "Точно?" before a file is deleted. */
+.menu .menu-button--danger,
+.menu .menu-button--danger:hover {
+    color: rgb(255, 188, 180);
+    --frame-fill: rgba(255, 96, 96, 0.2);
+    --frame-line: rgba(255, 120, 120, 0.9);
+}
+
+/* ---- The plate: a section of the main menu, or the pause menu ---- */
+
+.menu-plate {
+    width: 500px;
+    max-width: 100%;
+    max-height: 100%;
+    flex-shrink: 1;
+    padding: 20px 24px 18px 24px;
+    opacity: 1;
+    translate: 0 0;
+    transition-property: opacity, translate;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+    --frame-cut: 18;
+    --frame-fill: rgba(5, 9, 14, 0.955);
+    --frame-line: rgba(126, 232, 220, 0.3);
+    --frame-accent: rgb(126, 232, 220);
+}
+
+.menu-plate--wide {
+    width: 780px;
+}
+
+.menu--pause .menu-plate {
+    width: 400px;
+    max-height: 90%;
+}
+
+.menu--pause .menu-plate--wide {
+    width: 640px;
+}
+
+/* Where the plate comes from: GameMenu puts the class on and takes it off a frame later. */
+.menu-plate--entering {
+    opacity: 0;
+    translate: 18px 0;
+    transition-duration: 0s;
+}
+
+.menu-plate__head {
+    flex-shrink: 0;
+    margin-bottom: 16px;
+}
+
+.menu-plate__title {
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    letter-spacing: 5px;
+    color: rgb(126, 232, 220);
+}
+
+.menu--pause .menu-plate__title {
+    -unity-text-align: middle-center;
+}
+
+.menu-plate__rule {
+    height: 1px;
+    margin-top: 12px;
+    background-color: rgba(126, 232, 220, 0.22);
+}
+
+/* ---- What fills a plate ---- */
+
+.menu-scroll {
+    flex-grow: 0;
+    flex-shrink: 1;
+}
+
+.menu-scroll .unity-scroller--vertical {
+    width: 6px;
+    margin-left: 10px;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.menu-scroll .unity-scroller__low-button,
+.menu-scroll .unity-scroller__high-button {
+    display: none;
+}
+
+.menu-scroll .unity-scroller--vertical > .unity-scroller__slider {
+    width: 6px;
+    min-width: 6px;
+    margin: 0;
+}
+
+.menu-scroll .unity-base-slider__tracker {
+    border-width: 0;
+    background-color: rgba(126, 232, 220, 0.08);
+}
+
+.menu-scroll .unity-base-slider__dragger {
+    left: 0;
+    width: 6px;
+    border-width: 0;
+    border-radius: 0;
+    background-color: rgba(126, 232, 220, 0.5);
+}
+
+.menu-scroll .unity-base-slider__dragger:hover {
+    background-color: rgb(126, 232, 220);
+}
+
+.menu-scroll .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.menu-caption {
+    margin: 2px 0 8px 0;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgb(128, 150, 162);
+}
+
+.menu-text {
+    margin: 0 0 8px 0;
+    padding: 0;
+    white-space: normal;
+}
+
+.menu-text--accent {
+    color: rgb(170, 244, 234);
+}
+
+.menu-text--centre {
+    -unity-text-align: middle-center;
+}
+
+.menu-note {
+    margin: 2px 0 8px 0;
+    padding: 0;
+    font-size: 12px;
+    white-space: normal;
+    color: rgb(128, 150, 162);
+}
+
+/* What the menu says back: an error, "Сохранено". */
+.menu-message {
+    flex-shrink: 0;
+    margin: 8px 0 0 0;
+    padding: 0;
+    white-space: normal;
+    color: rgb(255, 204, 128);
+}
+
+.menu-row {
+    flex-direction: row;
+    margin-left: -8px;
+}
+
+.menu-row > * {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-left: 8px;
+}
+
+.menu .menu-row > * {
+    margin-left: 8px;
+}
+
+.menu-gap {
+    height: 8px;
+}
+
+/* Missions: two cards in a row. */
+.menu-cards {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.menu-card {
+    width: 49.2%;
+    padding: 11px 14px 11px 16px;
+    align-items: stretch;
+    color: rgb(222, 236, 242);
+    --frame-cut: 10;
+    --frame-fill: rgba(126, 232, 220, 0.025);
+    --frame-line: rgba(126, 232, 220, 0.24);
+}
+
+.menu .menu-card {
+    margin-bottom: 9px;
+}
+
+.menu .menu-card:hover {
+    --frame-fill: rgba(126, 232, 220, 0.08);
+    --frame-line: rgba(126, 232, 220, 0.9);
+    --frame-accent: rgb(190, 255, 246);
+}
+
+.menu .menu-card:active {
+    --frame-fill: rgba(126, 232, 220, 0.18);
+}
+
+.menu-card__title {
+    margin: 0 0 7px 0;
+    padding: 0;
+    font-size: 14px;
+    white-space: normal;
+    -unity-text-align: upper-left;
+}
+
+.menu-card__meta {
+    flex-direction: row;
+    align-items: center;
+}
+
+.menu-card__detail {
+    margin: 0 0 0 4px;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(128, 150, 162);
+}
+
+/* A player's colour: a start slot of a mission, a place in the lobby. */
+.menu-pip {
+    width: 8px;
+    height: 8px;
+    margin-right: 5px;
+    flex-shrink: 0;
+}
+
+/* Saves and replays: the file, and the button that deletes it. */
+.menu-file {
+    flex-direction: row;
+}
+
+.menu-file__open {
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 8px 14px;
+    align-items: stretch;
+}
+
+.menu-file__title {
+    margin: 0 0 3px 0;
+    padding: 0;
+    white-space: normal;
+    -unity-text-align: upper-left;
+}
+
+.menu-file__detail {
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 1px;
+    white-space: normal;
+    -unity-text-align: upper-left;
+    color: rgb(128, 150, 162);
+}
+
+.menu-file__delete {
+    width: 96px;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.menu .menu-file__delete {
+    margin-left: 8px;
+}
+
+/* Lobby: a place, who sits there and the faction. */
+.menu-slot {
+    flex-direction: row;
+    align-items: center;
+    min-height: 36px;
+    margin-bottom: 6px;
+    padding: 0 0 0 12px;
+    background-color: rgba(126, 232, 220, 0.05);
+    border-left-width: 2px;
+    border-left-color: rgba(126, 232, 220, 0.4);
+}
+
+.menu-slot__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin: 0 0 0 4px;
+    padding: 0;
+}
+
+.menu-slot__faction {
+    margin: 0 12px 0 8px;
+    padding: 0;
+    color: rgb(128, 150, 162);
+}
+
+.menu-slot__pick {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+.menu .menu-slot__pick {
+    margin: 0;
+}
+
+.menu-progress {
+    height: 6px;
+    margin: 4px 0 8px 0;
+    background-color: rgba(126, 232, 220, 0.12);
+}
+
+.menu-progress__fill {
+    width: 0;
+    height: 6px;
+    background-color: rgb(126, 232, 220);
+}
+
+/* ---- Unity's fields in the menu's colours ---- */
+
+.menu-field {
+    flex-direction: column;
+    margin: 0 0 10px 0;
+}
+
+.menu-field > .unity-base-field__label {
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 5px 0;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgb(128, 150, 162);
+}
+
+.menu-field--short {
+    flex-grow: 0;
+    flex-basis: auto;
+    width: 110px;
+}
+
+.menu-field .unity-base-text-field__input,
+.menu-field .unity-base-popup-field__input {
+    min-height: 34px;
+    margin: 0;
+    padding: 4px 10px;
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgba(126, 232, 220, 0.26);
+    background-color: rgba(3, 7, 12, 0.85);
+    color: rgb(222, 236, 242);
+    --unity-cursor-color: rgb(126, 232, 220);
+    --unity-selection-color: rgba(126, 232, 220, 0.35);
+}
+
+/* The theme repaints a field under the pointer, in focus and while its list is open. */
+.menu .menu-field:hover:enabled .unity-base-text-field__input,
+.menu .menu-field:hover:enabled .unity-base-popup-field__input {
+    border-color: rgba(126, 232, 220, 0.6);
+    background-color: rgba(3, 7, 12, 0.85);
+}
+
+.menu .menu-field:focus:enabled .unity-base-text-field__input,
+.menu .menu-field .unity-base-text-field__input:focus:enabled,
+.menu .menu-field:focus:enabled .unity-base-popup-field__input,
+.menu .menu-field:active:enabled .unity-base-popup-field__input {
+    border-color: rgb(126, 232, 220);
+    background-color: rgba(3, 7, 12, 0.85);
+}
+
+.menu-field .unity-base-popup-field__text {
+    margin: 0;
+    padding: 0;
+    color: rgb(222, 236, 242);
+}
+
+.menu-field .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(126, 232, 220);
+}
+
+/* The list a dropdown opens sits at the panel's root, outside .menu. */
+.unity-base-dropdown {
+    -unity-font-definition: url("Fonts/Exo2.ttf");
+}
+
+.unity-base-dropdown__container-outer {
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgba(126, 232, 220, 0.6);
+    background-color: rgb(6, 11, 17);
+}
+
+.unity-base-dropdown__container-inner {
+    border-width: 0;
+    border-radius: 0;
+    background-color: rgb(6, 11, 17);
+}
+
+.unity-base-dropdown__item {
+    min-height: 30px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.unity-base-dropdown .unity-base-dropdown__item:hover,
+.unity-base-dropdown .unity-base-dropdown__item:hover:enabled {
+    background-color: rgba(126, 232, 220, 0.12);
+}
+
+.unity-base-dropdown__label {
+    color: rgb(222, 236, 242);
+}
+
+.unity-base-dropdown__checkmark {
+    -unity-background-image-tint-color: rgb(126, 232, 220);
+}

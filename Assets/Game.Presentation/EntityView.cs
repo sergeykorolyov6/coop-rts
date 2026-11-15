@@ -450,10 +450,15 @@ namespace Game.Presentation
                 return _legionColor;
             if (ownerId == state.NeutralPlayerId)
                 return _neutralColor;
-            int index = ownerId - 1;
-            // missions.csv "colors": the mission may give a start slot another colour of the palette
-            // (Red Lightning plays red); players are 1..N in slot order (MissionLauncher).
-            IReadOnlyList<string>? colors = _runner != null ? _runner.Mission?.Colors : null;
+            // Players are 1..N in slot order (MissionLauncher).
+            return SlotColor(_runner != null ? _runner.Mission?.Colors : null, ownerId - 1);
+        }
+
+        // Colour of a mission's start slot (from 0). missions.csv "colors" may give the slot another
+        // colour of the palette (Red Lightning plays red); without it slot N takes colour N.
+        public Color SlotColor(IReadOnlyList<string>? colors, int slot)
+        {
+            int index = slot;
             if (colors != null && index >= 0 && index < colors.Count)
             {
                 int named = System.Array.IndexOf(PaletteNames, colors[index]);
@@ -461,6 +466,13 @@ namespace Game.Presentation
                     index = named;
             }
             return index >= 0 && index < _playerColors.Length ? _playerColors[index] : Color.white;
+        }
+
+        // The palette's colour by the name missions.csv gives it; white for an unknown name.
+        public Color PaletteColor(string name)
+        {
+            int named = System.Array.IndexOf(PaletteNames, name);
+            return named >= 0 && named < _playerColors.Length ? _playerColors[named] : Color.white;
         }
 
         private Color ResourceColor(int resourceType) =>
