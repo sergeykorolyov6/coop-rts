@@ -411,20 +411,11 @@ namespace Game.Presentation
             Changed?.Invoke();
         }
 
-        // Own first (two can share a cell only while one is a belt under a unit's path), then any shown.
+        // The building on the cell, when it is the player's own or one the fog shows.
         private static Building? BuildingAt(SimState state, int playerId, int cellX, int cellY)
         {
-            Building? other = null;
-            foreach (Building building in state.Buildings)
-            {
-                if (building.IsDead || !building.OccupiesCell(cellX, cellY))
-                    continue;
-                if (building.OwnerId == playerId)
-                    return building;
-                if (other == null && Visibility.BuildingShown(state, playerId, building))
-                    other = building;
-            }
-            return other;
+            Building? building = state.BuildingAt(cellX, cellY);
+            return building != null && (building.OwnerId == playerId || Visibility.BuildingShown(state, playerId, building)) ? building : null;
         }
 
         private void OnPlayerChanged()
@@ -444,7 +435,7 @@ namespace Game.Presentation
             radius = 0f;
             if (!_entities!.TryGetUnitPosition(unit.Id, out Vector3 ground))
                 return false;
-            float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
+            float size = Ground.Cells(unit.Stats.SizeMilli);
             Vector3 middle = ground + Vector3.up * size * 0.5f;
             Vector3 screen = _view!.WorldToScreenPoint(middle);
             if (screen.z <= 0f)

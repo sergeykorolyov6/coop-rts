@@ -43,9 +43,17 @@ internal static class TurretSystem
     {
         Entity? best = null;
         long bestDist = long.MaxValue;
+        // Nothing farther than this from the turret's middle is in range: its longest range plus
+        // its own footprint. Cheaper than a root for every unit and building of the match.
+        int cx = Grid.CellToMilli(turret.CellX) + Grid.CellToMilli(turret.Width) / 2;
+        int cy = Grid.CellToMilli(turret.CellY) + Grid.CellToMilli(turret.Height) / 2;
+        long reach = turret.Stats.AttackRangeMilli + state.Rules.HighGroundRangeBonusMilli
+            + Grid.CellToMilli(System.Math.Max(turret.Width, turret.Height));
         foreach (Unit u in state.Units)
         {
-            if (!CanShoot(state, turret, u))
+            long near = reach + u.Radius;
+            long dx = u.X - cx, dy = u.Y - cy;
+            if (dx > near || dx < -near || dy > near || dy < -near || !CanShoot(state, turret, u))
                 continue;
             long d = EdgeDistance(turret, u);
             if (d < bestDist)
@@ -56,15 +64,24 @@ internal static class TurretSystem
         }
         if (best != null)
             return best;
-        foreach (Building b in state.Buildings)
+
+        // Only the buckets the range reaches; a building may sit in several of them.
+        state.BuildingIndex.Range(cx, cy, reach, out int minBx, out int minBy, out int maxBx, out int maxBy);
+        for (int by = minBy; by <= maxBy; by++)
         {
-            if (b == turret || !CanShoot(state, turret, b))
-                continue;
-            long d = EdgeDistance(turret, b);
-            if (d < bestDist)
+            for (int bx = minBx; bx <= maxBx; bx++)
             {
-                best = b;
-                bestDist = d;
+                foreach (Building b in state.BuildingIndex.Bucket(state, bx, by))
+                {
+                    if (b == turret || !CanShoot(state, turret, b))
+                        continue;
+                    long d = EdgeDistance(turret, b);
+                    if (d < bestDist || (d == bestDist && b.Id < best!.Id))
+                    {
+                        best = b;
+                        bestDist = d;
+                    }
+                }
             }
         }
         return best;

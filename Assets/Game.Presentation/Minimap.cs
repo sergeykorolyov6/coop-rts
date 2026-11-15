@@ -294,8 +294,8 @@ namespace Game.Presentation
             if (simulation == null || _localPlayer == null || Time.unscaledTime < _nextPingTime)
                 return;
             _nextPingTime = Time.unscaledTime + PingCooldownSeconds;
-            int x = Mathf.Clamp(Mathf.RoundToInt(cellX * Grid.MilliPerCell), 0, simulation.State.Map.Width * Grid.MilliPerCell - 1);
-            int y = Mathf.Clamp(Mathf.RoundToInt(cellY * Grid.MilliPerCell), 0, simulation.State.Map.Height * Grid.MilliPerCell - 1);
+            int x = Mathf.Clamp(Ground.Milli(cellX), 0, simulation.State.Map.Width * Grid.MilliPerCell - 1);
+            int y = Mathf.Clamp(Ground.Milli(cellY), 0, simulation.State.Map.Height * Grid.MilliPerCell - 1);
             _runner.Submit(new PingCommand(_localPlayer.PlayerId, simulation.State.Tick, x, y));
         }
 

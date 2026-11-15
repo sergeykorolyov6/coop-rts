@@ -82,7 +82,7 @@ internal static class Combat
     public static void TickAttackMove(SimState state, Unit unit)
     {
         Entity? target = state.FindEntity(unit.TargetId);
-        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli || !Sight.Sees(state, unit, target!))
+        if (!Holds(state, unit, target))
             target = CanAttack(unit) ? NearestEnemy(state, unit, unit.X, unit.Y, unit.Stats.VisionMilli) : null;
         if (target != null)
         {
@@ -114,7 +114,7 @@ internal static class Combat
             return;
 
         Entity? target = state.FindEntity(unit.TargetId);
-        if (!IsValidTarget(state, unit, target) || EdgeDistance(unit, target!) > unit.Stats.VisionMilli || !Sight.Sees(state, unit, target!))
+        if (!Holds(state, unit, target))
             target = NearestEnemy(state, unit, unit.X, unit.Y, unit.Stats.VisionMilli);
         if (target == null)
         {
@@ -123,6 +123,10 @@ internal static class Combat
         }
         Engage(state, unit, target);
     }
+
+    // A unit without an order keeps the target it fights while that stays an enemy in its own sight.
+    private static bool Holds(SimState state, Unit unit, Entity? target) =>
+        IsValidTarget(state, unit, target) && EdgeDistance(unit, target!) <= unit.Stats.VisionMilli && Sight.Sees(state, unit, target!);
 
     // Units first, then buildings; nearest edge distance; ties by lower id.
     public static Entity? NearestEnemy(SimState state, Unit unit, int x, int y, long radius)
@@ -169,7 +173,6 @@ internal static class Combat
         }
         return best;
     }
-
 
     // All blows of the tick at once, in attacker id order: two units can kill each other.
     public static void ApplyHits(SimState state, List<SimEvent> events)

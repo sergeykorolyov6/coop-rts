@@ -34,7 +34,7 @@ namespace Game.Presentation
             if (b != null && !b.IsDead && b.Factory != null && b.Factory.HasRally && b.OwnerId == _localPlayer!.PlayerId)
             {
                 var from = new Vector3(b.CellX + b.Width * 0.5f, 0f, b.CellY + b.Height * 0.5f);
-                var to = new Vector3(b.Factory.RallyX / (float)Grid.MilliPerCell, 0f, b.Factory.RallyY / (float)Grid.MilliPerCell);
+                var to = Ground.Flat(b.Factory.RallyX, b.Factory.RallyY);
                 _dashes.Line(from, to, 0.8f, 0.5f);
                 Flag().position = to + Vector3.up * 0.6f;
                 flag = true;

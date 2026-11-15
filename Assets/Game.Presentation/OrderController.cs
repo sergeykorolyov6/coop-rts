@@ -108,7 +108,7 @@ namespace Game.Presentation
                 return Intent.Attack;
             }
 
-            Building? building = BuildingAt(state, cellX, cellY);
+            Building? building = state.BuildingAt(cellX, cellY);
             if (building != null && state.Relations.IsEnemy(playerId, building.OwnerId) && state.Fog.IsVisible(playerId, cellX, cellY))
             {
                 targetId = building.Id;
@@ -158,7 +158,7 @@ namespace Game.Presentation
             int tick = state.Tick;
             bool queued = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
             int cellX = Mathf.FloorToInt(ground.x), cellY = Mathf.FloorToInt(ground.z);
-            int milliX = Mathf.RoundToInt(ground.x * Grid.MilliPerCell), milliY = Mathf.RoundToInt(ground.z * Grid.MilliPerCell);
+            int milliX = Ground.Milli(ground.x), milliY = Ground.Milli(ground.z);
             int[] workers = _workers.ToArray();
 
             ICommand? workerCommand = intent switch
@@ -258,8 +258,8 @@ namespace Game.Presentation
                 if (camp.State != CreepCampState.Cleared || camp.TrophyPrimary + camp.TrophySecondary == 0
                     || !state.Fog.IsDiscovered(playerId, camp.CenterX, camp.CenterY))
                     continue;
-                float dx = ground.x - camp.CenterMilliX / (float)Grid.MilliPerCell;
-                float dz = ground.z - camp.CenterMilliY / (float)Grid.MilliPerCell;
+                float dx = ground.x - Ground.Cells(camp.CenterMilliX);
+                float dz = ground.z - Ground.Cells(camp.CenterMilliY);
                 if (dx * dx + dz * dz <= _trophyPickCells * _trophyPickCells)
                 {
                     campIndex = camp.Index;
@@ -291,18 +291,8 @@ namespace Game.Presentation
             _showingTip = true;
             if (!mouse.rightButton.wasPressedThisFrame)
                 return;
-            int milliX = Mathf.RoundToInt(ground.x * Grid.MilliPerCell), milliY = Mathf.RoundToInt(ground.z * Grid.MilliPerCell);
+            int milliX = Ground.Milli(ground.x), milliY = Ground.Milli(ground.z);
             _runner!.Submit(new SetRallyCommand(playerId, state.Tick, factory.Id, !onFactory, milliX, milliY));
-        }
-
-        private static Building? BuildingAt(SimState state, int cellX, int cellY)
-        {
-            foreach (Building building in state.Buildings)
-            {
-                if (!building.IsDead && building.OccupiesCell(cellX, cellY))
-                    return building;
-            }
-            return null;
         }
 
         private static int[] Concat(List<int> a, List<int> b)

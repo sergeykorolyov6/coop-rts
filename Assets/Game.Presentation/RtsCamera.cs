@@ -182,7 +182,7 @@ namespace Game.Presentation
             Building? hq = simulation.State.FindHeadquarters(playerId);
             Focus(hq != null
                 ? new Vector3(hq.CellX + hq.Width * 0.5f, 0f, hq.CellY + hq.Height * 0.5f)
-                : new Vector3(simulation.State.Grid.Width * 0.5f, 0f, simulation.State.Grid.Height * 0.5f));
+                : new Vector3(simulation.State.Map.Width * 0.5f, 0f, simulation.State.Map.Height * 0.5f));
         }
 
         private void ClampFocus()
@@ -195,8 +195,8 @@ namespace Game.Presentation
             // the narrowest half-extent of the view (bottom corners, unturned) from every edge.
             Vector3 bottomLeft = GroundOffset(-1f, -1f);
             float inset = Mathf.Min(-bottomLeft.x, -bottomLeft.z);
-            _focus.x = ClampAxis(_focus.x, inset - _overscrollCells, simulation.State.Grid.Width - inset + _overscrollCells, simulation.State.Grid.Width);
-            _focus.z = ClampAxis(_focus.z, inset - _overscrollCells, simulation.State.Grid.Height - inset + _overscrollCells, simulation.State.Grid.Height);
+            _focus.x = ClampAxis(_focus.x, inset - _overscrollCells, simulation.State.Map.Width - inset + _overscrollCells, simulation.State.Map.Width);
+            _focus.z = ClampAxis(_focus.z, inset - _overscrollCells, simulation.State.Map.Height - inset + _overscrollCells, simulation.State.Map.Height);
         }
 
         // A map smaller than the view stays centred.

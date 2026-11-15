@@ -30,7 +30,7 @@ namespace Game.Presentation
 
         public static Transform Unit(UnitStats stats, Color owner, PartFactory part, List<MeshRenderer> renderers, out Transform? cargo)
         {
-            float s = stats.SizeMilli / (float)Grid.MilliPerCell;
+            float s = Ground.Cells(stats.SizeMilli);
             var root = new GameObject(stats.Id).transform;
             Color shade = Color.Lerp(owner, Color.black, 0.45f);
             Color light = Color.Lerp(owner, Color.white, 0.45f);

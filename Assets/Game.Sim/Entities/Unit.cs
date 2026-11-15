@@ -85,6 +85,6 @@ public sealed class Unit : Entity
     internal int RepairCostAccumulator { get; set; }
     internal int RepairCostAccumulatorSecondary { get; set; }
 
-    public int CellX => Grid.MilliToCell(X);
-    public int CellY => Grid.MilliToCell(Y);
+    public override int CellX => Grid.MilliToCell(X);
+    public override int CellY => Grid.MilliToCell(Y);
 }

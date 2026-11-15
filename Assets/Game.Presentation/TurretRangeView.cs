@@ -73,7 +73,7 @@ namespace Game.Presentation
         // Four straight sides plus a quarter circle at each corner, as dashes on the ground.
         private void Ring(RectInt rect, int rangeMilli, float fill)
         {
-            float r = rangeMilli / (float)Grid.MilliPerCell;
+            float r = Ground.Cells(rangeMilli);
             float x0 = rect.xMin, x1 = rect.xMax, z0 = rect.yMin, z1 = rect.yMax;
             _dashes!.Line(new Vector3(x0, 0f, z0 - r), new Vector3(x1, 0f, z0 - r), 1f, fill);
             _dashes.Line(new Vector3(x1 + r, 0f, z0), new Vector3(x1 + r, 0f, z1), 1f, fill);

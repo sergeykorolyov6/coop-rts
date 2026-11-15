@@ -81,7 +81,7 @@ namespace Game.Presentation
                         break;
                     // coop-tools.md: a mark for the allies — a pillar in the player's colour and rings on the ground.
                     case Pinged ping:
-                        Mark(Ground.Lift(new Vector3(ping.X / (float)Game.Sim.Grid.MilliPerCell, 0f, ping.Y / (float)Game.Sim.Grid.MilliPerCell)),
+                        Mark(Ground.At(ping.X, ping.Y),
                             _entities!.OwnerColor(state, ping.PlayerId));
                         break;
                 }
@@ -177,8 +177,8 @@ namespace Game.Presentation
         {
             if (!state.Data.TryGetAbility(used.AbilityId, out AbilityStats? ability))
                 return;
-            Vector3 at = Ground.Lift(new Vector3(used.X / (float)Game.Sim.Grid.MilliPerCell, 0f, used.Y / (float)Game.Sim.Grid.MilliPerCell));
-            float radius = Mathf.Max(0.5f, ability!.RadiusMilli / (float)Game.Sim.Grid.MilliPerCell);
+            Vector3 at = Ground.At(used.X, used.Y);
+            float radius = Mathf.Max(0.5f, Ground.Cells(ability!.RadiusMilli));
             Vector3 caster = _entities!.TryGetUnitPosition(used.UnitId, out Vector3 drawn) ? drawn : at;
             switch (ability.Effect)
             {

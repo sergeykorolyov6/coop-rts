@@ -29,8 +29,8 @@ public sealed class Building : Entity
     public BuildingStats Stats { get; }
 
     // Bottom-left cell of the footprint.
-    public int CellX { get; }
-    public int CellY { get; }
+    public override int CellX { get; }
+    public override int CellY { get; }
     public int Width => Stats.SizeW;
     public int Height => Stats.SizeH;
     public Direction Direction { get; }

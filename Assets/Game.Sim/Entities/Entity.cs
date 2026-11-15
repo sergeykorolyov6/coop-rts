@@ -21,6 +21,10 @@ public abstract class Entity
     public int Hp { get; internal set; }
     public int Armor { get; }
 
+    // The cell the entity stands on: a unit's own, the bottom-left one of a building's footprint.
+    public abstract int CellX { get; }
+    public abstract int CellY { get; }
+
     // Set when HP reaches 0; the entity is removed at the end of the tick.
     public bool IsDead { get; internal set; }
 

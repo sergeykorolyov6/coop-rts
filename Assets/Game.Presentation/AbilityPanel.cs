@@ -106,7 +106,7 @@ namespace Game.Presentation
                 Vector2 pointer = mouse != null ? mouse.position.ReadValue() : Vector2.zero;
                 _hud?.ShowTip($"{AbilityName(state, _targeting)}: ЛКМ — куда, ПКМ/Esc — отмена", pointer);
                 if (_camera != null && _camera.GroundPoint(pointer, out Vector3 aim) && state.Data.TryGetAbility(_targeting, out AbilityStats? a) && a!.RadiusMilli > 0)
-                    Circle(aim, a.RadiusMilli / (float)Game.Sim.Grid.MilliPerCell);
+                    Circle(aim, Ground.Cells(a.RadiusMilli));
                 if ((keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || (mouse != null && mouse.rightButton.wasPressedThisFrame))
                 {
                     EndTargeting();
@@ -115,7 +115,7 @@ namespace Game.Presentation
                 if (mouse != null && mouse.leftButton.wasPressedThisFrame && _camera != null
                     && !(_hud != null && _hud.IsPointerOverUi(pointer)) && _camera.GroundPoint(pointer, out Vector3 ground))
                 {
-                    Issue(simulation, _targeting, Mathf.RoundToInt(ground.x * Game.Sim.Grid.MilliPerCell), Mathf.RoundToInt(ground.z * Game.Sim.Grid.MilliPerCell));
+                    Issue(simulation, _targeting, Ground.Milli(ground.x), Ground.Milli(ground.z));
                     EndTargeting();
                 }
                 return;

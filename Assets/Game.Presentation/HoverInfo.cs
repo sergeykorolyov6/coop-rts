@@ -80,8 +80,8 @@ namespace Game.Presentation
             {
                 if (!state.Fog.IsDiscovered(playerId, camp.CenterX, camp.CenterY))
                     continue;
-                float dx = ground.x - camp.CenterMilliX / (float)Grid.MilliPerCell;
-                float dz = ground.z - camp.CenterMilliY / (float)Grid.MilliPerCell;
+                float dx = ground.x - Ground.Cells(camp.CenterMilliX);
+                float dz = ground.z - Ground.Cells(camp.CenterMilliY);
                 float distance2 = dx * dx + dz * dz;
                 int trophy = camp.TrophyPrimary + camp.TrophySecondary;
                 if (camp.State == CreepCampState.Cleared)
@@ -103,7 +103,7 @@ namespace Game.Presentation
             if (!map.InBounds(cellX, cellY) || !state.Fog.IsDiscovered(playerId, cellX, cellY))
                 return null;
             // neutral-buildings.md: what a neutral building gives and how to take it.
-            Building? poi = state.FindBuilding(map.BuildingAt(cellX, cellY));
+            Building? poi = state.BuildingAt(cellX, cellY);
             if (poi != null && !poi.IsDead && (poi.OwnerId == state.NeutralPlayerId || poi.Stats.Behavior == BuildingBehavior.Lighthouse))
             {
                 int seconds = state.Rules.CaptureTimeTicks / Simulation.TicksPerSecond;
@@ -175,8 +175,8 @@ namespace Game.Presentation
             }
             if (_ring.Count == 0)
                 CreateRing();
-            float radius = camp.Stats.AggroRadiusMilli / (float)Grid.MilliPerCell;
-            Vector3 centre = Ground.Lift(new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 0.05f, camp.CenterMilliY / (float)Grid.MilliPerCell));
+            float radius = Ground.Cells(camp.Stats.AggroRadiusMilli);
+            Vector3 centre = Ground.At(camp.CenterMilliX, camp.CenterMilliY, 0.05f);
             float length = 2f * Mathf.PI * radius / RingSegments * 0.6f;
             for (int i = 0; i < RingSegments; i++)
             {

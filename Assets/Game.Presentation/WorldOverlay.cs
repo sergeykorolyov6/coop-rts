@@ -82,7 +82,7 @@ namespace Game.Presentation
                 if (unit.IsDead || unit.Hp >= unit.MaxHp || !Visibility.UnitShown(state, playerId, unit)
                     || !_entities!.TryGetUnitPosition(unit.Id, out Vector3 ground))
                     continue;
-                float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
+                float size = Ground.Cells(unit.Stats.SizeMilli);
                 ShowBar(ground + Vector3.up * (size * 1.4f + 0.2f), 34f, unit.Hp / (float)unit.MaxHp, HpColor(unit), null);
             }
 
@@ -97,7 +97,7 @@ namespace Game.Presentation
                 int level = owner.HeroLevel;
                 bool top = level >= levels.Count;
                 float share = top ? 1f : Mathf.InverseLerp(levels[level - 1].Xp, levels[level].Xp, owner.HeroXp);
-                float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
+                float size = Ground.Cells(unit.Stats.SizeMilli);
                 // Anchored where the HP bar is and lifted in pixels: the label never covers the HP bar at any zoom.
                 ShowBar(ground + Vector3.up * (size * 1.4f + 0.2f), 44f, share, _xpColor, top ? $"ур. {level} (макс.)" : $"ур. {level}", LabelledBarHeight);
             }
@@ -163,7 +163,7 @@ namespace Game.Presentation
                 CreepCamp camp = state.CreepCamps[i];
                 if (_alerts.Count <= i)
                     _alerts.Add(CreateAlert());
-                Vector3 centre = Ground.Lift(new Vector3(camp.CenterMilliX / (float)Grid.MilliPerCell, 2.6f, camp.CenterMilliY / (float)Grid.MilliPerCell));
+                Vector3 centre = Ground.At(camp.CenterMilliX, camp.CenterMilliY, 2.6f);
                 bool alerted = camp.State == CreepCampState.Alerted && state.Fog.IsDiscovered(playerId, camp.CenterX, camp.CenterY)
                     && _camera.WorldToViewportPoint(centre).z > 0f;
                 _alerts[i].style.display = alerted ? DisplayStyle.Flex : DisplayStyle.None;

@@ -23,7 +23,6 @@ public sealed class SimState
         Goal = setup.Goal;
         Map = new MapState(setup.Map);
         BuildingIndex = new BuildingIndex(Map.Width, Map.Height);
-        Grid = new Grid(setup.MapWidth, setup.MapHeight);
         Rng = new DeterministicRng(setup.Seed);
         ResourceTypeCount = setup.ResourceTypeCount;
 
@@ -154,7 +153,6 @@ public sealed class SimState
     // The tick that will be executed next.
     public int Tick { get; internal set; }
 
-    public Grid Grid { get; }
     public int ResourceTypeCount { get; }
 
     // Sorted by id.
@@ -173,6 +171,10 @@ public sealed class SimState
     public Unit? FindUnit(int id) => FindById(_units, id);
 
     public Building? FindBuilding(int id) => FindById(_buildings, id);
+
+    // The building standing on the cell, or null — also for a cell off the map.
+    public Building? BuildingAt(int cellX, int cellY) =>
+        Map.InBounds(cellX, cellY) ? FindBuilding(Map.BuildingAt(cellX, cellY)) : null;
 
     public Entity? FindEntity(int id) => (Entity?)FindUnit(id) ?? FindBuilding(id);
 

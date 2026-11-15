@@ -171,7 +171,7 @@ namespace Game.Presentation
         {
             foreach (Unit unit in state.Units)
             {
-                Vector3 position = ToWorld(unit.X, unit.Y);
+                Vector3 position = Ground.At(unit.X, unit.Y);
                 if (!_units.TryGetValue(unit.Id, out UnitVisual? visual))
                 {
                     visual = CreateUnit(state, unit);
@@ -222,7 +222,7 @@ namespace Game.Presentation
                 int targetId = unit.TargetId != 0 ? unit.TargetId : unit.Order.TargetId;
                 Entity? target = targetId != 0 ? state.FindEntity(targetId) : null;
                 look = target is Building b ? CellCentre(b) - visual.To
-                    : target is Unit u ? ToWorld(u.X, u.Y) - visual.To
+                    : target is Unit u ? Ground.At(u.X, u.Y) - visual.To
                     : Vector3.zero;
                 look.y = 0f;
             }
@@ -294,7 +294,7 @@ namespace Game.Presentation
                 if (_trophies.Count <= i)
                 {
                     Transform trophy = CreatePrimitive(PrimitiveType.Cube, $"Trophy {i}", _trophyColor);
-                    trophy.localPosition = ToWorld(camp.CenterMilliX, camp.CenterMilliY) + new Vector3(0f, 0.25f, 0f);
+                    trophy.localPosition = Ground.At(camp.CenterMilliX, camp.CenterMilliY) + new Vector3(0f, 0.25f, 0f);
                     trophy.localScale = new Vector3(0.7f, 0.5f, 0.7f);
                     _trophies.Add(trophy);
                 }
@@ -322,7 +322,7 @@ namespace Game.Presentation
 
         private UnitVisual CreateUnit(SimState state, Unit unit)
         {
-            float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell;
+            float size = Ground.Cells(unit.Stats.SizeMilli);
             Color color = OwnerColor(state, unit.OwnerId);
             var renderers = new List<MeshRenderer>();
             // The root stands on the ground at the unit's position; parts sit on it.
@@ -465,9 +465,6 @@ namespace Game.Presentation
 
         private Color ResourceColor(int resourceType) =>
             resourceType == Game.Sim.Resources.Primary ? _primaryCargoColor : _secondaryCargoColor;
-
-        private static Vector3 ToWorld(int milliX, int milliY) =>
-            Ground.Lift(new Vector3(milliX / (float)Grid.MilliPerCell, 0f, milliY / (float)Grid.MilliPerCell));
 
         private void OnDestroy()
         {

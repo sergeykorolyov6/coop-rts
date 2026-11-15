@@ -13,6 +13,7 @@ public sealed class FlowField
     public const int DiagonalCost = 14;
 
     // Neighbour order is fixed: ties between equal distances always resolve the same way.
+    // The first four are the side neighbours, the rest the diagonals.
     internal static readonly int[] Dx = { 1, 0, -1, 0, 1, -1, -1, 1 };
     internal static readonly int[] Dy = { 0, 1, 0, -1, 1, 1, -1, -1 };
 

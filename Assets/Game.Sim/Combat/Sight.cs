@@ -4,22 +4,18 @@ namespace Game.Sim;
 internal static class Sight
 {
     // The cell an entity stands on; a building's level is the same under all of it (belts are one cell).
+    // A unit pushed off the map for a moment stands on level 0.
     public static int StandLevel(MapState map, Entity e) =>
-        e is Unit u ? (map.InBounds(u.CellX, u.CellY) ? map.LevelAt(u.CellX, u.CellY) : 0) : map.LevelAt(((Building)e).CellX, ((Building)e).CellY);
+        map.InBounds(e.CellX, e.CellY) ? map.LevelAt(e.CellX, e.CellY) : 0;
 
     public static int EyeLevel(MapState map, Entity e) =>
-        e is Unit u ? (map.InBounds(u.CellX, u.CellY) ? map.EyeLevel(u.CellX, u.CellY) : 0) : map.EyeLevel(((Building)e).CellX, ((Building)e).CellY);
+        map.InBounds(e.CellX, e.CellY) ? map.EyeLevel(e.CellX, e.CellY) : 0;
 
     // No cliff between the two: equal levels, or one stands on the ramp joining them.
-    public static bool LevelAdjacent(MapState map, Entity a, Entity b)
-    {
-        (int ax, int ay) = Cell(a);
-        (int bx, int by) = Cell(b);
-        return !map.InBounds(ax, ay) || !map.InBounds(bx, by) || map.LevelsJoin(ax, ay, bx, by);
-    }
+    public static bool LevelAdjacent(MapState map, Entity a, Entity b) => LevelAdjacent(map, a, b.CellX, b.CellY);
 
-    public static bool LevelAdjacent(MapState map, Unit u, int cellX, int cellY) =>
-        !map.InBounds(u.CellX, u.CellY) || !map.InBounds(cellX, cellY) || map.LevelsJoin(u.CellX, u.CellY, cellX, cellY);
+    public static bool LevelAdjacent(MapState map, Entity e, int cellX, int cellY) =>
+        !map.InBounds(e.CellX, e.CellY) || !map.InBounds(cellX, cellY) || map.LevelsJoin(e.CellX, e.CellY, cellX, cellY);
 
     // May the viewer strike or pick the target now: its team sees the target's cell (any cell of a
     // building). Players without fog (creeps, the neutral owner) look with their own eyes.
@@ -27,8 +23,7 @@ internal static class Sight
     {
         if (!state.Fog.IsBlind(viewer.OwnerId))
             return IsVisibleTo(state, viewer.OwnerId, target);
-        (int x, int y) = Cell(viewer);
-        return SeesFrom(state, viewer.OwnerId, x, y, EyeLevel(state.Map, viewer), target);
+        return SeesFrom(state, viewer.OwnerId, viewer.CellX, viewer.CellY, EyeLevel(state.Map, viewer), target);
     }
 
     // For a player without fog, looking from cell (fromX, fromY): not above the eyes and not behind
@@ -97,6 +92,4 @@ internal static class Sight
     // heights.md: a ranged attacker standing higher than its target reaches farther.
     public static int HighGroundBonus(SimState state, Entity attacker, Entity target) =>
         state.Map.HasLevels && StandLevel(state.Map, attacker) > StandLevel(state.Map, target) ? state.Rules.HighGroundRangeBonusMilli : 0;
-
-    private static (int X, int Y) Cell(Entity e) => e is Unit u ? (u.CellX, u.CellY) : (((Building)e).CellX, ((Building)e).CellY);
 }

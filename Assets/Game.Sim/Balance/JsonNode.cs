@@ -32,7 +32,10 @@ internal sealed class JsonNode
     public static JsonNode Bool(bool value) => new JsonNode(JsonKind.Bool, value ? 1 : 0, "", NoItems, NoFields);
     public static JsonNode Null() => new JsonNode(JsonKind.Null, 0, "", NoItems, NoFields);
 
-    public JsonNode Get(string key)
+    public JsonNode Get(string key) => Find(key) ?? throw new FormatException($"Missing field \"{key}\".");
+
+    // An optional field: null when the object has none.
+    public JsonNode? Find(string key)
     {
         Expect(JsonKind.Object, "object");
         foreach (KeyValuePair<string, JsonNode> field in Fields)
@@ -40,7 +43,7 @@ internal sealed class JsonNode
             if (field.Key == key)
                 return field.Value;
         }
-        throw new FormatException($"Missing field \"{key}\".");
+        return null;
     }
 
     public int GetInt(string key) => Get(key).Expect(JsonKind.Integer, $"integer field \"{key}\"").Integer;

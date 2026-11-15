@@ -37,16 +37,16 @@ public sealed class MapState
         {
             for (int x = 0; x < Width; x++)
             {
-                _blocked[y * Width + x] = setup.IsBlocked(x, y);
-                _ore[y * Width + x] = setup.OreAt(x, y);
-                _terrain[y * Width + x] = setup.TerrainAt(x, y);
-                _level[y * Width + x] = (byte)setup.LevelAt(x, y);
-                _ramp[y * Width + x] = setup.IsRamp(x, y);
-                HasLevels |= _level[y * Width + x] != 0 || _ramp[y * Width + x];
-                TerrainStats? terrain = _terrain[y * Width + x];
-                if (terrain != null && terrain.Destructible)
-                    _rockHp[y * Width + x] = terrain.Hp;
                 int i = y * Width + x;
+                _blocked[i] = setup.IsBlocked(x, y);
+                _ore[i] = setup.OreAt(x, y);
+                _terrain[i] = setup.TerrainAt(x, y);
+                _level[i] = (byte)setup.LevelAt(x, y);
+                _ramp[i] = setup.IsRamp(x, y);
+                HasLevels |= _level[i] != 0 || _ramp[i];
+                TerrainStats? terrain = _terrain[i];
+                if (terrain != null && terrain.Destructible)
+                    _rockHp[i] = terrain.Hp;
                 int cell = (_blocked[i] ? 1 : 0) | ((_ore[i] + 1) << 1) | (_level[i] << 4) | ((_ramp[i] ? 1 : 0) << 8);
                 LayoutChecksum ^= Mix(i, cell) ^ Mix(i + count, _rockHp[i]);
             }
@@ -285,7 +285,7 @@ public sealed class MapState
         int best = 0;
         for (int d = 0; d < 4; d++)
         {
-            int nx = x + (d == 0 ? 1 : d == 1 ? -1 : 0), ny = y + (d == 2 ? 1 : d == 3 ? -1 : 0);
+            int nx = x + FlowField.Dx[d], ny = y + FlowField.Dy[d];
             if (!InBounds(nx, ny))
                 continue;
             int n = Index(nx, ny);

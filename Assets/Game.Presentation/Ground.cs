@@ -48,6 +48,17 @@ namespace Game.Presentation
             return Mathf.Lerp(low, high, fz);
         }
 
+        // Sim positions are milli-cells; a cell is one unit of the world.
+        public static float Cells(int milli) => milli / (float)Game.Sim.Grid.MilliPerCell;
+
+        public static int Milli(float cells) => Mathf.RoundToInt(cells * Game.Sim.Grid.MilliPerCell);
+
+        // A sim point on the ground, `above` it.
+        public static Vector3 At(int milliX, int milliY, float above = 0f) => Lift(Flat(milliX, milliY, above));
+
+        // A sim point at a fixed height, not lifted: for what follows the ground itself (GroundDashes).
+        public static Vector3 Flat(int milliX, int milliY, float y = 0f) => new Vector3(Cells(milliX), y, Cells(milliY));
+
         // The point lifted onto the ground: its own y becomes the height above the ground.
         public static Vector3 Lift(Vector3 point)
         {

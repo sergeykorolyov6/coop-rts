@@ -24,6 +24,9 @@ public sealed class FogOfWar
     // never used, so the update skips them — on a big map that is most of the fog's cost.
     private readonly bool[] _blind;
 
+    // Player id → index in the arrays above, -1 for an id nobody has: asked for every target a unit weighs.
+    private readonly int[] _indexById;
+
     internal FogOfWar(IReadOnlyList<Player> players, MapState map)
     {
         int width = map.Width, height = map.Height;
@@ -35,8 +38,15 @@ public sealed class FogOfWar
         _visible = new bool[players.Count][];
         _discovered = new bool[players.Count][];
         _blind = new bool[players.Count];
+        int maxId = 0;
+        foreach (Player player in players)
+            maxId = System.Math.Max(maxId, player.Id);
+        _indexById = new int[maxId + 1];
+        for (int id = 0; id <= maxId; id++)
+            _indexById[id] = -1;
         for (int i = 0; i < players.Count; i++)
         {
+            _indexById[players[i].Id] = i;
             _ownSight[i] = new bool[width * height];
             _visible[i] = new bool[width * height];
             _discovered[i] = new bool[width * height];
@@ -103,7 +113,8 @@ public sealed class FogOfWar
         }
     }
 
-    private static void WriteBits(BinaryWriter w, bool[] cells)
+    // A bit a cell: for the snapshot and for the state hash.
+    internal static void WriteBits(BinaryWriter w, bool[] cells)
     {
         for (int c = 0; c < cells.Length; c += 8)
         {
@@ -296,11 +307,8 @@ public sealed class FogOfWar
 
     private int IndexOf(int playerId)
     {
-        for (int i = 0; i < _players.Count; i++)
-        {
-            if (_players[i].Id == playerId)
-                return i;
-        }
-        throw new System.ArgumentException($"Unknown player {playerId}.", nameof(playerId));
+        if (playerId < 0 || playerId >= _indexById.Length || _indexById[playerId] < 0)
+            throw new System.ArgumentException($"Unknown player {playerId}.", nameof(playerId));
+        return _indexById[playerId];
     }
 }

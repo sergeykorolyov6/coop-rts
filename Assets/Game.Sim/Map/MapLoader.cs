@@ -55,31 +55,9 @@ public static class MapLoader
             }
         }
 
-        // Optional: a digit is the cell's level, a letter (a = 0, b = 1, …) a ramp from that level up.
-        foreach (KeyValuePair<string, JsonNode> field in root.Fields)
-        {
-            if (field.Key != "levels_bottom_up")
-                continue;
-            IReadOnlyList<JsonNode> levels = field.Value.Items;
-            if (levels.Count != height)
-                throw new FormatException($"Map has {levels.Count} rows of levels, expected {height}.");
-            for (int y = 0; y < height; y++)
-            {
-                string row = levels[y].Text;
-                if (row.Length != width)
-                    throw new FormatException($"Levels row {y} has {row.Length} cells, expected {width}.");
-                for (int x = 0; x < width; x++)
-                {
-                    char c = row[x];
-                    if (c >= '0' && c <= '0' + MapSetup.MaxLevel)
-                        map.Level(x, y, c - '0');
-                    else if (c >= 'a' && c < 'a' + MapSetup.MaxLevel)
-                        map.Level(x, y, c - 'a', ramp: true);
-                    else
-                        throw new FormatException($"Levels cell ({x}, {y}) has unknown '{c}'.");
-                }
-            }
-        }
+        JsonNode? levels = root.Find("levels_bottom_up");
+        if (levels != null)
+            ParseLevels(map, levels.Items);
 
         foreach (JsonNode start in root.Get("starts").Items)
         {
@@ -100,35 +78,48 @@ public static class MapLoader
             map.CreepCamp(camp.GetString("type"), camp.GetInt("x"), camp.GetInt("y"), cells.ToArray());
         }
 
-        foreach (KeyValuePair<string, JsonNode> field in root.Fields)
+        JsonNode? neutrals = root.Find("neutral");
+        if (neutrals != null)
         {
-            if (field.Key == "neutral")
-            {
-                foreach (JsonNode n in field.Value.Items)
-                {
-                    int guard = -1;
-                    foreach (KeyValuePair<string, JsonNode> f in n.Fields)
-                    {
-                        if (f.Key == "guard")
-                            guard = f.Value.Integer;
-                    }
-                    map.Neutral(n.GetString("building"), n.GetInt("x"), n.GetInt("y"), guard);
-                }
-                continue;
-            }
-            // legion-ai.md, T5: "legion" is the map's only base, "legions" a list of several.
-            if (field.Key == "legion")
-                ParseBase(map, field.Value);
-            if (field.Key != "legions")
-                continue;
-            for (int i = 0; i < field.Value.Items.Count; i++)
-            {
-                if (i > 0)
-                    map.LegionBase();
-                ParseBase(map, field.Value.Items[i]);
-            }
+            foreach (JsonNode n in neutrals.Items)
+                map.Neutral(n.GetString("building"), n.GetInt("x"), n.GetInt("y"), n.Find("guard")?.Integer ?? -1);
+        }
+
+        // legion-ai.md, T5: "legion" is the map's only base, "legions" a list of several.
+        JsonNode? legion = root.Find("legion");
+        if (legion != null)
+            ParseBase(map, legion);
+        JsonNode? legions = root.Find("legions");
+        for (int i = 0; legions != null && i < legions.Items.Count; i++)
+        {
+            if (i > 0)
+                map.LegionBase();
+            ParseBase(map, legions.Items[i]);
         }
         return map;
+    }
+
+    // A digit is the cell's level, a letter (a = 0, b = 1, …) a ramp from that level up.
+    private static void ParseLevels(MapSetup map, IReadOnlyList<JsonNode> rows)
+    {
+        if (rows.Count != map.Height)
+            throw new FormatException($"Map has {rows.Count} rows of levels, expected {map.Height}.");
+        for (int y = 0; y < map.Height; y++)
+        {
+            string row = rows[y].Text;
+            if (row.Length != map.Width)
+                throw new FormatException($"Levels row {y} has {row.Length} cells, expected {map.Width}.");
+            for (int x = 0; x < map.Width; x++)
+            {
+                char c = row[x];
+                if (c >= '0' && c <= '0' + MapSetup.MaxLevel)
+                    map.Level(x, y, c - '0');
+                else if (c >= 'a' && c < 'a' + MapSetup.MaxLevel)
+                    map.Level(x, y, c - 'a', ramp: true);
+                else
+                    throw new FormatException($"Levels cell ({x}, {y}) has unknown '{c}'.");
+            }
+        }
     }
 
     private static void ParseBase(MapSetup map, JsonNode legionBase)

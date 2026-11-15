@@ -398,8 +398,8 @@ namespace Game.Presentation
         {
             if (_simulation == null)
                 return;
-            int width = _simulation.State.Grid.Width;
-            int height = _simulation.State.Grid.Height;
+            int width = _simulation.State.Map.Width;
+            int height = _simulation.State.Map.Height;
 
             Gizmos.color = new Color(1f, 1f, 1f, 0.15f);
             for (int x = 0; x <= width; x++)

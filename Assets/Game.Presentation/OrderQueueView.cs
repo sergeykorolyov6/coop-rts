@@ -71,7 +71,7 @@ namespace Game.Presentation
             switch (order.Kind)
             {
                 case UnitOrderKind.Move:
-                    _points.Add((ToWorld(order.X, order.Y), _moveColor));
+                    _points.Add((Ground.Flat(order.X, order.Y), _moveColor));
                     break;
                 case UnitOrderKind.Attack:
                     if (_entities!.TryGetEntity(order.TargetId, out Vector3 target, out _, out _))
@@ -87,7 +87,7 @@ namespace Game.Presentation
                     break;
                 case UnitOrderKind.CarryTrophy:
                     CreepCamp camp = state.CreepCamps[order.TargetId];
-                    _points.Add((ToWorld(camp.CenterMilliX, camp.CenterMilliY), _workColor));
+                    _points.Add((Ground.Flat(camp.CenterMilliX, camp.CenterMilliY), _workColor));
                     break;
                 case UnitOrderKind.Build when plans != null:
                     foreach (PlannedBuild plan in plans)
@@ -151,9 +151,6 @@ namespace Game.Presentation
             }
             return material;
         }
-
-        private static Vector3 ToWorld(int milliX, int milliY) =>
-            new Vector3(milliX / (float)Grid.MilliPerCell, 0f, milliY / (float)Grid.MilliPerCell);
 
         private void OnDestroy()
         {

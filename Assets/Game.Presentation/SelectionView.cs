@@ -54,7 +54,7 @@ namespace Game.Presentation
                     if (unit == null || !_entities!.TryGetUnitPosition(id, out Vector3 position))
                         continue;
                     Transform disc = Disc(shown++);
-                    float size = unit.Stats.SizeMilli / (float)Grid.MilliPerCell * _scale;
+                    float size = Ground.Cells(unit.Stats.SizeMilli) * _scale;
                     disc.localScale = new Vector3(size, 0.01f, size);
                     disc.position = position + Vector3.up * 0.02f;
                     disc.gameObject.SetActive(true);
@@ -83,7 +83,7 @@ namespace Game.Presentation
                     _inspectDisc = CreateMarker(PrimitiveType.Cylinder, "InspectDisc");
                     _inspectDisc.GetComponent<MeshRenderer>().sharedMaterial = InspectMaterial(_inspectDisc);
                 }
-                float size = inspected!.Stats.SizeMilli / (float)Grid.MilliPerCell * _scale;
+                float size = Ground.Cells(inspected!.Stats.SizeMilli) * _scale;
                 _inspectDisc.localScale = new Vector3(size, 0.01f, size);
                 _inspectDisc.position = at + Vector3.up * 0.02f;
             }
