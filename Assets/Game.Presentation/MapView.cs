@@ -7,11 +7,23 @@ namespace Game.Presentation
     // resources; checkerboard so cells read without gizmos. Shaded by the local player's fog:
     // never seen — dark, nothing of the ground shows; seen before — dimmed; seen now — full.
     // Same layout as SimRunner's gizmo grid: cell (x, y) → world XZ [x, x+1) × [y, y+1).
+    // The cell picture carries the colour; the ground shader (Resources/Terrain/Ground) lays a
+    // detail texture over it by the kind of ground the cell has, which goes in the texel's alpha.
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class MapView : MonoBehaviour
     {
+        private const string Folder = "Terrain/";
+
+        // Detail textures in the order of the shader's layers; a kind of ground is its layer + 1,
+        // the cliff is the last layer. Made tileable and evened out by Tools/art/tile.py.
+        private static readonly string[] LayerNames = { "ground", "rockfloor", "gravel", "orebed", "cliff" };
+        private const byte KindUnseen = 0, KindGround = 1, KindRock = 2, KindRamp = 3, KindOre = 4;
+        private static readonly int LayersId = Shader.PropertyToID("_Layers");
+
         [SerializeField] private Color _cellColorA = new Color(0.32f, 0.36f, 0.30f);
         [SerializeField] private Color _cellColorB = new Color(0.28f, 0.32f, 0.26f);
+        [Tooltip("How much of the difference between the two cell colours is kept: under a texture the full checkerboard is too loud.")]
+        [SerializeField, Range(0f, 1f)] private float _checker = 0.5f;
         [SerializeField] private Color _blockedColor = new Color(0.15f, 0.14f, 0.13f);
         [SerializeField] private Color _primaryOreColor = new Color(0.80f, 0.55f, 0.25f);
         [SerializeField] private Color _secondaryOreColor = new Color(0.35f, 0.70f, 0.85f);
@@ -30,6 +42,7 @@ namespace Game.Presentation
         private SimRunner? _runner;
         private LocalPlayer? _localPlayer;
         private Texture2D? _texture;
+        private Texture2DArray? _layers;
         private Material? _material;
         private Mesh? _mesh;
         private Color32[] _baseColors = new Color32[0];
@@ -39,7 +52,13 @@ namespace Game.Presentation
         private int _shadedPlayer = -1;
 
         // Fog-shaded colour of a cell as on the ground this frame; the minimap draws the same.
-        public Color32 ShadedCell(int x, int y) => _shaded[y * (_texture != null ? _texture.width : 1) + x];
+        public Color32 ShadedCell(int x, int y)
+        {
+            Color32 color = _shaded[y * (_texture != null ? _texture.width : 1) + x];
+            // In the picture alpha is the kind of ground, not transparency.
+            color.a = 255;
+            return color;
+        }
 
         // Start, not Awake: SimRunner creates the Simulation in its Awake.
         private void Start()
@@ -55,9 +74,7 @@ namespace Game.Presentation
             int height = map.Height;
             _baseColors = new Color32[width * height];
             _shaded = new Color32[width * height];
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                    _baseColors[y * width + x] = CellColor(map, x, y);
+            PaintCells(map);
 
             _texture = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false)
             {
@@ -67,8 +84,8 @@ namespace Game.Presentation
             };
             Shade(simulation.State);
 
-            // URP Lit from Primitives: its main texture is the cell picture. The mesh is the ground
-            // in steps (heights.md): a quad per cell at its level, a slope on a ramp, a wall at a cliff.
+            // The mesh is the ground in steps (heights.md): a quad per cell at its level, a slope on
+            // a ramp, a wall at a cliff.
             var ground = Primitives.Create(PrimitiveType.Quad);
             ground.name = "Ground";
             Destroy(ground.GetComponent<Collider>());
@@ -79,8 +96,51 @@ namespace Game.Presentation
             ground.GetComponent<MeshFilter>().sharedMesh = _mesh;
 
             var groundRenderer = ground.GetComponent<MeshRenderer>();
-            _material = groundRenderer.material;
+            Shader? shader = UnityEngine.Resources.Load<Shader>(Folder + "Ground");
+            _layers = shader != null ? LoadLayers() : null;
+            if (_layers != null)
+            {
+                _material = new Material(shader!);
+                _material.SetTexture(LayersId, _layers);
+                groundRenderer.sharedMaterial = _material;
+            }
+            else
+            {
+                // Without the shader or its textures the ground is the plain cell picture on URP Lit.
+                Debug.LogError($"MapView: the ground shader or its textures are missing in Assets/Resources/{Folder}; the ground is drawn flat.");
+                _material = groundRenderer.material;
+            }
             _material.mainTexture = _texture;
+        }
+
+        // One array texture for the shader out of the separate pictures, so a picture can be
+        // replaced on its own. They are copied as imported, mips and all: same size and format.
+        private static Texture2DArray? LoadLayers()
+        {
+            Texture2DArray? layers = null;
+            for (int i = 0; i < LayerNames.Length; i++)
+            {
+                Texture2D? source = UnityEngine.Resources.Load<Texture2D>(Folder + LayerNames[i]);
+                if (source == null || (layers != null && (source.width != layers.width || source.height != layers.height
+                    || source.graphicsFormat != layers.graphicsFormat || source.mipmapCount != layers.mipmapCount)))
+                {
+                    Debug.LogError($"MapView: ground texture '{LayerNames[i]}' is missing or differs from '{LayerNames[0]}' in size or import settings.");
+                    if (layers != null)
+                        Destroy(layers);
+                    return null;
+                }
+                layers ??= new Texture2DArray(source.width, source.height, LayerNames.Length, source.graphicsFormat,
+                    UnityEngine.Experimental.Rendering.TextureCreationFlags.MipChain, source.mipmapCount)
+                {
+                    name = "GroundLayers",
+                    wrapMode = TextureWrapMode.Repeat,
+                    filterMode = FilterMode.Trilinear,
+                    anisoLevel = 8,
+                };
+                for (int mip = 0; mip < source.mipmapCount; mip++)
+                    Graphics.CopyTexture(source, 0, mip, layers, i, mip);
+            }
+            return layers;
         }
 
         // The fog changes only on ticks; 64×64 cells per tick is nothing to repaint.
@@ -94,9 +154,7 @@ namespace Game.Presentation
             {
                 // terrain.md: a dug-out cell is ground or ore now.
                 _rockChecksum = map.RockChecksum;
-                for (int y = 0; y < map.Height; y++)
-                    for (int x = 0; x < map.Width; x++)
-                        _baseColors[y * map.Width + x] = CellColor(map, x, y);
+                PaintCells(map);
                 _shadedTick = -1;
             }
             if (simulation.State.Tick != _shadedTick || _localPlayer!.PlayerId != _shadedPlayer)
@@ -170,6 +228,7 @@ namespace Game.Presentation
             int playerId = _localPlayer!.PlayerId;
             int width = state.Map.Width, height = state.Map.Height;
             Color32 undiscovered = _undiscoveredColor;
+            undiscovered.a = KindUnseen;
             byte remembered = (byte)(_rememberedBrightness * 255f);
             for (int y = 0; y < height; y++)
             {
@@ -183,7 +242,7 @@ namespace Game.Presentation
                     else
                     {
                         Color32 c = _baseColors[i];
-                        _shaded[i] = new Color32((byte)(c.r * remembered / 255), (byte)(c.g * remembered / 255), (byte)(c.b * remembered / 255), 255);
+                        _shaded[i] = new Color32((byte)(c.r * remembered / 255), (byte)(c.g * remembered / 255), (byte)(c.b * remembered / 255), c.a);
                     }
                 }
             }
@@ -191,6 +250,23 @@ namespace Game.Presentation
             _texture.Apply();
             _shadedTick = state.Tick;
             _shadedPlayer = playerId;
+        }
+
+        // Colour of every cell without the fog, and in alpha its kind of ground for the shader.
+        private void PaintCells(MapState map)
+        {
+            for (int y = 0; y < map.Height; y++)
+            {
+                for (int x = 0; x < map.Width; x++)
+                {
+                    Color32 color = CellColor(map, x, y);
+                    color.a = map.IsBlocked(x, y) ? KindRock
+                        : map.IsRamp(x, y) ? KindRamp
+                        : map.OreAt(x, y) != MapSetup.NoOre ? KindOre
+                        : KindGround;
+                    _baseColors[y * map.Width + x] = color;
+                }
+            }
         }
 
         // heights.md: higher ground is lighter, the foot of a cliff lies in its shadow and a ramp is
@@ -220,7 +296,7 @@ namespace Game.Presentation
                 return _blockedColor;
             int ore = map.OreAt(x, y);
             if (ore == MapSetup.NoOre)
-                return even ? _cellColorA : _cellColorB;
+                return Color.Lerp(Color.Lerp(_cellColorA, _cellColorB, 0.5f), even ? _cellColorA : _cellColorB, _checker);
             Color color = ore == Game.Sim.Resources.Primary ? _primaryOreColor : _secondaryOreColor;
             return even ? color : Color.Lerp(color, Color.black, _oreCheckerShade);
         }
@@ -233,6 +309,8 @@ namespace Game.Presentation
                 Destroy(_mesh);
             if (_texture != null)
                 Destroy(_texture);
+            if (_layers != null)
+                Destroy(_layers);
         }
     }
 }

@@ -56,3 +56,6 @@ __pycache__/
 /CoopRTS_win/
 /CoopRTS_win.zip
 /*_BackUpThisFolder_ButDontShipItWithYourGame/
+
+# Сырые результаты генерации (эскизы, GLB по 20 МБ): в игру идут копии из Assets/Resources/Terrain, обработанные Tools/art
+/ArtSource/

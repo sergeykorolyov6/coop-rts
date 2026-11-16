@@ -13,11 +13,13 @@ namespace Game.Presentation
         private static Material? _material;
         private static bool _warned;
 
+        // The shared material itself: textured models (TerrainView) make their own copies of it.
+        public static Material? Lit => _material ??= UnityEngine.Resources.Load<Material>(MaterialPath);
+
         public static GameObject Create(PrimitiveType type)
         {
             GameObject go = GameObject.CreatePrimitive(type);
-            _material ??= UnityEngine.Resources.Load<Material>(MaterialPath);
-            if (_material != null)
+            if (Lit != null)
                 go.GetComponent<MeshRenderer>().sharedMaterial = _material;
             else if (!_warned)
             {

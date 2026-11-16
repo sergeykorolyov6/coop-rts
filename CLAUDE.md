@@ -155,6 +155,7 @@ Assets/
   Game.Presentation/   Unity-слой
   Game.Net/
   Data/                json с балансом (генерируется из Docs/Design/*.csv)
+  Resources/Terrain/   арт рельефа: текстуры земли, шейдер Ground, модели породы, руды и декора (имена файлов — см. TerrainView)
 Game.Sim.Dotnet/       Game.Sim.csproj — собирает Assets/Game.Sim/**/*.cs для dotnet
 Game.Sim.Tests/        NUnit-проект (вне Assets/, Unity его не видит)
   Mechanics/           тесты по спекам (DrillTests …)
@@ -167,4 +168,6 @@ Docs/
     maps/*.txt         карты текстом (легенда в начале файла) → Assets/Data/maps/*.json
     maps/*.tmj         или карта из редактора Tiled (Tools/tiled.py; набор тайлов cooprts.tsj/.png) — у карты один файл
 Tools/                 csv2json и прочие скрипты
+  art/                 обработка сгенерированного арта: tile.py (бесшовная текстура земли), bake.py (GLB → упрощённая модель + текстура)
+ArtSource/             сырьё генерации (эскизы, GLB), не в git
 ```

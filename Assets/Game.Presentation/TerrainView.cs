@@ -4,38 +4,36 @@ using UnityEngine;
 
 namespace Game.Presentation
 {
-    // Relief on top of the flat ground texture (MapView): rocks on blocked cells, a few nuggets
-    // in the resource's colour on ore cells. Variation comes from a hash of the cell, so the
-    // look is the same every run. Follows the local player's fog like the ground: never seen —
-    // hidden, seen before — dimmed, seen now — full. Nuggets hide under any building
+    // Relief on top of the ground (MapView): a rock on every blocked cell, a pile of ore or a
+    // cluster of crystals on every ore cell, and here and there a piece of scenery on plain ground.
+    // Models and their textures lie in Assets/Resources/Terrain and are found by name:
+    // rock_<terrain id>_<n>, ore_primary_<n>, ore_secondary_<n>, decor_<n>, n from 1 without gaps
+    // (the texture is <model>_tex). A new kind of rock in terrain.csv gets its look by adding
+    // files; without them it looks like plain rock. Models come from Tools/art/bake.py: the
+    // footprint is one unit wide and centred, the bottom is at zero.
+    // Which model stands on a cell, its turn and size come from a hash of the cell, so the map
+    // looks the same every run. Follows the local player's fog like the ground: never seen —
+    // hidden, seen before — dimmed, seen now — full. Ore and scenery hide under any building
     // (a drill or a conveyor sits on the ore).
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class TerrainView : MonoBehaviour
     {
-        [SerializeField] private Color[] _rockColors =
-        {
-            new Color(0.36f, 0.34f, 0.31f),
-            new Color(0.42f, 0.39f, 0.35f),
-            new Color(0.30f, 0.29f, 0.28f),
-        };
-        [Header("Rock kinds (terrain.md)")]
-        [SerializeField] private Color _softRockColor = new Color(0.50f, 0.40f, 0.30f);
-        [SerializeField] private Color _hardRockColor = new Color(0.40f, 0.43f, 0.52f);
-        [Tooltip("Eternal rock: darker than anything a miner can dig.")]
-        [SerializeField, Range(0f, 1f)] private float _eternalDarkening = 0.35f;
-        [SerializeField] private Color _primaryOreColor = new Color(0.95f, 0.62f, 0.25f);
-        [SerializeField] private Color _secondaryOreColor = new Color(0.40f, 0.80f, 0.95f);
+        private const string Folder = "Terrain/";
+        private const string PlainRock = "rock_rock";
+
         [SerializeField, Range(0f, 1f)] private float _rememberedBrightness = 0.5f;
+        [Tooltip("Share of plain ground cells with a piece of scenery on them.")]
+        [SerializeField, Range(0f, 0.2f)] private float _decorDensity = 0.02f;
 
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
 
         private readonly List<Cell> _cells = new List<Cell>();
-        private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
+        private readonly Dictionary<string, Prop[]> _props = new Dictionary<string, Prop[]>();
+        private readonly List<Material> _materials = new List<Material>();
 
         private SimRunner? _runner;
         private LocalPlayer? _localPlayer;
         private Transform? _root;
-        private Material? _baseMaterial;
         private int _shownTick = -1;
         private ulong _rockChecksum;
         private int _shownPlayer = -1;
@@ -50,6 +48,8 @@ namespace Game.Presentation
                 return;
             _root = new GameObject("Terrain").transform;
             _root.SetParent(transform, worldPositionStays: false);
+            if (Props(PlainRock).Length == 0)
+                Debug.LogError($"TerrainView: no models in Assets/Resources/{Folder} ({PlainRock}_1 …); the map has no rocks.");
 
             MapState map = simulation.State.Map;
             for (int y = 0; y < map.Height; y++)
@@ -57,9 +57,11 @@ namespace Game.Presentation
                 for (int x = 0; x < map.Width; x++)
                 {
                     if (map.IsBlocked(x, y))
-                        _cells.Add(Rocks(x, y, map.TerrainAt(x, y)));
+                        Rock(x, y, map.TerrainAt(x, y));
                     else if (map.OreAt(x, y) != MapSetup.NoOre)
-                        _cells.Add(Nuggets(x, y, map.OreAt(x, y)));
+                        Ore(x, y, map.OreAt(x, y));
+                    else if (!map.IsRamp(x, y) && Unit(Hash(x, y), 40) < _decorDensity)
+                        Decor(x, y);
                 }
             }
             _rockChecksum = map.RockChecksum;
@@ -67,7 +69,7 @@ namespace Game.Presentation
         }
 
         // terrain.md: dug rock settles as it loses strength and disappears when dug out; ore found
-        // under it gets nuggets. Only when some rock changed (the checksum the sim keeps for its hash).
+        // under it gets its pile. Only when some rock changed (the checksum the sim keeps for its hash).
         private void UpdateRocks(MapState map)
         {
             if (map.RockChecksum == _rockChecksum)
@@ -77,20 +79,19 @@ namespace Game.Presentation
             for (int i = 0; i < count; i++)
             {
                 Cell cell = _cells[i];
-                if (cell.IsOre || cell.Gone || cell.MaxHp == 0)
+                if (cell.Gone || cell.MaxHp == 0)
                     continue;
                 int hp = map.RockHp(cell.X, cell.Y);
                 if (hp > 0)
                 {
-                    cell.Root.localScale = new Vector3(1f, 0.45f + 0.55f * hp / cell.MaxHp, 1f);
+                    cell.Transform.localScale = Vector3.Scale(cell.Scale, new Vector3(1f, 0.45f + 0.55f * hp / cell.MaxHp, 1f));
                     continue;
                 }
                 cell.Gone = true;
-                cell.Root.gameObject.SetActive(false);
-                cell.Root.localScale = Vector3.one;
+                cell.Transform.gameObject.SetActive(false);
                 int ore = map.OreAt(cell.X, cell.Y);
                 if (ore != MapSetup.NoOre)
-                    _cells.Add(Nuggets(cell.X, cell.Y, ore));
+                    Ore(cell.X, cell.Y, ore);
             }
         }
 
@@ -114,121 +115,102 @@ namespace Game.Presentation
                 CellLook look = !state.Fog.IsDiscovered(playerId, cell.X, cell.Y) ? CellLook.Hidden
                     : state.Fog.IsVisible(playerId, cell.X, cell.Y) ? CellLook.Lit
                     : CellLook.Dim;
-                if (cell.IsOre && state.Map.BuildingAt(cell.X, cell.Y) != 0)
+                if (cell.HidesUnderBuilding && state.Map.BuildingAt(cell.X, cell.Y) != 0)
                     look = CellLook.Hidden;
                 if (look == cell.Look)
                     continue;
                 cell.Look = look;
-                cell.Root.gameObject.SetActive(look != CellLook.Hidden);
-                if (look == CellLook.Hidden)
-                    continue;
-                for (int i = 0; i < cell.Renderers.Count; i++)
-                {
-                    Color color = look == CellLook.Lit ? cell.Colors[i] : Color.Lerp(Color.black, cell.Colors[i], _rememberedBrightness);
-                    cell.Renderers[i].sharedMaterial = MaterialFor(color);
-                }
+                cell.Transform.gameObject.SetActive(look != CellLook.Hidden);
+                if (look != CellLook.Hidden)
+                    cell.Renderer.sharedMaterial = look == CellLook.Lit ? cell.Prop.Lit : cell.Prop.Dim;
             }
             _shownTick = state.Tick;
             _shownPlayer = playerId;
         }
 
-        // A low rounded base sunk into the ground, a big tilted block breaking the silhouette and
-        // a shard or two around it, sized and turned by the cell's hash: neighbouring blocked cells
-        // merge into ridges. Neither pure cubes (read as crates) nor pure spheres (read as eggs).
-        private Cell Rocks(int x, int y, TerrainStats? terrain)
+        // Wider than the cell and sunk a little, turned by quarter turns with a wobble, taller or
+        // lower by the hash: neighbouring blocked cells merge into one ridge, not a row of copies.
+        private void Rock(int x, int y, TerrainStats? terrain)
         {
-            var cell = new Cell(x, y, isOre: false, CellRoot(x, y, "Rocks")) { MaxHp = terrain?.Hp ?? 0 };
+            Prop[] props = terrain != null ? Props("rock_" + terrain.Id) : Props(PlainRock);
+            if (props.Length == 0)
+                props = Props(PlainRock);
+            if (props.Length == 0)
+                return;
             uint h = Hash(x, y);
-            Color main = _rockColors[h % (uint)_rockColors.Length];
-            // terrain.md: what can be dug reads apart from eternal rock, and soft from hard.
-            if (terrain == null || !terrain.Destructible)
-                main = Color.Lerp(main, Color.black, _eternalDarkening);
-            else if (terrain.Id == "hard_rock")
-                main = Color.Lerp(main, _hardRockColor, 0.7f);
-            else
-                main = Color.Lerp(main, _softRockColor, 0.7f);
-            float width = 1.05f + Unit(h, 2) * 0.25f;
-            AddPart(cell, PrimitiveType.Sphere, Color.Lerp(main, Color.black, 0.15f), new Vector3(0f, 0.05f, 0f),
-                new Vector3(width, 0.45f + Unit(h, 1) * 0.2f, width * 0.9f), Unit(h, 6) * 180f, 0f);
-
-            float block = 0.5f + Unit(h, 3) * 0.3f;
-            AddPart(cell, PrimitiveType.Cube, main, new Vector3(Unit(h, 4) * 0.2f - 0.1f, 0.25f + block * 0.3f, Unit(h, 5) * 0.2f - 0.1f),
-                new Vector3(block, block * (0.8f + Unit(h, 7) * 0.7f), block * 0.85f), Unit(h, 8) * 360f, 18f + Unit(h, 9) * 20f);
-
-            int shards = 1 + (int)(h >> 20) % 2;
-            for (int i = 0; i < shards; i++)
-            {
-                float size = 0.18f + Unit(h, 10 + i) * 0.2f;
-                float angle = Unit(h, 12 + i) * 360f;
-                Vector3 offset = Quaternion.Euler(0f, angle, 0f) * new Vector3(0f, 0f, 0.32f + Unit(h, 14 + i) * 0.12f);
-                Color shard = Color.Lerp(main, Color.white, 0.1f);
-                AddPart(cell, PrimitiveType.Cube, shard, offset + new Vector3(0f, 0.12f + size * 0.3f, 0f),
-                    new Vector3(size, size * (0.8f + Unit(h, 16 + i) * 0.6f), size * 0.8f), angle, 25f + Unit(h, 18 + i) * 20f);
-            }
-            // Rock with ore inside shows specks of the resource's colour.
-            if (terrain != null && terrain.OreType != MapSetup.NoOre)
-            {
-                Color speck = terrain.OreType == Game.Sim.Resources.Primary ? _primaryOreColor : _secondaryOreColor;
-                for (int i = 0; i < 3; i++)
-                {
-                    float angle = Unit(h, 30 + i) * 360f;
-                    Vector3 at = Quaternion.Euler(0f, angle, 0f) * new Vector3(0f, 0.35f + Unit(h, 33 + i) * 0.2f, 0.28f);
-                    AddPart(cell, PrimitiveType.Cube, speck, at, Vector3.one * (0.12f + Unit(h, 36 + i) * 0.06f), angle, 30f);
-                }
-            }
-            return cell;
+            float size = 1.15f + Unit(h, 2) * 0.25f;
+            var scale = new Vector3(size, size * (0.85f + Unit(h, 3) * 0.4f), size);
+            var offset = new Vector3((Unit(h, 4) - 0.5f) * 0.12f, -0.03f, (Unit(h, 5) - 0.5f) * 0.12f);
+            float yaw = (h >> 8) % 4 * 90f + (Unit(h, 6) - 0.5f) * 24f;
+            Cell cell = Place(x, y, "Rock", props[h % (uint)props.Length], offset, scale, yaw, hidesUnderBuilding: false);
+            cell.MaxHp = terrain?.Hp ?? 0;
         }
 
-        // Two or three low angular chunks: the cell reads as ore from any zoom.
-        private Cell Nuggets(int x, int y, int resourceType)
+        // Smaller than the cell: single cells of a deposit stay countable.
+        private void Ore(int x, int y, int resourceType)
         {
-            var cell = new Cell(x, y, isOre: true, CellRoot(x, y, "Ore"));
+            Prop[] props = Props(resourceType == Game.Sim.Resources.Primary ? "ore_primary" : "ore_secondary");
+            if (props.Length == 0)
+                return;
             uint h = Hash(x, y);
-            Color color = resourceType == Game.Sim.Resources.Primary ? _primaryOreColor : _secondaryOreColor;
-            int count = 2 + (int)(h >> 24) % 2;
-            for (int i = 0; i < count; i++)
-            {
-                float size = 0.14f + Unit(h, i + 1) * 0.12f;
-                Vector3 offset = new Vector3(Unit(h, i + 4) * 0.6f - 0.3f, size * 0.35f, Unit(h, i + 7) * 0.6f - 0.3f);
-                Color shade = Color.Lerp(color, Color.white, Unit(h, i + 10) * 0.25f);
-                AddPart(cell, PrimitiveType.Cube, shade, offset, new Vector3(size, size * 0.8f, size), Unit(h, i + 13) * 90f, 35f);
-            }
-            return cell;
+            float size = 0.6f + Unit(h, 2) * 0.2f;
+            var offset = new Vector3((Unit(h, 4) - 0.5f) * 0.24f, -0.01f, (Unit(h, 5) - 0.5f) * 0.24f);
+            Place(x, y, "Ore", props[h % (uint)props.Length], offset, Vector3.one * size, Unit(h, 6) * 360f, hidesUnderBuilding: true);
         }
 
-        private Transform CellRoot(int x, int y, string name)
+        // Small and low, so it is not taken for an obstacle: units walk through it and buildings stand on it.
+        private void Decor(int x, int y)
         {
-            var root = new GameObject($"{name} {x},{y}").transform;
-            root.SetParent(_root, worldPositionStays: false);
-            root.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0f, y + 0.5f));
-            return root;
+            Prop[] props = Props("decor");
+            if (props.Length == 0)
+                return;
+            uint h = Hash(x, y);
+            float size = 0.55f + Unit(h, 2) * 0.3f;
+            var offset = new Vector3((Unit(h, 4) - 0.5f) * 0.3f, -0.01f, (Unit(h, 5) - 0.5f) * 0.3f);
+            Place(x, y, "Decor", props[(h >> 8) % (uint)props.Length], offset, Vector3.one * size, Unit(h, 6) * 360f, hidesUnderBuilding: true);
         }
 
-        private void AddPart(Cell cell, PrimitiveType type, Color color, Vector3 position, Vector3 scale, float yaw, float tilt)
+        private Cell Place(int x, int y, string name, Prop prop, Vector3 offset, Vector3 scale, float yaw, bool hidesUnderBuilding)
         {
-            GameObject go = Primitives.Create(type);
-            Destroy(go.GetComponent<Collider>());
-            MeshRenderer renderer = go.GetComponent<MeshRenderer>();
-            _baseMaterial ??= renderer.sharedMaterial;
-            renderer.sharedMaterial = MaterialFor(color);
-            go.transform.SetParent(cell.Root, worldPositionStays: false);
-            go.transform.localPosition = position;
-            go.transform.localRotation = Quaternion.Euler(tilt, yaw, tilt * 0.5f);
+            var go = new GameObject($"{name} {x},{y}", typeof(MeshFilter), typeof(MeshRenderer));
+            go.transform.SetParent(_root, worldPositionStays: false);
+            go.transform.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0f, y + 0.5f) + offset);
+            go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             go.transform.localScale = scale;
-            cell.Renderers.Add(renderer);
-            cell.Colors.Add(color);
+            go.GetComponent<MeshFilter>().sharedMesh = prop.Mesh;
+            var cell = new Cell(x, y, go.transform, go.GetComponent<MeshRenderer>(), prop, scale, hidesUnderBuilding);
+            _cells.Add(cell);
+            return cell;
         }
 
-        private Material MaterialFor(Color color)
+        // Models of one kind: <prefix>_1, <prefix>_2 … up to the first that is missing.
+        private Prop[] Props(string prefix)
         {
-            if (!_materials.TryGetValue(color, out Material? material))
+            if (_props.TryGetValue(prefix, out Prop[]? found))
+                return found;
+            var props = new List<Prop>();
+            Material? lit = Primitives.Lit;
+            for (int n = 1; lit != null; n++)
             {
-                material = new Material(_baseMaterial) { color = color };
-                // Stone and ore are matte: the default Lit smoothness makes them look like plastic.
-                if (material.HasProperty(SmoothnessId))
-                    material.SetFloat(SmoothnessId, 0.08f);
-                _materials.Add(color, material);
+                string path = $"{Folder}{prefix}_{n}";
+                Mesh? mesh = UnityEngine.Resources.Load<Mesh>(path);
+                Texture2D? texture = UnityEngine.Resources.Load<Texture2D>(path + "_tex");
+                if (mesh == null || texture == null)
+                    break;
+                props.Add(new Prop(mesh, Textured(lit, texture, 1f), Textured(lit, texture, _rememberedBrightness)));
             }
+            found = props.ToArray();
+            _props.Add(prefix, found);
+            return found;
+        }
+
+        private Material Textured(Material lit, Texture2D texture, float brightness)
+        {
+            var material = new Material(lit) { mainTexture = texture, color = new Color(brightness, brightness, brightness) };
+            // Stone and ore are matte: the default Lit smoothness makes them look like plastic.
+            if (material.HasProperty(SmoothnessId))
+                material.SetFloat(SmoothnessId, 0.08f);
+            _materials.Add(material);
             return material;
         }
 
@@ -256,28 +238,47 @@ namespace Game.Presentation
 
         private void OnDestroy()
         {
-            foreach (Material material in _materials.Values)
+            foreach (Material material in _materials)
                 Destroy(material);
         }
 
         private enum CellLook { Unset, Hidden, Dim, Lit }
 
+        // A model with its texture, as seen now and as remembered under the fog.
+        private sealed class Prop
+        {
+            public Prop(Mesh mesh, Material lit, Material dim)
+            {
+                Mesh = mesh;
+                Lit = lit;
+                Dim = dim;
+            }
+
+            public Mesh Mesh { get; }
+            public Material Lit { get; }
+            public Material Dim { get; }
+        }
+
         private sealed class Cell
         {
-            public Cell(int x, int y, bool isOre, Transform root)
+            public Cell(int x, int y, Transform transform, MeshRenderer renderer, Prop prop, Vector3 scale, bool hidesUnderBuilding)
             {
                 X = x;
                 Y = y;
-                IsOre = isOre;
-                Root = root;
+                Transform = transform;
+                Renderer = renderer;
+                Prop = prop;
+                Scale = scale;
+                HidesUnderBuilding = hidesUnderBuilding;
             }
 
             public int X { get; }
             public int Y { get; }
-            public bool IsOre { get; }
-            public Transform Root { get; }
-            public List<MeshRenderer> Renderers { get; } = new List<MeshRenderer>();
-            public List<Color> Colors { get; } = new List<Color>();
+            public Transform Transform { get; }
+            public MeshRenderer Renderer { get; }
+            public Prop Prop { get; }
+            public Vector3 Scale { get; }
+            public bool HidesUnderBuilding { get; }
             public CellLook Look { get; set; } = CellLook.Unset;
 
             // terrain.md: full strength of destructible rock (0 for anything else), and dug out.
