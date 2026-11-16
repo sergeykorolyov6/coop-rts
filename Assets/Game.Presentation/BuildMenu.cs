@@ -46,6 +46,8 @@ namespace Game.Presentation
         private PlacementController? _placement;
         private VisualElement? _panel;
         private VisualElement? _grid;
+        private Label? _hint;
+        private string _shownHint = "";
         private string _shownFaction = "";
 
         private void Awake()
@@ -62,7 +64,7 @@ namespace Game.Presentation
             _panel = HudKit.Plate("BuildMenu", "hud-commands");
             VisualElement title = HudKit.Child(_panel, "hud-commands__title");
             HudKit.Text(title, "СТРОЙКА", "hud-caption");
-            HudKit.Text(title, "ПКМ / ESC — ОТМЕНА", "hud-caption");
+            _hint = HudKit.Text(title, "", "hud-caption");
             _grid = HudKit.Child(_panel, "hud-commands__grid");
             _hud.BottomBar.Add(_panel);
         }
@@ -90,6 +92,14 @@ namespace Game.Presentation
                 HudKit.SetPrice(button.Price, stats.CostPrimary, stats.CostSecondary, shortPrimary, shortSecondary);
                 button.SetBlocked(shortPrimary || shortSecondary);
                 button.SetActive(_placement!.BuildingId == stats.Id);
+            }
+
+            // What the mouse does now: nothing is said about cancelling until there is something to cancel.
+            string hint = _placement!.IsActive ? "ЛКМ — ПОСТАВИТЬ · R — ПОВЕРНУТЬ · ПКМ / ESC — ОТМЕНА" : "ВЫБЕРИТЕ ЗДАНИЕ — КНОПКОЙ ИЛИ КЛАВИШЕЙ";
+            if (hint != _shownHint)
+            {
+                _shownHint = hint;
+                _hint!.text = hint;
             }
 
             Keyboard? keyboard = Keyboard.current;

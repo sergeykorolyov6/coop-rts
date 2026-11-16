@@ -56,11 +56,15 @@ namespace Game.Presentation
             VisualElement head = HudKit.Child(_objective, "hud-objective__head");
             HudKit.IconView(head, "ui_target", "◎", "hud-objective__icon");
             HudKit.Text(head, "ЦЕЛЬ МИССИИ", "hud-caption");
+            // Folded: only the wave's timer is left.
+            _hud.AddFold(_objective, head, "objective");
             _goal = HudKit.Text(_objective, state.Goal == MissionGoal.KillBoss
                 ? "Победите вожака Серых Существ — его логово на северо-востоке."
                 : "Найдите и уничтожьте штабы и заводы Чёрного Легиона.", "hud-text");
+            _goal.AddToClassList("hud-fold");
             _found = HudKit.Text(_objective, "", "hud-dim");
             _found.AddToClassList("hud-objective__found");
+            _found.AddToClassList("hud-fold");
             _found.style.display = DisplayStyle.None;
 
             _wave = HudKit.Child(_objective, "hud-wave");
@@ -70,9 +74,11 @@ namespace Game.Presentation
             _waveTimer = HudKit.Text(waveHead, "", "hud-wave__timer");
             _waveBar = HudKit.AddBar(_wave, "hud-wave__bar");
             _waveArrival = HudKit.Text(_wave, "", "hud-dim");
+            _waveArrival.AddToClassList("hud-fold");
             _wave.style.display = DisplayStyle.None;
 
             VisualElement footer = HudKit.Child(_objective, "hud-objective__footer");
+            footer.AddToClassList("hud-fold");
             _clock = HudKit.Text(footer, "", "hud-dim");
             HudKit.Text(footer, "F1 — КАК ИГРАТЬ", "hud-dim").AddToClassList("hud-accent");
             _hud.TopRight.Insert(0, _objective);
@@ -114,7 +120,8 @@ namespace Game.Presentation
             {
                 _shownFound = found;
                 _found!.text = found;
-                _found.style.display = found.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                // Shown — by the style sheet: a folded plate hides it (Hud.uss .hud-folded).
+                _found.style.display = found.Length > 0 ? StyleKeyword.Null : DisplayStyle.None;
             }
 
             bool waveShown = state.Outcome == MissionOutcome.InProgress && legion != null;

@@ -129,6 +129,8 @@ namespace Game.Presentation
             bool enemy = state.Relations.IsEnemy(me, b.OwnerId);
             owner.EnableInClassList("hud-alarm", enemy);
             owner.EnableInClassList("hud-dim", !enemy);
+            // Folded: the name, the health and the demolish button stay.
+            _hud!.AddFold(_card, head, "card");
 
             _hp = HudKit.AddBar(_card, "hud-bar--hp");
             VisualElement hpRow = HudKit.Child(_card, "hud-card__hp");
@@ -136,10 +138,13 @@ namespace Game.Presentation
             _hpText = HudKit.Text(hpRow, "", "hud-card__hp-text");
             _state = HudKit.Text(_card, "", "hud-card__extra");
             _state.style.display = DisplayStyle.None;
-            HudKit.Text(_card, b.Stats.Description, "hud-dim").AddToClassList("hud-card__desc");
+            Label description = HudKit.Text(_card, b.Stats.Description, "hud-dim");
+            description.AddToClassList("hud-card__desc");
+            description.AddToClassList("hud-fold");
             if (!own)
             {
                 VisualElement stats = HudKit.Child(_card, "hud-stats");
+                stats.AddToClassList("hud-fold");
                 foreach ((string caption, string value) in EntityTips.BuildingNumbers(b.Stats))
                     HudKit.Stat(stats, caption, value);
                 if (b.Stats.Produces.Count > 0)
@@ -147,7 +152,9 @@ namespace Game.Presentation
                     var names2 = new string[b.Stats.Produces.Count];
                     for (int i = 0; i < names2.Length; i++)
                         names2[i] = DisplayNames.Unit(b.Stats.Produces[i]);
-                    HudKit.Text(_card, $"Делает: {string.Join(", ", names2)}", "hud-dim").AddToClassList("hud-card__desc");
+                    Label makes = HudKit.Text(_card, $"Делает: {string.Join(", ", names2)}", "hud-dim");
+                    makes.AddToClassList("hud-card__desc");
+                    makes.AddToClassList("hud-fold");
                 }
             }
             else

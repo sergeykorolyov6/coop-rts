@@ -47,8 +47,11 @@ namespace Game.Presentation
             _panel = HudKit.Plate("FactoryPanel", "hud-commands");
             VisualElement title = HudKit.Child(_panel, "hud-commands__title");
             _title = HudKit.Text(title, "", "hud-caption");
+            // Folded: the unit buttons and the queue; the stock and the hint go.
+            _hud.AddFold(_panel, title, "factory");
 
             _stock = HudKit.Child(_panel, "hud-stock");
+            _stock.AddToClassList("hud-fold");
             HudKit.Text(_stock, "СКЛАД", "hud-caption").style.marginRight = 10;
             HudKit.Child(_stock, "hud-res").AddToClassList("hud-res--primary");
             _primaryBar = HudKit.AddBar(_stock, "hud-stock__bar");
@@ -65,6 +68,7 @@ namespace Game.Presentation
             });
 
             _note = HudKit.Text(_panel, "", "hud-note");
+            _note.AddToClassList("hud-fold");
             _grid = HudKit.Child(_panel, "hud-commands__grid");
 
             _queue = HudKit.Child(_panel, "hud-queue");
@@ -108,7 +112,8 @@ namespace Game.Presentation
             if (_title!.text != title)
                 _title.text = title;
 
-            _stock!.style.display = factory.Stock != null ? DisplayStyle.Flex : DisplayStyle.None;
+            // Shown — by the style sheet: a folded panel hides it (Hud.uss .hud-folded).
+            _stock!.style.display = factory.Stock != null ? StyleKeyword.Null : DisplayStyle.None;
             int primary = wallet.Get(Game.Sim.Resources.Primary), secondary = wallet.Secondary;
             if (factory.Stock != null)
             {

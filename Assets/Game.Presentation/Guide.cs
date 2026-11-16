@@ -177,6 +177,8 @@ namespace Game.Presentation
             Hud.StyleButton(hide);
             _hud!.AttachTip(hide, () => new HudTip { Title = "Скрыть первые шаги", Body = "Больше не показывать этот список. Справка всегда по F1." });
             head.Add(hide);
+            // Folded: only the step to do now.
+            _hud.AddFold(_steps, head, "steps");
             for (int i = 0; i < Steps.Length; i++)
             {
                 VisualElement row = HudKit.Child(_steps, "hud-step");

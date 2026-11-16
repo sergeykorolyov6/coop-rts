@@ -127,6 +127,8 @@ namespace Game.Presentation
             Label owner = HudKit.Text(names, whose.Length > 0 ? whose.ToUpperInvariant() : FactionOf(state, unit.OwnerId), "hud-card__whose");
             owner.EnableInClassList("hud-alarm", state.Relations.IsEnemy(_localPlayer.PlayerId, unit.OwnerId));
             owner.EnableInClassList("hud-dim", !state.Relations.IsEnemy(_localPlayer.PlayerId, unit.OwnerId));
+            // Folded: the name and the health stay, the words and the numbers go.
+            _hud!.AddFold(_card!, head, "card");
 
             if (count == 1)
             {
@@ -137,8 +139,11 @@ namespace Game.Presentation
                 HudKit.Text(hpRow, "ПРОЧНОСТЬ", "hud-caption");
                 _hpText = HudKit.Text(hpRow, "", "hud-card__hp-text");
             }
-            HudKit.Text(_card!, s.Description, "hud-dim").AddToClassList("hud-card__desc");
+            Label description = HudKit.Text(_card!, s.Description, "hud-dim");
+            description.AddToClassList("hud-card__desc");
+            description.AddToClassList("hud-fold");
             VisualElement stats = HudKit.Child(_card!, "hud-stats");
+            stats.AddToClassList("hud-fold");
             foreach ((string caption, string value) in EntityTips.UnitNumbers(s))
                 HudKit.Stat(stats, caption, value);
             _extra = HudKit.Text(_card!, "", "hud-card__extra");

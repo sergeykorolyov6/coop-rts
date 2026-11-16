@@ -192,20 +192,38 @@
 
 /* ---- Buttons ---- */
 
-.hud .unity-button {
+/* The root has .hud and the menu lives under it, so these name the HUD's own buttons: a rule on
+   every .unity-button here would also strip the menu's buttons of their margins. */
+.hud .hud-button,
+.hud .hud-cmd,
+.hud .hud-tile {
     margin: 0;
     border-width: 0;
     border-radius: 0;
 }
 
 /* Every state the theme paints (its rules are .unity-button:hover:enabled and the like). */
-.hud .unity-button,
-.hud .unity-button:hover,
-.hud .unity-button:active,
-.hud .unity-button:focus,
-.hud .unity-button:hover:active,
-.hud .unity-button:hover:focus,
-.hud .unity-button:disabled {
+.hud .hud-button,
+.hud .hud-button:hover,
+.hud .hud-button:active,
+.hud .hud-button:focus,
+.hud .hud-button:hover:active,
+.hud .hud-button:hover:focus,
+.hud .hud-button:disabled,
+.hud .hud-cmd,
+.hud .hud-cmd:hover,
+.hud .hud-cmd:active,
+.hud .hud-cmd:focus,
+.hud .hud-cmd:hover:active,
+.hud .hud-cmd:hover:focus,
+.hud .hud-cmd:disabled,
+.hud .hud-tile,
+.hud .hud-tile:hover,
+.hud .hud-tile:active,
+.hud .hud-tile:focus,
+.hud .hud-tile:hover:active,
+.hud .hud-tile:hover:focus,
+.hud .hud-tile:disabled {
     background-color: rgba(0, 0, 0, 0);
 }
 
@@ -240,10 +258,44 @@
     --frame-line: rgb(126, 232, 220);
 }
 
+/* Folding a plate (Hud.AddFold): the button in its header, and what goes when folded. */
+.hud-fold-button {
+    width: 22px;
+    min-height: 20px;
+    padding: 0;
+    font-size: 14px;
+    -unity-font-style: bold;
+    flex-shrink: 0;
+    --frame-cut: 5;
+}
+
+.hud .hud-fold-button {
+    margin-left: 8px;
+}
+
+.hud-folded .hud-fold {
+    display: none;
+}
+
+/* The first steps folded: only the one to do now. */
+.hud-folded .hud-step {
+    display: none;
+}
+
+.hud-folded .hud-step--now {
+    display: flex;
+    margin-bottom: 0;
+}
+
+.hud-folded .hud-steps__head,
+.hud-folded .hud-objective__head {
+    margin-bottom: 4px;
+}
+
 /* A command card's square button. */
 .hud-cmd {
     width: 78px;
-    height: 80px;
+    min-height: 80px;
     margin: 0 5px 5px 0;
     padding: 6px 2px 4px 2px;
     align-items: center;
@@ -289,15 +341,15 @@
     color: rgb(128, 150, 162);
 }
 
+/* A long name ("Сторожевая башня") takes two lines; the row's other buttons grow with it. */
 .hud-cmd__name {
+    flex-grow: 1;
     margin: 4px 0 0 0;
     padding: 0;
     font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
     max-width: 74px;
-    -unity-text-align: middle-center;
+    -unity-text-align: upper-center;
 }
 
 .hud-cmd__price {
@@ -544,7 +596,7 @@
     color: rgb(126, 232, 220);
 }
 
-.hud-card__button {
+.hud .hud-card__button {
     margin-top: 8px;
 }
 
@@ -710,6 +762,7 @@
 }
 
 .hud-objective__head .hud-caption {
+    flex-grow: 1;
     margin: 0;
     color: rgb(126, 232, 220);
 }
@@ -801,6 +854,11 @@
     min-height: 20px;
     padding: 0 8px;
     font-size: 10px;
+}
+
+.hud-steps__head .hud-fold-button {
+    padding: 0;
+    font-size: 14px;
 }
 
 .hud-step {

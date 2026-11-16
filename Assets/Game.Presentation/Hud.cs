@@ -419,6 +419,34 @@ namespace Game.Presentation
                 HideUiTip();
         }
 
+        // A small button in a plate's header that folds the plate: whatever has the class hud-fold
+        // hides (Hud.uss .hud-folded), and the choice is remembered under the key. A plate that is
+        // rebuilt calls this again: the state comes back from the key.
+        public Button AddFold(VisualElement plate, VisualElement header, string key)
+        {
+            string pref = "hud_fold_" + key;
+            bool folded = PlayerPrefs.GetInt(pref, 0) != 0;
+            plate.EnableInClassList("hud-folded", folded);
+            Button? button = null;
+            button = new Button(() =>
+            {
+                bool now = !plate.ClassListContains("hud-folded");
+                plate.EnableInClassList("hud-folded", now);
+                button!.text = now ? "+" : "–";
+                PlayerPrefs.SetInt(pref, now ? 1 : 0);
+                PlayerPrefs.Save();
+            }) { text = folded ? "+" : "–" };
+            StyleButton(button);
+            button.AddToClassList("hud-fold-button");
+            AttachTip(button, () => new HudTip
+            {
+                Title = plate.ClassListContains("hud-folded") ? "Развернуть" : "Свернуть",
+                Body = "Оставить от окна только главное. Игра запомнит выбор.",
+            });
+            header.Add(button);
+            return button;
+        }
+
         // A small framed button of the HUD (Hud.uss .hud-button).
         public static void StyleButton(Button button)
         {
