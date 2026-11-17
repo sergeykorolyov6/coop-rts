@@ -11,7 +11,7 @@ public class FactoryTests
     {
         var sim = Match();
         Building factory = sim.State.PlaceBuilding(Setups.PlayerA, sim.State.Data.Building("factory"), 10, 6, Direction.Right, complete);
-        // factory.md M2: production is paid from the factory's own stock that belts fill.
+        // factory.md (M2): production is paid from the factory's own stock that belts fill.
         factory.Stock!.Add(Resources.Primary, 100);
         return (sim, factory);
     }

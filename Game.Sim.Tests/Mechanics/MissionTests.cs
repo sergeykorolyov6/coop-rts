@@ -82,7 +82,7 @@ public class MissionTests
     [Test]
     public void GWT5_HeadquartersLost_TheBuilderRebuildsIt_ASiteWithoutABuilderDoesNotCount()
     {
-        // mission.md M2+: a finished headquarters or a living builder keeps the team in the game.
+        // mission.md (M2+): a finished headquarters or a living builder keeps the team in the game.
         var sim = Match();
         Wipe(sim, Setups.PlayerB);
         Kill(sim.State.FindHeadquarters(Setups.PlayerA)!);

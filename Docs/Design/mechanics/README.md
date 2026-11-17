@@ -62,7 +62,7 @@
 | Спека | О чём | Веха | Тесты |
 |---|---|---|---|
 | `legion-ai.md` | ИИ Чёрного Легиона: слоты базы, восстановление, волны, несколько баз | M2, T5 | `LegionAiTests`, `LegionBasesTests` |
-| `mission.md` | Победа и поражение, миссии и их карты | M2, T5 | `MissionTests`, `Map/MissionMapTests`, `Map/CoopMissionTests`, `Map/CanyonsMissionTests` |
+| `mission.md` | Победа и поражение; миссии `m2`, `coop`, «Каньоны» и их карты | M2, T5 | `MissionTests`, `Map/MissionMapTests`, `Map/CoopMissionTests`, `Map/CanyonsMissionTests` |
 
 ### Фракции
 

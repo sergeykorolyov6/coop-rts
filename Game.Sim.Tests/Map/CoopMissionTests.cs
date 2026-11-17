@@ -6,7 +6,7 @@ using static Game.Sim.Tests.SimExtensions;
 
 namespace Game.Sim.Tests;
 
-// The co-op mission (mission.md, section M2+): missions.json row "coop", maps/coop.json.
+// The co-op mission (mission.md, the coop mission, M2+, rows C): missions.json row "coop", maps/coop.json.
 public class CoopMissionTests
 {
     private const int Second = Simulation.TicksPerSecond;

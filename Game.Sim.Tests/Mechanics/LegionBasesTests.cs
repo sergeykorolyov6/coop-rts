@@ -5,7 +5,7 @@ using static Game.Sim.Tests.SimExtensions;
 
 namespace Game.Sim.Tests;
 
-// Docs/Design/mechanics/legion-ai.md, "T5: несколько баз Легиона и время в пути"
+// Docs/Design/mechanics/legion-ai.md: several Legion bases and the travel time of a wave (T5, rows T)
 public class LegionBasesTests
 {
     private const int Second = Simulation.TicksPerSecond;

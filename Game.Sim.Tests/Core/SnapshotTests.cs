@@ -6,7 +6,7 @@ using static Game.Sim.Tests.SimExtensions;
 
 namespace Game.Sim.Tests;
 
-// Docs/Design/mechanics/save-load.md, "T5: снимок состояния"
+// Docs/Design/mechanics/save-load.md: the state snapshot (T5, rows S)
 public class SnapshotTests
 {
     private const int Second = Simulation.TicksPerSecond;

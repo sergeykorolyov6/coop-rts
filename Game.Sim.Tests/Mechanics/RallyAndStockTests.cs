@@ -4,7 +4,7 @@ using static Game.Sim.Tests.SimExtensions;
 
 namespace Game.Sim.Tests;
 
-// Docs/Design/mechanics/factory.md, section "M2: точка сбора и склад завода".
+// Docs/Design/mechanics/factory.md: the rally point (rows R) and the factory's stock (rows S), both M2.
 public class RallyAndStockTests
 {
     private const int Second = Simulation.TicksPerSecond;

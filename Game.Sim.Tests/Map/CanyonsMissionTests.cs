@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace Game.Sim.Tests;
 
-// mission.md, "T5: миссии «Каньоны»" (plan-terrain-and-factions.md, T5): the first big map — Docs/Design/maps/canyons.txt (192×192,
+// mission.md, the Canyons missions (T5, rows K; plan-terrain-and-factions.md, T5): the first big map — Docs/Design/maps/canyons.txt (192×192,
 // 2–4 players, two Legion bases) — as the missions canyons2 and canyons4 launch it.
 public class CanyonsMissionTests
 {
