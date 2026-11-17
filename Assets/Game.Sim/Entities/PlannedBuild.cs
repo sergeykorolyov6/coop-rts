@@ -20,4 +20,8 @@ public sealed class PlannedBuild
 
     // Site to help build instead of a new one (right-click on a frozen or ally site): its id; 0 otherwise.
     public int ExistingSiteId { get; internal set; }
+
+    // rebuild-ghosts.md: whose building it will be — 0 for the worker's own player; an ally's when
+    // the worker rebuilds the ally's ghost (the worker's player pays).
+    public int OwnerId { get; internal set; }
 }

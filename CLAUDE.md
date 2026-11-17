@@ -3,7 +3,7 @@
 Кооперативная PvE-RTS для 1–4 друзей на Unity 6 / C#. Экономика по мотивам Mindustry (буры на месторождениях работают сами, конвейеры везут ресурс в штаб), ядро — точки интереса, у каждого игрока своя база, свои ресурсы и свой цвет. Туман войны общий для команды.
 
 Источники правды:
-- `PLAN.md` — дорожная карта, вехи, скоуп MVP. Вех в работе две: «T — Большая карта и рельеф» (код готов, остался плейтест T5; `Docs/Design/plan-terrain-and-factions.md`) и «U — Удобство управления» (новая работа идёт по ней, этапы U1–U9; `Docs/Design/plan-convenience.md`). **Не добавляй фичи, фракции, юниты и механики, которых нет в этих вехах.** Если задача выходит за скоуп — скажи об этом, не делай молча.
+- `PLAN.md` — дорожная карта, вехи, скоуп MVP. Вех в работе две: «T — Большая карта и рельеф» (код готов, остался плейтест T5; `Docs/Design/plan-terrain-and-factions.md`) и «U — Удобство управления» (код всех этапов U1–U9 готов 17.11.2026, остался плейтест; `Docs/Design/plan-convenience.md`). **Не добавляй фичи, фракции, юниты и механики, которых нет в этих вехах.** Если задача выходит за скоуп — скажи об этом, не делай молча.
 - `Docs/Design/vision.md` — видение (портрет игрока, JTBD, фракции).
 - `Docs/Design/mechanics/*.md` — спецификации механик. Если спека и `PLAN.md` расходятся, права спека.
 - `Docs/Design/open-questions.md` — вопросы и решения геймдизайна.
@@ -123,8 +123,7 @@
 | идти с боем; идти, не отвлекаясь (`attack-move.md`, U8) | `AttackMoveCommand` (№ 17, приказ `UnitOrderKind.AttackMove`); `MoveCommand`; тег `scout` — `UnitTags.Scout` |
 | врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` (`FromBack`, `FromLeft`, `FromRight`), `PlacementPreview.BeltInputs` |
 | повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `Factory.Paid`, `SetRepeatCommand` (№ 19); `Logistics.TryGive` → `Logistics.Needs`, `PassOn`, `Building.PassCursor` |
-| **веха U — в коде этого ещё нет, имена закреплены заранее** (`plan-convenience.md`) | |
-| призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `RebuildCommand`, `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, правило `ghost_limit` |
+| призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `GhostRules` (`Leave`, `NearestFor`), `RebuildCommand` (№ 20), `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, `Construction.TickRebuild`, правило `ghost_limit`; вид — `GhostView` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.
 

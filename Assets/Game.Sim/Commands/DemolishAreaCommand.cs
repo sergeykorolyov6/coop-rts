@@ -58,6 +58,9 @@ public sealed class DemolishAreaCommand : ICommand
             b.DemolishTicksLeft = DemolishSystem.DemolishTicks(state.Rules, b.Stats);
         }
 
+        // rebuild-ghosts.md: the owner's own ghosts in the frame go too.
+        state._ghosts.RemoveAll(g => g.OwnerId == PlayerId && GhostRules.Touches(state, g, minX, minY, maxX, maxY));
+
         foreach (Unit unit in state.Units)
         {
             Worker? worker = unit.Worker;

@@ -249,8 +249,17 @@ public sealed class SimState
         return unit;
     }
 
+    // rebuild-ghosts.md: ghosts of destroyed team buildings, in id order.
+    internal readonly List<Ghost> _ghosts = new List<Ghost>();
+
+    public IReadOnlyList<Ghost> Ghosts => _ghosts;
+
+    public int NextGhostId { get; internal set; } = 1;
+
     internal Building PlaceBuilding(int ownerId, BuildingStats stats, int cellX, int cellY, Direction direction, bool complete)
     {
+        if (_ghosts.Count > 0)
+            GhostRules.RemoveUnder(this, cellX, cellY, stats.SizeW, stats.SizeH);
         var building = new Building(NextEntityId++, ownerId, stats, cellX, cellY, direction, complete, Rules.ConstructionStartHpPercent);
         _buildings.Add(building);
         BuildingListVersion++;

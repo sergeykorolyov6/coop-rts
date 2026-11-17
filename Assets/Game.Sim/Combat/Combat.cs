@@ -206,6 +206,8 @@ internal static class Combat
             {
                 target.Hp = 0;
                 target.IsDead = true;
+                if (target is Building fallen)
+                    GhostRules.Leave(state, fallen);
                 FactionTraits.OnKill(state, hit.AttackerId, target);
                 if (target is Unit victim)
                     HeroSystem.OnUnitDied(state, victim, events);

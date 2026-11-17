@@ -52,6 +52,18 @@ internal sealed class StateHasher
         }
 
         _writer.Write(state.NextEntityId);
+        _writer.Write(state.NextGhostId);
+        _writer.Write(state.Ghosts.Count);
+        foreach (Ghost g in state.Ghosts)
+        {
+            _writer.Write(g.Id);
+            _writer.Write(g.OwnerId);
+            _writer.Write(g.BuildingTypeId);
+            _writer.Write(g.CellX);
+            _writer.Write(g.CellY);
+            _writer.Write((byte)g.Direction);
+            _writer.Write(g.DestroyedTick);
+        }
         _writer.Write(state.Units.Count);
         foreach (Unit unit in state.Units)
             WriteUnit(unit);
@@ -177,6 +189,7 @@ internal sealed class StateHasher
         _writer.Write(plan.CellY);
         _writer.Write((byte)plan.Direction);
         _writer.Write(plan.ExistingSiteId);
+        _writer.Write(plan.OwnerId);
     }
 
     private void WriteBuilding(Building b)

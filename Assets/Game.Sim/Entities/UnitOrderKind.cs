@@ -16,4 +16,7 @@ public enum UnitOrderKind : byte
 
     // terrain.md: dig out the rock cell (X, Y).
     Dig,
+
+    // rebuild-ghosts.md: a repairer rebuilds the ghost TargetId at the cell (X, Y).
+    Rebuild,
 }

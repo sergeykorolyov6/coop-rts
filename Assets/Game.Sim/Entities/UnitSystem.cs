@@ -70,6 +70,9 @@ internal static class UnitSystem
                 case UnitOrderKind.Dig:
                     Digging.TickDig(state, unit, events);
                     break;
+                case UnitOrderKind.Rebuild:
+                    Construction.TickRebuild(state, unit, events);
+                    break;
             }
         }
         Construction.EndTick(state, events);

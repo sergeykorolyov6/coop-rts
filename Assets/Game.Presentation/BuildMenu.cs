@@ -53,6 +53,8 @@ namespace Game.Presentation
         private string _shownHint = "";
         private string _shownFaction = "";
         private CommandButton? _demolish;
+        private CommandButton? _rebuild;
+        private int _shownGhosts = -1;
         private SelectionController? _selection;
 
         private void Awake()
@@ -103,6 +105,7 @@ namespace Game.Presentation
                 button.SetActive(_placement!.BuildingId == stats.Id);
             }
             _demolish?.SetActive(_placement!.IsDemolishing);
+            UpdateRebuild(simulation.State, player);
 
             // What the mouse does now: nothing is said about cancelling until there is something to cancel.
             string hint = _placement!.IsDemolishing ? "ПРОТЯНИТЕ РАМКУ — СНЕСТИ СВОЁ · ПКМ / ESC — ЗАКОНЧИТЬ"
@@ -124,6 +127,12 @@ namespace Game.Presentation
                     Begin(stats.Id);
                     return;
                 }
+            }
+            // rebuild-ghosts.md: U — every own ghost back to the builder's silhouettes.
+            if (keyboard[Key.U].wasPressedThisFrame)
+            {
+                RebuildAll();
+                return;
             }
             // With an own building selected, Delete is its panel's: that building alone.
             if (keyboard.deleteKey.wasPressedThisFrame && !OwnBuildingSelected(simulation.State))
@@ -180,6 +189,74 @@ namespace Game.Presentation
                 Note = "Штаб рамкой не сносится. С выделенным своим зданием Del сносит только его.",
             });
             _grid.Add(_demolish.Button);
+            _rebuild = new CommandButton(RebuildAll, "ui_rebuild", "Восстановить", "U");
+            _hud!.AttachTip(_rebuild.Button, RebuildTip);
+            _grid.Add(_rebuild.Button);
+            _shownGhosts = -1;
+        }
+
+        // rebuild-ghosts.md: the count of own ghosts on the button, dimmed with none.
+        private void UpdateRebuild(SimState state, Player player)
+        {
+            if (_rebuild == null)
+                return;
+            int count = 0;
+            foreach (Ghost g in state.Ghosts)
+            {
+                if (g.OwnerId == player.Id)
+                    count++;
+            }
+            if (count == _shownGhosts)
+                return;
+            _shownGhosts = count;
+            _rebuild.SetName(count > 0 ? $"Восстановить ({count})" : "Восстановить");
+            _rebuild.SetBlocked(count == 0);
+        }
+
+        private HudTip RebuildTip()
+        {
+            int primary = 0, secondary = 0, count = 0;
+            Simulation? simulation = _runner!.Simulation;
+            if (simulation != null && _localPlayer != null)
+            {
+                foreach (Ghost g in simulation.State.Ghosts)
+                {
+                    if (g.OwnerId != _localPlayer.PlayerId || !simulation.State.Data.TryGetBuilding(g.BuildingTypeId, out BuildingStats? stats))
+                        continue;
+                    count++;
+                    primary += stats!.CostPrimary;
+                    secondary += stats.CostSecondary;
+                }
+            }
+            return new HudTip
+            {
+                Title = "Восстановить разрушенное",
+                Hotkey = "U",
+                HasPrice = count > 0,
+                Primary = primary,
+                Secondary = secondary,
+                Body = count > 0
+                    ? $"Строитель обойдёт {count} разрушенных зданий и отстроит их как было — с теми же направлениями лент и парами мостов. Цена — полная, по мере дохода."
+                    : "Разрушенное здание оставляет призрак. Эта кнопка отдаёт строителю все свои призраки.",
+                Note = "Ремонтники восстанавливают призраки рядом сами. Призрак союзника — ПКМ строителем, за свой счёт.",
+            };
+        }
+
+        // To the own builder, as a building order would go (build-mode.md): after its build, or now.
+        private void RebuildAll()
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (simulation == null || _localPlayer == null || _runner.IsReplay)
+                return;
+            SimState state = simulation.State;
+            Unit? builder = state.FindBuilder(_localPlayer.PlayerId);
+            if (builder == null)
+                return;
+            Keyboard? keyboard = Keyboard.current;
+            bool queued = (keyboard != null && keyboard.shiftKey.isPressed)
+                || builder.Order.Kind == UnitOrderKind.Build || builder.Order.Kind == UnitOrderKind.Idle;
+            _runner.Submit(new RebuildCommand(_localPlayer.PlayerId, state.Tick, new[] { builder.Id },
+                0, 0, state.Map.Width - 1, state.Map.Height - 1, includeAllies: false, queued));
         }
 
         private Wallet? CurrentWallet()

@@ -52,6 +52,7 @@ namespace Game.Presentation
                 OrderController.Intent.Carry => _carry,
                 OrderController.Intent.Deliver => _deliver,
                 OrderController.Intent.Repair => _repair,
+                OrderController.Intent.Rebuild => _repair,
                 _ => null,
             };
             Cursor.SetCursor(texture, texture != null ? new Vector2(Size / 2, Size / 2) : Vector2.zero, CursorMode.Auto);

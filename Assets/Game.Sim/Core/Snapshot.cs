@@ -16,8 +16,9 @@ internal static class Snapshot
 {
     private const int Magic = 0x50414E53; // "SNAP"
     // 2: Worker.WaitingForResources (builder-beam.md); 3: Conveyor.LastFeeder (belt-merge.md);
-    // 4: Factory.Repeat, paid places, Building.PassCursor (factory-auto.md).
-    private const int Version = 4;
+    // 4: Factory.Repeat, paid places, Building.PassCursor (factory-auto.md);
+    // 5: ghosts, PlannedBuild.OwnerId (rebuild-ghosts.md).
+    private const int Version = 5;
 
     public static byte[] Write(SimState state)
     {
@@ -85,6 +86,18 @@ internal static class Snapshot
                 }
             }
 
+            w.Write(state.NextGhostId);
+            w.Write(state.Ghosts.Count);
+            foreach (Ghost g in state.Ghosts)
+            {
+                w.Write(g.Id);
+                w.Write(g.OwnerId);
+                w.Write(g.BuildingTypeId);
+                w.Write(g.CellX);
+                w.Write(g.CellY);
+                w.Write((byte)g.Direction);
+                w.Write(g.DestroyedTick);
+            }
             state.Fog.WriteSnapshot(w);
         }
         return stream.ToArray();
@@ -163,6 +176,16 @@ internal static class Snapshot
                 }
             }
 
+            state.NextGhostId = r.ReadInt32();
+            state._ghosts.Clear();
+            for (int n = Count(r, stream); n > 0; n--)
+            {
+                int id = r.ReadInt32(), owner = r.ReadInt32();
+                string type = state.Data.Building(r.ReadString()).Id;
+                int x = r.ReadInt32(), y = r.ReadInt32();
+                var dir = (Direction)r.ReadByte();
+                state._ghosts.Add(new Ghost(id, owner, type, x, y, dir, r.ReadInt32()));
+            }
             state.Fog.ReadSnapshot(r);
             if (stream.Position != stream.Length)
                 throw new InvalidDataException("Snapshot: trailing bytes.");
@@ -538,6 +561,7 @@ internal static class Snapshot
             w.Write(plan.CellY);
             w.Write((byte)plan.Direction);
             w.Write(plan.ExistingSiteId);
+            w.Write(plan.OwnerId);
         }
     }
 
@@ -549,6 +573,7 @@ internal static class Snapshot
             string type = state.Data.Building(r.ReadString()).Id;
             var plan = new PlannedBuild(type, r.ReadInt32(), r.ReadInt32(), (Direction)r.ReadByte());
             plan.ExistingSiteId = r.ReadInt32();
+            plan.OwnerId = r.ReadInt32();
             plans.Add(plan);
         }
         return plans;

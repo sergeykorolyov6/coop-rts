@@ -32,5 +32,6 @@ public static class GameCommands
         codec.Register(DemolishAreaCommand.Id, DemolishAreaCommand.Read);
         codec.Register(AttackMoveCommand.Id, AttackMoveCommand.Read);
         codec.Register(SetRepeatCommand.Id, SetRepeatCommand.Read);
+        codec.Register(RebuildCommand.Id, RebuildCommand.Read);
     }
 }

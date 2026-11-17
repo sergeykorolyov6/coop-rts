@@ -21,6 +21,7 @@
   "drill_rate_per_ore_cell_ticks_per_unit": 160,
   "factory_queue": 5,
   "factory_stock": 150,
+  "ghost_limit": 256,
   "high_ground_range_bonus_mc": 1000,
   "interact_range_mc": 1000,
   "lighthouse_radius_mc": 2000,

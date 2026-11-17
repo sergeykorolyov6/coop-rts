@@ -1,7 +1,8 @@
 namespace Game.Sim;
 
 // builder.md: an idle repairer looks around every ScanInterval ticks for the nearest damaged own
-// or ally building or unit within auto_repair_radius and goes to repair it.
+// or ally building or unit within auto_repair_radius and goes to repair it; with nothing to repair,
+// for a ghost to rebuild (rebuild-ghosts.md, U5.3).
 internal static class AutoRepair
 {
     private const int ScanInterval = 10;
@@ -12,7 +13,14 @@ internal static class AutoRepair
             return false;
         Entity? target = Nearest(state, unit);
         if (target == null)
-            return false;
+        {
+            Ghost? ghost = GhostRules.NearestFor(state, unit);
+            if (ghost == null)
+                return false;
+            UnitOrders.Give(unit, UnitOrder.Rebuild(ghost.Id, ghost.CellX, ghost.CellY));
+            Construction.TickRebuild(state, unit, events);
+            return true;
+        }
         UnitOrders.Give(unit, UnitOrder.Repair(target.Id, isAuto: true));
         Construction.TickRepair(state, unit, events);
         return true;

@@ -43,7 +43,7 @@ namespace Game.Presentation
 
         private AbilityPanel? _abilities;
 
-        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally, Dig }
+        public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally, Dig, Rebuild }
 
         private bool _showingTip;
         private Vector3 _lastGround;
@@ -142,6 +142,12 @@ namespace Game.Presentation
                     return Intent.Repair;
                 return Intent.None;
             }
+            // rebuild-ghosts.md: a ghost, own or an ally's — rebuild it.
+            if (building == null && GhostView.At(state, playerId, cellX, cellY) is Ghost ghost)
+            {
+                targetId = ghost.Id;
+                return Intent.Rebuild;
+            }
             if (building == null && TrophyAt(state, playerId, ground, out int campIndex))
             {
                 targetId = campIndex;
@@ -172,6 +178,12 @@ namespace Game.Presentation
                 _ => null,
             };
 
+            if (intent == Intent.Rebuild)
+            {
+                // Only the workers rebuild; an ally's ghost too, at our cost (the sim decides who pays).
+                _runner!.Submit(new RebuildCommand(playerId, tick, workers, cellX, cellY, cellX, cellY, includeAllies: true, queued));
+                return;
+            }
             if (intent == Intent.Dig)
             {
                 // Only the miners dig; the rest of the selection stays where it is.
@@ -225,6 +237,7 @@ namespace Game.Presentation
                 Intent.Repair => state.FindBuilding(targetId) is { IsComplete: false } ? "ПКМ — помочь достроить (строитель)" : "ПКМ — чинить",
                 Intent.Carry => $"ПКМ — нести трофей (осталось {Trophy(state, targetId)})",
                 Intent.Dig => "ПКМ — прокопать ход к этой клетке (шахтёры)",
+                Intent.Rebuild => RebuildTip(state, targetId),
                 Intent.Mine => $"ПКМ — копать: {state.Rules.ManualCargo} ед. за {DisplayNames.Seconds(state.Rules.ManualCargo * state.Rules.ManualMiningTicksPerUnit)}, строитель сам носит в штаб",
                 _ => null,
             };
@@ -240,6 +253,21 @@ namespace Game.Presentation
             }
             _hud?.ShowTip(text + "\nShift — в очередь", pointer);
             _showingTip = true;
+        }
+
+        private string RebuildTip(SimState state, int ghostId)
+        {
+            foreach (Ghost g in state.Ghosts)
+            {
+                if (g.Id != ghostId || !state.Data.TryGetBuilding(g.BuildingTypeId, out BuildingStats? stats))
+                    continue;
+                string name = DisplayNames.Building(g.BuildingTypeId).ToLowerInvariant();
+                string cost = stats!.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
+                return g.OwnerId == _localPlayer!.PlayerId
+                    ? $"ПКМ — восстановить: {name} ({cost})"
+                    : $"ПКМ — восстановить {name} союзника за свой счёт ({cost}); здание останется у союзника";
+            }
+            return "ПКМ — восстановить";
         }
 
         private void HideTip()

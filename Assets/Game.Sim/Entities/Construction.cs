@@ -172,7 +172,9 @@ internal static class Construction
             {
                 // Checked again in range: the place may have been taken meanwhile.
                 // Same-tick starts resolve by worker id: units act in id order (answer 4).
-                RejectReason? reason = CheckPlacement(state, unit.OwnerId, stats, plan.CellX, plan.CellY, plan.Direction);
+                // rebuild-ghosts.md: an ally's ghost is placed for the ally, paid by the worker's player.
+                int owner = plan.OwnerId != 0 ? plan.OwnerId : unit.OwnerId;
+                RejectReason? reason = CheckPlacement(state, owner, stats, plan.CellX, plan.CellY, plan.Direction);
                 if (reason == null && CheckCanPay(state, unit.OwnerId, stats) != null)
                 {
                     // builder-beam.md: wait by the silhouette with the order kept; told once.
@@ -192,7 +194,7 @@ internal static class Construction
 
                 Wallet wallet = state.GetPlayer(unit.OwnerId).Wallet;
                 wallet.TryPay(stats.CostPrimary, stats.CostSecondary);
-                site = state.PlaceBuilding(unit.OwnerId, stats, plan.CellX, plan.CellY, plan.Direction, complete: false);
+                site = state.PlaceBuilding(owner, stats, plan.CellX, plan.CellY, plan.Direction, complete: false);
                 plan.ExistingSiteId = site.Id;
             }
 
@@ -213,6 +215,73 @@ internal static class Construction
             }
             StepOnTheMove(state, unit, plan, stats);
             return;
+        }
+    }
+
+    // rebuild-ghosts.md, U5.3: a repairer (no Worker) rebuilds a ghost by itself: walks into build range,
+    // pays in full from its own player and places the building for the ghost's owner, then builds it
+    // as a worker would. Someone started it first — it helps with that site; otherwise it gives up.
+    public static void TickRebuild(SimState state, Unit unit, List<SimEvent> events)
+    {
+        Building? site = unit.TargetId != 0 ? state.FindBuilding(unit.TargetId) : null;
+        if (site == null)
+        {
+            Ghost? ghost = GhostRules.Find(state, unit.Order.TargetId);
+            if (ghost == null)
+            {
+                Building? there = state.FindBuilding(state.Map.BuildingAt(unit.Order.X, unit.Order.Y));
+                if (there == null || there.IsDead || there.IsComplete || !state.Relations.IsAlly(unit.OwnerId, there.OwnerId))
+                {
+                    UnitOrders.Give(unit, UnitOrder.Idle);
+                    return;
+                }
+                site = there;
+                unit.TargetId = there.Id;
+            }
+            else
+            {
+                BuildingStats stats = state.Data.Building(ghost.BuildingTypeId);
+                if (Movement.DistanceToRectangle(unit, ghost.CellX, ghost.CellY, stats.SizeW, stats.SizeH) > state.Rules.BuildRangeMilli
+                    || !Sight.LevelAdjacent(state.Map, unit, ghost.CellX, ghost.CellY))
+                {
+                    Movement.StepToRectangle(state, unit, ghost.CellX, ghost.CellY, stats.SizeW, stats.SizeH);
+                    return;
+                }
+                if (CheckPlacement(state, ghost.OwnerId, stats, ghost.CellX, ghost.CellY, ghost.Direction) != null
+                    || !state.GetPlayer(unit.OwnerId).Wallet.TryPay(stats.CostPrimary, stats.CostSecondary))
+                {
+                    UnitOrders.Give(unit, UnitOrder.Idle);
+                    return;
+                }
+                site = state.PlaceBuilding(ghost.OwnerId, stats, ghost.CellX, ghost.CellY, ghost.Direction, complete: false);
+                unit.TargetId = site.Id;
+            }
+        }
+
+        if (site.IsDead || site.IsComplete)
+        {
+            UnitOrders.Give(unit, UnitOrder.Idle);
+            return;
+        }
+        if (Movement.DistanceToBuilding(unit.X, unit.Y, site) > state.Rules.BuildRangeMilli || !Sight.LevelAdjacent(state.Map, unit, site))
+        {
+            Movement.StepToRectangle(state, unit, site.CellX, site.CellY, site.Width, site.Height);
+            return;
+        }
+        // Enough builders on it already: look for something else.
+        if (site.WorkersThisTick >= site.Stats.MaxBuilders)
+        {
+            UnitOrders.Give(unit, UnitOrder.Idle);
+            return;
+        }
+        site.WorkersThisTick++;
+        site.BuildSpeedAccumulator += state.Rules.BuildSpeedPercent;
+        site.AddWork(site.BuildSpeedAccumulator / 100);
+        site.BuildSpeedAccumulator %= 100;
+        if (site.IsComplete)
+        {
+            events.Add(new ConstructionCompleted(state.Tick, site.OwnerId, site.Id));
+            UnitOrders.Give(unit, UnitOrder.Idle);
         }
     }
 

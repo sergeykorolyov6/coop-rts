@@ -123,6 +123,15 @@ namespace Game.Presentation
                         return $"Нейтральный {DisplayNames.Building(poi.Stats.Id).ToLowerInvariant()}: подведите юнита на {seconds} с — станет вашим";
                 }
             }
+            // rebuild-ghosts.md: what stood here and how to get it back.
+            if (poi == null && GhostView.At(state, playerId, cellX, cellY) is Ghost ghost && state.Data.TryGetBuilding(ghost.BuildingTypeId, out BuildingStats? lost))
+            {
+                string name = DisplayNames.Building(ghost.BuildingTypeId).ToLowerInvariant();
+                string cost = lost!.CostSecondary > 0 ? $"{lost.CostPrimary} + {lost.CostSecondary}" : $"{lost.CostPrimary}";
+                return ghost.OwnerId == playerId
+                    ? $"Разрушено: {name}. ПКМ строителем — восстановить ({cost}) · U — восстановить всё"
+                    : $"Разрушено у союзника: {name}. ПКМ строителем — восстановить за свой счёт ({cost}), здание останется у союзника";
+            }
             // belt-merge.md: an own belt says how many belts feed it — they enter in turn.
             if (poi != null && !poi.IsDead && poi.Conveyor != null && poi.OwnerId == playerId && poi.IsComplete)
             {
