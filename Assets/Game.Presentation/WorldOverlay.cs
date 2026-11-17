@@ -13,7 +13,8 @@ namespace Game.Presentation
     // - "+5" rising over a headquarters on every delivery, in the carrier's colour (manual-mining.md);
     // - a red "!" over an alerted creep camp (creep-camp.md);
     // - capture progress over a neutral building, "guarded" while its camp lives (neutral-buildings.md);
-    // - demolition countdown (demolish.md), a factory's stock (factory.md M2).
+    // - demolition countdown (demolish.md), a factory's stock (factory.md M2);
+    // - "waits for resources" over a silhouette whose builder waits to pay (builder-beam.md).
     // Only what the local player sees through the fog.
     [RequireComponent(typeof(SimRunner), typeof(EntityView), typeof(LocalPlayer))]
     public sealed class WorldOverlay : MonoBehaviour
@@ -153,6 +154,16 @@ namespace Game.Presentation
                     string? label = drill.IsStopped ? "полон — некуда отдавать" : null;
                     ShowBar(top + Vector3.down * 0.9f, width, drill.Buffer / (float)capacity, drill.IsStopped ? _stoppedColor : _bufferColor, label);
                 }
+            }
+
+            foreach (Unit unit in state.Units)
+            {
+                PlannedBuild? plan = unit.Worker?.CurrentPlan;
+                if (unit.IsDead || plan == null || !unit.Worker!.WaitingForResources || !state.Relations.IsAlly(playerId, unit.OwnerId)
+                    || !state.Data.TryGetBuilding(plan.BuildingTypeId, out BuildingStats? stats))
+                    continue;
+                var top = Ground.Lift(new Vector3(plan.CellX + stats!.SizeW * 0.5f, 0.8f, plan.CellY + stats.SizeH * 0.5f));
+                ShowBar(top, 40f + 16f * stats.SizeW, 0f, _stoppedColor, "ждёт ресурса");
             }
 
             for (int i = _barsUsed; i < _bars.Count; i++)

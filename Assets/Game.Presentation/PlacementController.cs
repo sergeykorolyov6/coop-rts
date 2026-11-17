@@ -183,6 +183,8 @@ namespace Game.Presentation
                 tip += $"\nРуды под буром: {cells} из 4 · {DisplayNames.PerSecond(cells, state.Rules.DrillTicksPerUnitPerOreCell)}";
                 tip += "\nОтдаёт в соседнюю ленту, склад или штаб; в кошелёк зачисляет только штаб";
             }
+            if (reason == null)
+                tip += Shortfall(state, playerId, stats.Id, 1);
             if (nearCamp)
                 tip += "\nРядом лагерь крипов: нападут";
 
@@ -296,7 +298,7 @@ namespace Game.Presentation
             PlaceTile(cursor.x, cursor.y, ok ? _okColor : _blockedColor);
             PlaceArrow(cursor.x, cursor.y, direction);
 
-            string text = $"Мост — 2 × {_stats.CostPrimary} = {2 * _stats.CostPrimary}\nВторой конец";
+            string text = $"Мост — 2 × {_stats.CostPrimary} = {2 * _stats.CostPrimary}\nВторой конец" + Shortfall(state, playerId, id, 2);
             if (!inRange)
                 text += $"\nНа одной прямой, не дальше {range} клеток";
             else if (end == null && !state.Map.LevelsJoin(start.x, start.y, cursor.x, cursor.y))
@@ -435,6 +437,22 @@ namespace Game.Presentation
                     return true;
             }
             return false;
+        }
+
+        // builder-beam.md: money is no reason to refuse — the silhouette waits; the tip says how much is missing.
+        private static string Shortfall(SimState state, int playerId, string buildingId, int count)
+        {
+            (int primary, int secondary) = PlacementPreview.Shortfall(state, playerId, buildingId);
+            if (count > 1 && state.Data.TryGetBuilding(buildingId, out BuildingStats? stats))
+            {
+                Wallet wallet = state.GetPlayer(playerId).Wallet;
+                primary = Mathf.Max(0, count * stats!.CostPrimary - wallet.Get(Game.Sim.Resources.Primary));
+                secondary = Mathf.Max(0, count * stats.CostSecondary - wallet.Secondary);
+            }
+            if (primary == 0 && secondary == 0)
+                return "";
+            string missing = secondary > 0 ? (primary > 0 ? $"{primary} + {secondary} втор." : $"{secondary} втор.") : $"{primary}";
+            return $"\nНе хватает {missing}: построится, когда накопится";
         }
 
         private static string Cost(BuildingStats stats) =>

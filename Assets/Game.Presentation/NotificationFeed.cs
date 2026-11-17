@@ -127,6 +127,10 @@ namespace Game.Presentation
                     case MiningStopped stopped when stopped.PlayerId == me:
                         Show("Клетку руды заняли — строитель остановился", Weight.Warning);
                         break;
+                    // builder-beam.md: once per wait, the silhouette is kept and starts by itself.
+                    case ConstructionWaiting waiting when waiting.PlayerId == me:
+                        Show($"Не хватает ресурсов на {DisplayNames.Building(waiting.BuildingTypeId).ToLowerInvariant()}: стройка продолжится сама", Weight.Warning);
+                        break;
                     case ConstructionFrozen frozen when frozen.OwnerId == me:
                         Show($"Стройка заморожена: {BuildingName(state, frozen.BuildingId)}", Weight.Warning);
                         break;

@@ -26,4 +26,24 @@ public sealed class Worker
 
     // Key (cell index) of the plan this worker is on, -1 when it has none.
     internal int CurrentPlanKey { get; set; } = -1;
+
+    // The silhouette or site this worker is on, null when it has none (for the UI: the waiting
+    // mark and the build beam, builder-beam.md).
+    public PlannedBuild? CurrentPlan
+    {
+        get
+        {
+            if (CurrentPlanKey < 0)
+                return null;
+            foreach (PlannedBuild p in _plans)
+            {
+                if (Construction.PlanKey(p) == CurrentPlanKey)
+                    return p;
+            }
+            return null;
+        }
+    }
+
+    // builder-beam.md: at its current silhouette, waiting until the wallet can pay for it.
+    public bool WaitingForResources { get; internal set; }
 }

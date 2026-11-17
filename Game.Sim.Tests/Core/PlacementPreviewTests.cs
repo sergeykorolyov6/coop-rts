@@ -35,15 +35,16 @@ public class PlacementPreviewTests
         Assert.That(PlacementPreview.Check(sim.State, Setups.PlayerA, "factory", 8, 4, Direction.Right), Is.Null);
     }
 
+    // builder-beam.md: no money is no reason to refuse the place — the silhouette waits.
     [Test]
-    public void Check_NotEnoughResources_SameAsCommand()
+    public void Check_NotEnoughResources_PlaceStillFree_SameAsCommand()
     {
         var sim = Match();
         Wallet wallet = sim.State.GetPlayer(Setups.PlayerA).Wallet;
         wallet.TrySpend(Resources.Primary, wallet.Get(Resources.Primary));
 
-        Assert.That(PlacementPreview.Check(sim.State, Setups.PlayerA, "factory", 8, 4, Direction.Right), Is.EqualTo(RejectReason.NotEnoughResources));
-        Assert.That(ByCommand(sim, "factory", 8, 4), Is.EqualTo(RejectReason.NotEnoughResources));
+        Assert.That(PlacementPreview.Check(sim.State, Setups.PlayerA, "factory", 8, 4, Direction.Right), Is.Null);
+        Assert.That(ByCommand(sim, "factory", 8, 4), Is.Null);
     }
 
     [Test]

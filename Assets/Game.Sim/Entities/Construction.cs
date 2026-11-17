@@ -5,6 +5,9 @@ namespace Game.Sim;
 // construction.md / drill.md: workers walk to a silhouette, pay when they start, build
 // together up to MaxBuilders (+100 % each), the site freezes without builders; workers
 // repair own and ally buildings for half the build price, paid by the repairer.
+// builder-beam.md: buildings are built and repaired from build_range; a silhouette the wallet
+// cannot pay for yet keeps the worker waiting by it; while building, the worker walks on
+// towards the next silhouette it cannot reach.
 internal static class Construction
 {
 
@@ -101,6 +104,9 @@ internal static class Construction
     {
         Worker worker = unit.Worker!;
         List<PlannedBuild> plans = worker._plans;
+        // Set again below only while the wait goes on: the event marks its start.
+        bool wasWaiting = worker.WaitingForResources;
+        worker.WaitingForResources = false;
 
         // Finished or destroyed sites drop out; bounded so a long line costs at most one pass.
         for (int guard = plans.Count + 1; guard > 0; guard--)
@@ -121,8 +127,7 @@ internal static class Construction
                 continue;
             }
 
-            if (Movement.DistanceToRectangle(unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH) > state.Rules.InteractRangeMilli
-                || !Sight.LevelAdjacent(state.Map, unit, plan.CellX, plan.CellY))
+            if (!InBuildRange(state, unit, plan, stats))
             {
                 Movement.StepToRectangle(state, unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH);
                 return;
@@ -130,17 +135,15 @@ internal static class Construction
 
             if (site == null)
             {
-                // Checked again on arrival: the place may have been taken or the money spent meanwhile.
+                // Checked again in range: the place may have been taken meanwhile.
                 // Same-tick starts resolve by worker id: units act in id order (answer 4).
                 RejectReason? reason = CheckPlacement(state, unit.OwnerId, stats, plan.CellX, plan.CellY, plan.Direction);
-                if (reason == null)
-                    reason = CheckCanPay(state, unit.OwnerId, stats);
-                if (reason == RejectReason.NotEnoughResources)
+                if (reason == null && CheckCanPay(state, unit.OwnerId, stats) != null)
                 {
-                    events.Add(new CommandRejected(state.Tick, unit.OwnerId, reason.Value, unit.Id));
-                    // The worker stops; its silhouettes stay until another order (conveyors.md, fail cases).
-                    unit.Order = UnitOrder.Idle;
-                    worker.CurrentPlanKey = -1;
+                    // builder-beam.md: wait by the silhouette with the order kept; told once.
+                    worker.WaitingForResources = true;
+                    if (!wasWaiting)
+                        events.Add(new ConstructionWaiting(state.Tick, unit.OwnerId, unit.Id, plan.BuildingTypeId, plan.CellX, plan.CellY));
                     return;
                 }
                 if (reason != null)
@@ -171,8 +174,47 @@ internal static class Construction
                 DropPlan(worker, plan);
                 if (plans.Count == 0)
                     unit.Order = UnitOrder.Idle;
+                return;
             }
+            StepOnTheMove(state, unit, plan, stats);
             return;
+        }
+    }
+
+    // builder-beam.md: within build_range of the footprint's edge and level-adjacent to it.
+    private static bool InBuildRange(SimState state, Unit unit, PlannedBuild plan, BuildingStats stats) =>
+        Movement.DistanceToRectangle(unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH) <= state.Rules.BuildRangeMilli
+        && Sight.LevelAdjacent(state.Map, unit, plan.CellX, plan.CellY);
+
+    // builder-beam.md, U7.3: while building, one step towards the first later silhouette out of
+    // reach — kept only if the current one is still within reach from where the step ends.
+    private static void StepOnTheMove(SimState state, Unit unit, PlannedBuild current, BuildingStats currentStats)
+    {
+        PlannedBuild? next = null;
+        BuildingStats? nextStats = null;
+        foreach (PlannedBuild p in unit.Worker!._plans)
+        {
+            if (p == current)
+                continue;
+            BuildingStats stats = state.Data.Building(p.BuildingTypeId);
+            if (!InBuildRange(state, unit, p, stats))
+            {
+                next = p;
+                nextStats = stats;
+                break;
+            }
+        }
+        if (next == null)
+            return;
+
+        int x = unit.X, y = unit.Y;
+        Movement.StepToRectangle(state, unit, next.CellX, next.CellY, nextStats!.SizeW, nextStats.SizeH);
+        if (!InBuildRange(state, unit, current, currentStats))
+        {
+            unit.X = x;
+            unit.Y = y;
+            unit.StepX = 0;
+            unit.StepY = 0;
         }
     }
 
@@ -198,7 +240,8 @@ internal static class Construction
 
         if (target is Building b)
         {
-            if (Movement.DistanceToBuilding(unit.X, unit.Y, b) > state.Rules.InteractRangeMilli || !Sight.LevelAdjacent(state.Map, unit, b))
+            // builder-beam.md: buildings from build_range, units (below) from interact_range.
+            if (Movement.DistanceToBuilding(unit.X, unit.Y, b) > state.Rules.BuildRangeMilli || !Sight.LevelAdjacent(state.Map, unit, b))
             {
                 Movement.StepToRectangle(state, unit, b.CellX, b.CellY, b.Width, b.Height);
                 return;
@@ -349,5 +392,5 @@ internal static class Construction
     }
 
     // Sites never overlap, so the bottom-left cell identifies a plan; 16 bits per axis is plenty.
-    private static int PlanKey(PlannedBuild p) => (p.CellY << 16) | p.CellX;
+    internal static int PlanKey(PlannedBuild p) => (p.CellY << 16) | p.CellX;
 }

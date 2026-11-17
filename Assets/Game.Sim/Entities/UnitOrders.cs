@@ -21,6 +21,7 @@ internal static class UnitOrders
             worker._plans.Clear();
             worker.Phase = WorkerPhase.None;
             worker.CurrentPlanKey = -1;
+            worker.WaitingForResources = false;
         }
     }
 

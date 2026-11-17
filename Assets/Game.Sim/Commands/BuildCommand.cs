@@ -4,7 +4,8 @@ using System.IO;
 namespace Game.Sim;
 
 // Place one building, or a whole dragged conveyor line (one site per cell), with the selected
-// workers (construction.md, conveyors.md). Every site is paid when a worker starts it.
+// workers (construction.md, conveyors.md). Every site is paid when a worker starts it; an order
+// the wallet cannot pay for yet is accepted, the worker waits at the site (builder-beam.md).
 public sealed class BuildCommand : ICommand
 {
     public const int Id = 4;
@@ -84,8 +85,7 @@ public sealed class BuildCommand : ICommand
         // Checked against the first site only: later cells of a line are checked when
         // a worker gets to them (conveyors.md, fail cases).
         BuildSite first = _sites[0];
-        RejectReason? reason = Construction.CheckPlacement(state, PlayerId, stats!, first.CellX, first.CellY, first.Direction)
-            ?? Construction.CheckCanPay(state, PlayerId, stats!);
+        RejectReason? reason = Construction.CheckPlacement(state, PlayerId, stats!, first.CellX, first.CellY, first.Direction);
         if (reason != null)
         {
             events.Add(new CommandRejected(state.Tick, PlayerId, reason.Value));

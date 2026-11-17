@@ -141,6 +141,10 @@ internal static class LegionAiSystem
             if (worker == null)
                 return;
             BaseSlotSetup s = slot.Setup;
+            // legion-ai.md: no order without the money — the worker would only stand and wait
+            // (builder-beam.md); try again next time.
+            if (Construction.CheckCanPay(state, ai.PlayerId, state.Data.Building(s.BuildingTypeId)) != null)
+                continue;
             new BuildCommand(ai.PlayerId, state.Tick, new[] { worker.Id }, s.BuildingTypeId,
                 new[] { new BuildSite(s.CellX, s.CellY, s.Direction) }).Execute(state, events);
             // Rejected (no money, place taken): try again next time.

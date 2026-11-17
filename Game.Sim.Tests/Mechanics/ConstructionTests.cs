@@ -179,8 +179,9 @@ public class ConstructionTests
         Assert.That(a.Order.Kind, Is.EqualTo(UnitOrderKind.Idle));
     }
 
+    // builder-beam.md: the worker waits by the silhouette instead of stopping.
     [Test]
-    public void Fail_ResourcesSpentWhileWalking_NotEnoughResources_NothingSpent()
+    public void Fail_ResourcesSpentWhileWalking_WorkerWaits_NothingSpent()
     {
         var sim = Match();
         Unit a = Worker(sim, Setups.PlayerA);
@@ -190,21 +191,25 @@ public class ConstructionTests
         wallet.TrySpend(Resources.Primary, wallet.Get(Resources.Primary) - 10);
 
         var rejected = sim.RunCollecting<CommandRejected>(200);
-        Assert.That(rejected.Single().Reason, Is.EqualTo(RejectReason.NotEnoughResources));
+        Assert.That(rejected, Is.Empty);
         Assert.That(Wallet(sim, Setups.PlayerA), Is.EqualTo(10));
         Assert.That(SiteAt(sim, 12, 6), Is.Null);
-        // The silhouette stays until the player gives another order (conveyors.md, fail cases).
         Assert.That(a.Worker!.Plans, Has.Count.EqualTo(1));
+        Assert.That(a.Worker.WaitingForResources, Is.True);
+        Assert.That(a.Order.Kind, Is.EqualTo(UnitOrderKind.Build));
     }
 
+    // builder-beam.md: an order the wallet cannot pay for yet is accepted.
     [Test]
-    public void Order_NotEnoughResources_RejectedRightAway()
+    public void Order_NotEnoughResources_Accepted()
     {
         var sim = Match();
         sim.State.GetPlayer(Setups.PlayerA).Wallet.TrySpend(Resources.Primary, 100);
-        sim.Order(Build(sim, Setups.PlayerA, "factory", 12, 6, Worker(sim, Setups.PlayerA)));
+        Unit worker = Worker(sim, Setups.PlayerA);
+        sim.Order(Build(sim, Setups.PlayerA, "factory", 12, 6, worker));
         sim.Tick();
-        Assert.That(sim.Events.OfType<CommandRejected>().Single().Reason, Is.EqualTo(RejectReason.NotEnoughResources));
+        Assert.That(sim.Events.OfType<CommandRejected>(), Is.Empty);
+        Assert.That(worker.Order.Kind, Is.EqualTo(UnitOrderKind.Build));
     }
 
     [Test]

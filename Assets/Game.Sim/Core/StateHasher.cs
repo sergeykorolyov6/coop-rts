@@ -164,6 +164,7 @@ internal sealed class StateHasher
         _writer.Write(w.DeliverToId);
         _writer.Write((byte)w.Phase);
         _writer.Write(w.CurrentPlanKey);
+        _writer.Write(w.WaitingForResources);
         _writer.Write(w.Plans.Count);
         foreach (PlannedBuild plan in w.Plans)
             WritePlan(plan);

@@ -43,8 +43,9 @@ public class ConveyorTests
 
         int ticks = sim.RunUntil(s => Enumerable.Range(7, 5).All(x => SiteAt(s, x, 7) is { IsComplete: true }));
         Assert.That(Wallet(sim, Setups.PlayerA), Is.EqualTo(5));
-        // 5 × 0.5 s of work plus short steps between cells.
-        Assert.That(ticks + 1, Is.InRange(50, 80));
+        // 5 × 0.5 s of work at build_speed_pct, 7 ticks a cell: within build_range and on the move
+        // there are no stops between cells (builder-beam.md).
+        Assert.That(ticks + 1, Is.InRange(35, 40));
     }
 
     [Test]

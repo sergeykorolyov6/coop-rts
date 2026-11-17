@@ -8,6 +8,7 @@
   "attack_reveal_ticks": 40,
   "auto_repair_radius_mc": 8000,
   "bridge_range": 4,
+  "build_range_mc": 4000,
   "build_speed_pct": 150,
   "capture_radius_mc": 2000,
   "capture_time_ticks": 200,

@@ -15,7 +15,8 @@ namespace Game.Sim;
 internal static class Snapshot
 {
     private const int Magic = 0x50414E53; // "SNAP"
-    private const int Version = 1;
+    // 2: Worker.WaitingForResources (builder-beam.md).
+    private const int Version = 2;
 
     public static byte[] Write(SimState state)
     {
@@ -445,6 +446,7 @@ internal static class Snapshot
         w.Write(worker.DeliverToId);
         w.Write((byte)worker.Phase);
         w.Write(worker.CurrentPlanKey);
+        w.Write(worker.WaitingForResources);
         WritePlans(w, worker._plans);
     }
 
@@ -496,6 +498,7 @@ internal static class Snapshot
         worker.DeliverToId = r.ReadInt32();
         worker.Phase = (WorkerPhase)r.ReadByte();
         worker.CurrentPlanKey = r.ReadInt32();
+        worker.WaitingForResources = r.ReadBoolean();
         worker._plans.AddRange(ReadPlans(r, stream, state));
         return u;
     }

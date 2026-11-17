@@ -10,7 +10,7 @@ public sealed class GameRules
     private static readonly string[] Keys =
     {
         "start_primary", "start_secondary", "construction_start_hp_pct", "repair_cost_pct",
-        "interact_range_mc", "drill_rate_per_ore_cell_ticks_per_unit", "drill_buffer", "manual_cargo",
+        "interact_range_mc", "build_range_mc", "drill_rate_per_ore_cell_ticks_per_unit", "drill_buffer", "manual_cargo",
         "manual_mining_rate_ticks_per_unit", "conveyor_item_speed_mc_per_tick", "conveyor_item_spacing_mc",
         "bridge_range", "storage_capacity", "factory_queue", "attack_alarm_cooldown_ticks",
         "ai_think_interval_ticks", "ai_wave_repeat_ticks", "ai_wave_warning_ticks", "ai_defense_calm_ticks",
@@ -31,6 +31,7 @@ public sealed class GameRules
         ConstructionStartHpPercent = Read(root, "construction_start_hp_pct");
         RepairCostPercent = Read(root, "repair_cost_pct");
         InteractRangeMilli = Read(root, "interact_range_mc");
+        BuildRangeMilli = Read(root, "build_range_mc");
         DrillTicksPerUnitPerOreCell = Read(root, "drill_rate_per_ore_cell_ticks_per_unit");
         DrillBuffer = Read(root, "drill_buffer");
         ManualCargo = Read(root, "manual_cargo");
@@ -69,6 +70,9 @@ public sealed class GameRules
     public int ConstructionStartHpPercent { get; }
     public int RepairCostPercent { get; }
     public int InteractRangeMilli { get; }
+
+    // builder-beam.md: building and repairing buildings reach this far from the footprint's edge.
+    public int BuildRangeMilli { get; }
 
     // Accumulator threshold: each ore cell under a drill adds 1 per tick (drill.md, appendix).
     public int DrillTicksPerUnitPerOreCell { get; }
