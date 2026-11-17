@@ -21,4 +21,7 @@ public static class UnitTags
 
     // factions.md (Yellow Star): one per player, comes back after death, gains levels.
     public const string Hero = "hero";
+
+    // attack-move.md: a scout only walks on an attack-move — it is there to look, not to fight.
+    public const string Scout = "scout";
 }

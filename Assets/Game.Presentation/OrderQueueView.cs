@@ -73,6 +73,10 @@ namespace Game.Presentation
                 case UnitOrderKind.Move:
                     _points.Add((Ground.Flat(order.X, order.Y), _moveColor));
                     break;
+                // attack-move.md: "go fighting" is marked red, a plain move green.
+                case UnitOrderKind.AttackMove:
+                    _points.Add((Ground.Flat(order.X, order.Y), _attackColor));
+                    break;
                 case UnitOrderKind.Attack:
                     if (_entities!.TryGetEntity(order.TargetId, out Vector3 target, out _, out _))
                         _points.Add((new Vector3(target.x, 0f, target.z), _attackColor));

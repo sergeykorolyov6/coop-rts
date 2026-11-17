@@ -30,5 +30,6 @@ public static class GameCommands
         codec.Register(PingCommand.Id, PingCommand.Read);
         codec.Register(GiveResourcesCommand.Id, GiveResourcesCommand.Read);
         codec.Register(DemolishAreaCommand.Id, DemolishAreaCommand.Read);
+        codec.Register(AttackMoveCommand.Id, AttackMoveCommand.Read);
     }
 }
