@@ -17,10 +17,12 @@ namespace Game.Presentation
     // The mode stays on for the next silhouette until right click or Esc (or a headquarters that can
     // be only one); a building joins the builder's build, or replaces what else it does — Shift
     // always queues it after everything ordered (order-queue.md).
+    // relay-and-demolish.md: belt cells over own belts show blue — they are turned, not built; the
+    // demolition mode drags a frame and takes down everything own inside (DemolishAreaCommand).
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class PlacementController : MonoBehaviour
     {
-        private enum Mode { None, Single, Line, Bridge }
+        private enum Mode { None, Single, Line, Bridge, Demolish }
 
         [SerializeField] private RtsCamera? _camera;
         [SerializeField] private Hud? _hud;
@@ -30,6 +32,9 @@ namespace Game.Presentation
         [SerializeField] private Color _blockedColor = new Color(0.90f, 0.25f, 0.20f);
         [SerializeField] private Color _warningColor = new Color(0.95f, 0.80f, 0.20f);
         [SerializeField] private Color _spanColor = new Color(0.55f, 0.65f, 0.80f);
+        [Tooltip("Belt cells over own belts: turned, free (relay-and-demolish.md).")]
+        [SerializeField] private Color _relayColor = new Color(0.35f, 0.75f, 1.00f);
+        [SerializeField] private Color _demolishColor = new Color(0.95f, 0.20f, 0.15f);
 
         private readonly List<Vector2Int> _path = new List<Vector2Int>();
         private readonly List<Transform> _tiles = new List<Transform>();
@@ -50,6 +55,7 @@ namespace Game.Presentation
         private Direction _rotation = Direction.Right;
         private bool _dragging;
         private Vector2Int? _bridgeStart;
+        private Vector2Int _frameStart;
         private int _endedFrame = -1;
         private int _tilesUsed, _arrowsUsed;
         private int _replaceSentTick = -1;
@@ -61,6 +67,9 @@ namespace Game.Presentation
         public bool IsBusy => IsActive || _endedFrame == Time.frameCount;
 
         public string? BuildingId => _stats?.Id;
+
+        // relay-and-demolish.md: the demolition frame is being chosen.
+        public bool IsDemolishing => _mode == Mode.Demolish;
 
         // Cells the single-building silhouette covers this frame, null when there is none
         // (turret.md: the range ring is drawn around it).
@@ -91,6 +100,19 @@ namespace Game.Presentation
         }
 
         public void Cancel() => End();
+
+        // relay-and-demolish.md: Delete without an own building selected, or the menu's button.
+        public void BeginDemolish()
+        {
+            Simulation? simulation = _runner!.Simulation;
+            if (simulation == null || _runner.IsReplay)
+                return;
+            _stats = null;
+            _mode = Mode.Demolish;
+            _dragging = false;
+            _bridgeStart = null;
+            _path.Clear();
+        }
 
         private void End()
         {
@@ -133,12 +155,13 @@ namespace Game.Presentation
                     case Mode.Single: tip = UpdateSingle(simulation, ground, mouse, overUi); break;
                     case Mode.Line: tip = UpdateLine(simulation, ground, mouse, overUi); break;
                     case Mode.Bridge: tip = UpdateBridge(simulation, ground, mouse, overUi); break;
+                    case Mode.Demolish: tip = UpdateDemolish(simulation, ground, mouse, overUi); break;
                 }
             }
             if (_mode == Mode.None)
                 return;
             // build-mode.md, fail cases: the silhouette shows, the click sends nothing.
-            if (tip != null && simulation.State.FindBuilder(_localPlayer!.PlayerId) == null)
+            if (tip != null && _mode != Mode.Demolish && simulation.State.FindBuilder(_localPlayer!.PlayerId) == null)
                 tip += "\n" + BuilderAway(simulation.State, _localPlayer.PlayerId);
             HideUnused();
             _hud?.ShowTip(tip, pointer);
@@ -217,6 +240,7 @@ namespace Game.Presentation
             RejectReason? first = null;
             bool overCliff = false;
             bool belt = _stats!.Behavior == BuildingBehavior.Conveyor;
+            int relaid = 0, kept = 0;
             for (int i = 0; i < count; i++)
             {
                 Direction direction = LineDirection(i);
@@ -226,14 +250,25 @@ namespace Game.Presentation
                 // heights.md: a belt hands nothing over a cliff — the cell just past it is marked.
                 bool cliff = belt && i > 0 && !state.Map.LevelsJoin(_path[i - 1].x, _path[i - 1].y, _path[i].x, _path[i].y);
                 overCliff |= cliff;
-                PlaceTile(_path[i].x, _path[i].y, reason != null ? _blockedColor : cliff ? _warningColor : _okColor);
+                // relay-and-demolish.md: an own belt under the line is turned, free; one already
+                // looking that way stays as it is.
+                Building? under = belt && reason == null ? OwnBelt(state, playerId, _path[i].x, _path[i].y) : null;
+                Color color = reason != null ? _blockedColor : under != null ? (under.Direction != direction ? _relayColor : _spanColor) : cliff ? _warningColor : _okColor;
+                if (under != null && under.Direction != direction)
+                    relaid++;
+                else if (under != null)
+                    kept++;
+                PlaceTile(_path[i].x, _path[i].y, color);
                 if (_stats.Behavior == BuildingBehavior.Conveyor)
                     PlaceArrow(_path[i].x, _path[i].y, direction);
             }
 
+            count -= relaid + kept;
             int total = count * _stats!.CostPrimary;
             int wallet = state.GetPlayer(playerId).Wallet.Get(Game.Sim.Resources.Primary);
             string tip = $"Лента: {count} × {_stats.CostPrimary} = {total}";
+            if (relaid > 0)
+                tip += $"\nПереложить: {relaid} — бесплатно, голубые клетки";
             if (total > wallet)
                 tip += $"\nСейчас хватает на {wallet / Mathf.Max(1, _stats.CostPrimary)} — остальное по мере дохода";
             if (first != null)
@@ -247,8 +282,8 @@ namespace Game.Presentation
             {
                 if (first == null)
                 {
-                    var sites = new BuildSite[count];
-                    for (int i = 0; i < count; i++)
+                    var sites = new BuildSite[_path.Count];
+                    for (int i = 0; i < _path.Count; i++)
                         sites[i] = new BuildSite(_path[i].x, _path[i].y, LineDirection(i));
                     Order(simulation, sites);
                 }
@@ -311,6 +346,83 @@ namespace Game.Presentation
                 Order(simulation, new[] { new BuildSite(start.x, start.y, direction), new BuildSite(cursor.x, cursor.y, direction) });
             }
             return text;
+        }
+
+        // relay-and-demolish.md: the frame from the press to the cursor; on release everything own in it
+        // starts going. The frame's border is red, what will go is covered red.
+        private string UpdateDemolish(Simulation simulation, Vector3 ground, Mouse mouse, bool overUi)
+        {
+            SimState state = simulation.State;
+            int playerId = _localPlayer!.PlayerId;
+            Vector2Int cursor = CursorCell(state, ground);
+            if (!_dragging)
+            {
+                _frameStart = cursor;
+                if (mouse.leftButton.wasPressedThisFrame && !overUi)
+                    _dragging = true;
+            }
+            int minX = Mathf.Min(_frameStart.x, cursor.x), maxX = Mathf.Max(_frameStart.x, cursor.x);
+            int minY = Mathf.Min(_frameStart.y, cursor.y), maxY = Mathf.Max(_frameStart.y, cursor.y);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                PlaceTile(x, minY, _demolishColor, 0.5f);
+                if (maxY != minY)
+                    PlaceTile(x, maxY, _demolishColor, 0.5f);
+            }
+            for (int y = minY + 1; y < maxY; y++)
+            {
+                PlaceTile(minX, y, _demolishColor, 0.5f);
+                if (maxX != minX)
+                    PlaceTile(maxX, y, _demolishColor, 0.5f);
+            }
+
+            int belts = 0, others = 0, refundPrimary = 0, refundSecondary = 0;
+            bool headquarters = false;
+            FactionStats? faction = state.GetPlayer(playerId).Faction;
+            foreach (Building b in state.Buildings)
+            {
+                if (b.IsDead || b.OwnerId != playerId || b.Stats.Invulnerable
+                    || b.CellX > maxX || b.CellX + b.Width - 1 < minX || b.CellY > maxY || b.CellY + b.Height - 1 < minY)
+                    continue;
+                if (b.Stats.Behavior == BuildingBehavior.Headquarters)
+                {
+                    headquarters = true;
+                    continue;
+                }
+                if (b.DemolishTicksLeft > 0)
+                    continue;
+                float top = PrimitiveModels.BuildingHeight(b.Stats) + 0.05f;
+                for (int y = b.CellY; y < b.CellY + b.Height; y++)
+                    for (int x = b.CellX; x < b.CellX + b.Width; x++)
+                        PlaceTile(x, y, _demolishColor, 0.95f, top);
+                if (b.Stats.IsBelt)
+                    belts++;
+                else
+                    others++;
+                (int primary, int secondary) = DemolishSystem.Refund(faction, b.Stats);
+                refundPrimary += primary;
+                refundSecondary += secondary;
+            }
+
+            string tip = belts + others == 0 ? "Снос: протяните рамку по своим зданиям"
+                : $"Снести: лент {belts}, зданий {others} · вернётся {refundPrimary}{(refundSecondary > 0 ? $" + {refundSecondary} втор." : "")}";
+            if (headquarters)
+                tip += "\nШтаб рамкой не сносится — только кнопкой на его панели";
+            tip += "\nНезаказанные силуэты в рамке тоже снимутся · ПКМ / Esc — закончить";
+
+            if (_dragging && !mouse.leftButton.isPressed)
+            {
+                _runner!.Submit(new DemolishAreaCommand(playerId, state.Tick, minX, minY, maxX, maxY));
+                _dragging = false;
+            }
+            return tip;
+        }
+
+        private static Building? OwnBelt(SimState state, int playerId, int x, int y)
+        {
+            Building? there = state.FindBuilding(state.Map.BuildingAt(x, y));
+            return there != null && !there.IsDead && there.OwnerId == playerId && there.Stats.Behavior == BuildingBehavior.Conveyor ? there : null;
         }
 
         // The level most cells of the footprint stand on (ties: the lower one).
@@ -458,11 +570,12 @@ namespace Game.Presentation
         private static string Cost(BuildingStats stats) =>
             stats.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
 
-        private void PlaceTile(int x, int y, Color color, float size = 0.9f)
+        // lift: over a building's top, so the mark is seen on it (relay-and-demolish.md: what goes is covered red).
+        private void PlaceTile(int x, int y, Color color, float size = 0.9f, float lift = 0.03f)
         {
             Transform tile = Pooled(_tiles, ref _tilesUsed, "GhostTile");
             tile.localScale = new Vector3(size, 0.04f, size);
-            tile.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.03f, y + 0.5f));
+            tile.localPosition = Ground.Lift(new Vector3(x + 0.5f, lift, y + 0.5f));
             tile.localRotation = Quaternion.identity;
             tile.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(color);
         }

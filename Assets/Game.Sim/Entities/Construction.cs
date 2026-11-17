@@ -33,7 +33,7 @@ internal static class Construction
         {
             for (int cx = x; cx < x + stats.SizeW; cx++)
             {
-                if (!map.IsBuildable(cx, cy))
+                if (!map.IsBuildable(cx, cy) && RelayableBelt(state, playerId, stats, cx, cy) == null)
                     return RejectReason.PlaceTaken;
                 anyOre |= map.OreAt(cx, cy) != MapSetup.NoOre;
             }
@@ -57,6 +57,16 @@ internal static class Construction
             }
         }
         return null;
+    }
+
+    // relay-and-demolish.md: a belt ordered onto the player's own belt turns it instead of being refused.
+    // Only belt over belt (Behavior Conveyor); bridges, walls and the rest still find the place taken.
+    internal static Building? RelayableBelt(SimState state, int playerId, BuildingStats stats, int x, int y)
+    {
+        if (stats.Behavior != BuildingBehavior.Conveyor)
+            return null;
+        Building? there = state.FindBuilding(state.Map.BuildingAt(x, y));
+        return there != null && !there.IsDead && there.OwnerId == playerId && there.Stats.Behavior == BuildingBehavior.Conveyor ? there : null;
     }
 
     public static RejectReason? CheckCanPay(SimState state, int playerId, BuildingStats stats)
@@ -120,6 +130,29 @@ internal static class Construction
             }
 
             BuildingStats stats = state.Data.Building(plan.BuildingTypeId);
+
+            // relay-and-demolish.md: an own belt under the silhouette is turned from build range, free;
+            // a finished one is done with, an unfinished one is built on with its progress kept.
+            Building? belt = RelayableBelt(state, unit.OwnerId, stats, plan.CellX, plan.CellY);
+            if (belt != null)
+            {
+                if (belt.Direction != plan.Direction)
+                {
+                    if (!InBuildRange(state, unit, plan, stats))
+                    {
+                        Movement.StepToRectangle(state, unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH);
+                        return;
+                    }
+                    belt.Direction = plan.Direction;
+                }
+                if (belt.IsComplete)
+                {
+                    DropPlan(worker, plan);
+                    continue;
+                }
+                plan.ExistingSiteId = belt.Id;
+            }
+
             Building? site = ResolveSite(state, unit.OwnerId, plan);
             if (plan.ExistingSiteId != 0 && (site == null || site.IsComplete))
             {

@@ -234,8 +234,10 @@ namespace Game.Presentation
         {
             foreach (Building building in state.Buildings)
             {
-                // neutral-buildings.md: a captured building takes its new owner's colour.
-                if (_buildings.TryGetValue(building.Id, out BuildingVisual? visual) && visual.OwnerId != building.OwnerId)
+                // neutral-buildings.md: a captured building takes its new owner's colour;
+                // relay-and-demolish.md: a relaid belt turns.
+                if (_buildings.TryGetValue(building.Id, out BuildingVisual? visual)
+                    && (visual.OwnerId != building.OwnerId || visual.Direction != building.Direction))
                 {
                     visual.DestroyObjects();
                     _buildings.Remove(building.Id);
@@ -342,7 +344,11 @@ namespace Game.Presentation
             root.name = $"{building.Stats.Id} #{building.Id}";
             root.SetParent(_root, worldPositionStays: false);
             root.localPosition = CellCentre(building);
-            var visual = new BuildingVisual(root, renderers, color, Mathf.Max(building.Width, building.Height), height * 0.5f) { OwnerId = building.OwnerId };
+            var visual = new BuildingVisual(root, renderers, color, Mathf.Max(building.Width, building.Height), height * 0.5f)
+            {
+                OwnerId = building.OwnerId,
+                Direction = building.Direction,
+            };
             if (building.Stats.Behavior == BuildingBehavior.Lighthouse)
             {
                 // The fire on top burns while the lighthouse shines for someone.
@@ -545,6 +551,7 @@ namespace Game.Presentation
             public Transform? Rotor { get; set; }
             public bool Spinning { get; set; }
             public int OwnerId { get; set; }
+            public Direction Direction { get; set; }
             public bool Demolishing { get; set; }
 
             public override void DestroyObjects()

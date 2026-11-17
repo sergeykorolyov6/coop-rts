@@ -147,6 +147,10 @@ namespace Game.Presentation
                         Show($"Атакован{whose}: {BuildingName(state, attacked.BuildingId)}", Weight.Alarm);
                         break;
                     // demolish.md: the owner took it down — not an alarm.
+                    // relay-and-demolish.md: a frame takes down whole lines — belts given nothing back stay quiet.
+                    case EntityDestroyed demolished when demolished.Demolished && demolished.OwnerId == me
+                        && demolished.RefundPrimary + demolished.RefundSecondary == 0 && IsBelt(state, demolished.TypeId):
+                        break;
                     case EntityDestroyed demolished when demolished.Demolished && demolished.OwnerId == me:
                         string refund = demolished.RefundPrimary + demolished.RefundSecondary > 0
                             ? $" (+{demolished.RefundPrimary}{(demolished.RefundSecondary > 0 ? $" + {demolished.RefundSecondary}" : "")})"
@@ -262,6 +266,9 @@ namespace Game.Presentation
 
         private static bool IsBuilder(SimState state, string unitId) =>
             state.Data.TryGetUnit(unitId, out UnitStats? stats) && stats!.HasTag(UnitTags.Builder);
+
+        private static bool IsBelt(SimState state, string typeId) =>
+            state.Data.TryGetBuilding(typeId, out BuildingStats? stats) && stats!.IsBelt;
 
         private static bool IsHeadquarters(SimState state, string buildingId) =>
             state.Data.TryGetBuilding(buildingId, out BuildingStats? stats) && stats!.Behavior == BuildingBehavior.Headquarters;

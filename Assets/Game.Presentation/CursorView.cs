@@ -15,10 +15,13 @@ namespace Game.Presentation
         [SerializeField] private Color _carryColor = new Color(0.98f, 0.85f, 0.30f);
         [SerializeField] private Color _deliverColor = new Color(0.45f, 0.90f, 0.45f);
         [SerializeField] private Color _repairColor = new Color(0.45f, 0.75f, 1.00f);
+        [SerializeField] private Color _demolishColor = new Color(0.95f, 0.20f, 0.15f);
 
         private OrderController? _orders;
-        private Texture2D? _attack, _mine, _carry, _deliver, _repair;
+        private Texture2D? _attack, _mine, _carry, _deliver, _repair, _demolish;
+        private PlacementController? _placement;
         private OrderController.Intent _shown = OrderController.Intent.None;
+        private bool _shownDemolish;
 
         private void Awake()
         {
@@ -28,15 +31,20 @@ namespace Game.Presentation
             _carry = Glyph(_carryColor, DrawBox);
             _deliver = Glyph(_deliverColor, DrawArrowDown);
             _repair = Glyph(_repairColor, DrawPlus);
+            _demolish = Glyph(_demolishColor, DrawCross);
+            _placement = GetComponent<PlacementController>();
         }
 
         private void LateUpdate()
         {
             OrderController.Intent intent = _orders!.CurrentIntent;
-            if (intent == _shown)
+            // relay-and-demolish.md: the demolition frame has its own cursor.
+            bool demolish = _placement != null && _placement.IsDemolishing;
+            if (intent == _shown && demolish == _shownDemolish)
                 return;
             _shown = intent;
-            Texture2D? texture = intent switch
+            _shownDemolish = demolish;
+            Texture2D? texture = demolish ? _demolish : intent switch
             {
                 OrderController.Intent.Attack => _attack,
                 OrderController.Intent.Mine => _mine,
@@ -53,11 +61,12 @@ namespace Game.Presentation
         {
             Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
             _shown = OrderController.Intent.None;
+            _shownDemolish = false;
         }
 
         private void OnDestroy()
         {
-            foreach (Texture2D? texture in new[] { _attack, _mine, _carry, _deliver, _repair })
+            foreach (Texture2D? texture in new[] { _attack, _mine, _carry, _deliver, _repair, _demolish })
             {
                 if (texture != null)
                     Destroy(texture);
@@ -173,6 +182,12 @@ namespace Game.Presentation
             Line(m, 15.5f, 28, 15.5f, 10, 4f);
             Line(m, 15.5f, 4, 7, 13, 3f);
             Line(m, 15.5f, 4, 24, 13, 3f);
+        }
+
+        private static void DrawCross(bool[] m)
+        {
+            Line(m, 5, 5, 26, 26, 4f);
+            Line(m, 5, 26, 26, 5, 4f);
         }
 
         private static void DrawPlus(bool[] m)

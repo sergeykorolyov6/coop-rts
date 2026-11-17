@@ -33,7 +33,8 @@ public sealed class Building : Entity
     public override int CellY { get; }
     public int Width => Stats.SizeW;
     public int Height => Stats.SizeH;
-    public Direction Direction { get; }
+    // relay-and-demolish.md: an own belt laid over turns the existing one.
+    public Direction Direction { get; internal set; }
 
     public BuildState State { get; internal set; }
     public bool IsComplete => State == BuildState.Complete;

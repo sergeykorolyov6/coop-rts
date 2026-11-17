@@ -8,7 +8,8 @@ using UnityEngine.UIElements;
 namespace Game.Presentation
 {
     // Build menu, always shown in a mission (build-mode.md: the player has one builder, so there is
-    // nothing to select first): a command button per building the local player's faction builds (factions.csv, in its order) with its icon, price and hotkey,
+    // nothing to select first): a command button per building the local player's faction builds,
+    // and the demolition frame last (relay-and-demolish.md: Delete with no own building selected) (factions.csv, in its order) with its icon, price and hotkey,
     // dimmed when the wallet cannot pay (the sim pays on start, so this is a hint, not a lock:
     // the button still works and the click is rejected with a reason).
     [RequireComponent(typeof(SimRunner), typeof(PlacementController))]
@@ -51,6 +52,8 @@ namespace Game.Presentation
         private Label? _hint;
         private string _shownHint = "";
         private string _shownFaction = "";
+        private CommandButton? _demolish;
+        private SelectionController? _selection;
 
         private void Awake()
         {
@@ -59,6 +62,7 @@ namespace Game.Presentation
             _abilities = GetComponent<AbilityPanel>();
             _guide = GetComponent<Guide>();
             _menu = GetComponent<GameMenu>();
+            _selection = GetComponent<SelectionController>();
         }
 
         private void Start()
@@ -98,9 +102,11 @@ namespace Game.Presentation
                 button.SetBlocked(shortPrimary || shortSecondary);
                 button.SetActive(_placement!.BuildingId == stats.Id);
             }
+            _demolish?.SetActive(_placement!.IsDemolishing);
 
             // What the mouse does now: nothing is said about cancelling until there is something to cancel.
-            string hint = _placement!.IsActive ? "ЛКМ — ПОСТАВИТЬ ЕЩЁ · R — ПОВЕРНУТЬ · ПКМ / ESC — ЗАКОНЧИТЬ" : "ВЫБЕРИТЕ ЗДАНИЕ — КНОПКОЙ ИЛИ КЛАВИШЕЙ";
+            string hint = _placement!.IsDemolishing ? "ПРОТЯНИТЕ РАМКУ — СНЕСТИ СВОЁ · ПКМ / ESC — ЗАКОНЧИТЬ"
+                : _placement.IsActive ? "ЛКМ — ПОСТАВИТЬ ЕЩЁ · R — ПОВЕРНУТЬ · ПКМ / ESC — ЗАКОНЧИТЬ" : "ВЫБЕРИТЕ ЗДАНИЕ — КНОПКОЙ ИЛИ КЛАВИШЕЙ";
             if (hint != _shownHint)
             {
                 _shownHint = hint;
@@ -119,6 +125,22 @@ namespace Game.Presentation
                     return;
                 }
             }
+            // With an own building selected, Delete is its panel's: that building alone.
+            if (keyboard.deleteKey.wasPressedThisFrame && !OwnBuildingSelected(simulation.State))
+                BeginDemolish();
+        }
+
+        private bool OwnBuildingSelected(SimState state)
+        {
+            Building? b = _selection != null ? state.FindBuilding(_selection.SelectedBuildingId) : null;
+            return b != null && !b.IsDead && b.OwnerId == _localPlayer!.PlayerId;
+        }
+
+        private void BeginDemolish()
+        {
+            if (_abilities != null)
+                _abilities.CancelTargeting();
+            _placement!.BeginDemolish();
         }
 
         // A building key or button ends an ability's aiming: the mouse goes to the silhouette.
@@ -148,6 +170,16 @@ namespace Game.Presentation
                 _grid.Add(button.Button);
                 _buttons.Add((button, stats, key));
             }
+            _demolish = new CommandButton(BeginDemolish, "ui_demolish", "Снос", "Del");
+            _hud!.AttachTip(_demolish.Button, () => new HudTip
+            {
+                Title = "Снос рамкой",
+                Hotkey = "Del",
+                Body = "Протяните рамку: всё своё в ней сносится — ленты сразу, остальное за четверть времени стройки, "
+                    + "вернётся половина цены. Незаказанные силуэты в рамке снимаются.",
+                Note = "Штаб рамкой не сносится. С выделенным своим зданием Del сносит только его.",
+            });
+            _grid.Add(_demolish.Button);
         }
 
         private Wallet? CurrentWallet()
