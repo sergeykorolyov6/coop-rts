@@ -3,7 +3,7 @@
 Кооперативная PvE-RTS для 1–4 друзей на Unity 6 / C#. Экономика по мотивам Mindustry (буры на месторождениях работают сами, конвейеры везут ресурс в штаб), ядро — точки интереса, у каждого игрока своя база, свои ресурсы и свой цвет. Туман войны общий для команды.
 
 Источники правды:
-- `PLAN.md` — дорожная карта, вехи, скоуп MVP. Текущая веха — «T — Большая карта и рельеф», подробности в `Docs/Design/plan-terrain-and-factions.md`. **Не добавляй фичи, фракции, юниты и механики, которых нет в текущей вехе.** Если задача выходит за скоуп — скажи об этом, не делай молча.
+- `PLAN.md` — дорожная карта, вехи, скоуп MVP. Вех в работе две: «T — Большая карта и рельеф» (код готов, остался плейтест T5; `Docs/Design/plan-terrain-and-factions.md`) и «U — Удобство управления» (новая работа идёт по ней, этапы U1–U9; `Docs/Design/plan-convenience.md`). **Не добавляй фичи, фракции, юниты и механики, которых нет в этих вехах.** Если задача выходит за скоуп — скажи об этом, не делай молча.
 - `Docs/Design/vision.md` — видение (портрет игрока, JTBD, фракции).
 - `Docs/Design/mechanics/*.md` — спецификации механик. Если спека и `PLAN.md` расходятся, права спека.
 - `Docs/Design/open-questions.md` — вопросы и решения геймдизайна.
@@ -115,6 +115,16 @@
 | снимок состояния (`save-load.md`, T5) | `Snapshot`, `Simulation.WriteSnapshot`, `Simulation.FromSnapshot`, `SaveGame.Snapshot`, `SaveGame.TryRestoreSnapshot`; `MapState.LayoutChecksum`, `SimState.Seed` |
 | метка для союзника, передача ресурса (`coop-tools.md`) | `PingCommand`, событие `Pinged`; `GiveResourcesCommand`, событие `ResourcesGiven` |
 | карта «Каньоны» (первая большая, T5) | миссии `canyons2`, `canyons4`; `maps/canyons.txt` из `Tools/make_canyons_map.py` (заготовка: после первой ручной правки карты генератор удалить) |
+| **веха U — в коде этого ещё нет, имена закреплены заранее** (`plan-convenience.md`) | |
+| стройка без выделения строителя, режим размещения (`build-mode.md`, U1) | только Presentation: `BuildMenu`, `PlacementController`; строитель — `SimState.FindBuilder` |
+| врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` |
+| умная линия, изгиб, пролёт, прилипание конца (`smart-line.md`, U3) | `LinePlanner.Plan`, `LinePlan`, `LineCellKind` |
+| перекладка ленты; снос рамкой (`relay-and-demolish.md`, U4) | правило в `Construction`; `DemolishAreaCommand` |
+| призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `RebuildCommand`, `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, правило `ghost_limit` |
+| повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `SetRepeatCommand`; правило в `Logistics.TryGive` |
+| дальность стройки (луч), стройка на ходу, ожидание ресурса (`builder-beam.md`, U7) | правило `build_range` (`GameRules.BuildRangeMilli`), `Worker.WaitingForResources`, событие `ConstructionWaiting` |
+| идти с боем; идти, не отвлекаясь (`attack-move.md`, U8) | `AttackMoveCommand` (приказ `UnitOrderKind.AttackMove` уже есть); `MoveCommand`; тег `scout` — `UnitTags.Scout` |
+| буры рамкой, сдвиг сетки (`drill-fill.md`, U9) | `DrillFill.Plan`, правило `drill_fill_min_ore_pct` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.
 
