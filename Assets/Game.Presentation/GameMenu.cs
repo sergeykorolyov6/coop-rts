@@ -64,6 +64,9 @@ namespace Game.Presentation
         private string _shownTitle = "";
         private bool _plateShown;
         private bool _open;
+
+        // The pause menu (or a screen over the game) is shown: the game's keys wait.
+        public bool IsOpen => _open;
         private bool _inLobby;
         private string _lobbyShown = "";
         private Label? _loadingLabel;

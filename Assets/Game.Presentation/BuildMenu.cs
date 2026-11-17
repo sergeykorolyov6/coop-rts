@@ -7,11 +7,11 @@ using UnityEngine.UIElements;
 
 namespace Game.Presentation
 {
-    // Build menu while own builders are selected: a command button per building the local player's
-    // faction builds (factions.csv, in its order) with its icon, price and hotkey,
+    // Build menu, always shown in a mission (build-mode.md: the player has one builder, so there is
+    // nothing to select first): a command button per building the local player's faction builds (factions.csv, in its order) with its icon, price and hotkey,
     // dimmed when the wallet cannot pay (the sim pays on start, so this is a hint, not a lock:
     // the button still works and the click is rejected with a reason).
-    [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(PlacementController))]
+    [RequireComponent(typeof(SimRunner), typeof(PlacementController))]
     public sealed class BuildMenu : MonoBehaviour
     {
         [Serializable]
@@ -42,8 +42,10 @@ namespace Game.Presentation
         private readonly List<(CommandButton Button, BuildingStats Stats, Key Key)> _buttons = new List<(CommandButton, BuildingStats, Key)>();
 
         private SimRunner? _runner;
-        private SelectionController? _selection;
         private PlacementController? _placement;
+        private AbilityPanel? _abilities;
+        private Guide? _guide;
+        private GameMenu? _menu;
         private VisualElement? _panel;
         private VisualElement? _grid;
         private Label? _hint;
@@ -53,8 +55,10 @@ namespace Game.Presentation
         private void Awake()
         {
             _runner = GetComponent<SimRunner>();
-            _selection = GetComponent<SelectionController>();
             _placement = GetComponent<PlacementController>();
+            _abilities = GetComponent<AbilityPanel>();
+            _guide = GetComponent<Guide>();
+            _menu = GetComponent<GameMenu>();
         }
 
         private void Start()
@@ -75,12 +79,13 @@ namespace Game.Presentation
             if (_panel == null || simulation == null || _localPlayer == null)
                 return;
 
-            bool show = HasWorkers(simulation.State);
+            // A replay has no local player to build for.
+            Player player = simulation.State.GetPlayer(_localPlayer.PlayerId);
+            bool show = !_runner.IsReplay && player.Faction != null;
             _panel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
             if (!show)
                 return;
 
-            Player player = simulation.State.GetPlayer(_localPlayer.PlayerId);
             // Ctrl+F1–F4 may switch to a player of another faction.
             if ((player.Faction?.Id ?? "") != _shownFaction)
                 Rebuild(simulation.State, player.Faction);
@@ -95,7 +100,7 @@ namespace Game.Presentation
             }
 
             // What the mouse does now: nothing is said about cancelling until there is something to cancel.
-            string hint = _placement!.IsActive ? "ЛКМ — ПОСТАВИТЬ · R — ПОВЕРНУТЬ · ПКМ / ESC — ОТМЕНА" : "ВЫБЕРИТЕ ЗДАНИЕ — КНОПКОЙ ИЛИ КЛАВИШЕЙ";
+            string hint = _placement!.IsActive ? "ЛКМ — ПОСТАВИТЬ ЕЩЁ · R — ПОВЕРНУТЬ · ПКМ / ESC — ЗАКОНЧИТЬ" : "ВЫБЕРИТЕ ЗДАНИЕ — КНОПКОЙ ИЛИ КЛАВИШЕЙ";
             if (hint != _shownHint)
             {
                 _shownHint = hint;
@@ -103,16 +108,25 @@ namespace Game.Presentation
             }
 
             Keyboard? keyboard = Keyboard.current;
-            if (keyboard == null)
+            // Over the help or the pause menu the game's keys wait.
+            if (keyboard == null || (_guide != null && _guide.IsBusy) || (_menu != null && _menu.IsOpen))
                 return;
             foreach ((_, BuildingStats stats, Key key) in _buttons)
             {
                 if (key != Key.None && keyboard[key].wasPressedThisFrame)
                 {
-                    _placement!.Begin(stats.Id);
+                    Begin(stats.Id);
                     return;
                 }
             }
+        }
+
+        // A building key or button ends an ability's aiming: the mouse goes to the silhouette.
+        private void Begin(string buildingId)
+        {
+            if (_abilities != null)
+                _abilities.CancelTargeting();
+            _placement!.Begin(buildingId);
         }
 
         private void Rebuild(SimState state, FactionStats? faction)
@@ -128,7 +142,7 @@ namespace Game.Presentation
                     continue;
                 Key key = HotkeyOf(stats!);
                 string hotkey = key != Key.None ? key.ToString() : "";
-                var button = new CommandButton(() => _placement!.Begin(id), id, stats!.NameRu, hotkey);
+                var button = new CommandButton(() => Begin(id), id, stats!.NameRu, hotkey);
                 BuildingStats tipStats = stats;
                 _hud!.AttachTip(button.Button, () => EntityTips.Building(tipStats, hotkey, CurrentWallet()));
                 _grid.Add(button.Button);
@@ -156,16 +170,6 @@ namespace Game.Presentation
                     return entry.Hotkey;
             }
             return Key.None;
-        }
-
-        private bool HasWorkers(SimState state)
-        {
-            foreach (int id in _selection!.Selected)
-            {
-                if (state.FindUnit(id)?.Worker != null)
-                    return true;
-            }
-            return false;
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Game.Net;
 using Game.Sim;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -6,15 +7,17 @@ using Grid = Game.Sim.Grid;
 
 namespace Game.Presentation
 {
-    // Placing a building chosen in the build menu, with the selected workers.
+    // Placing a building chosen in the build menu; every silhouette goes to the local player's
+    // builder, whatever is selected (build-mode.md).
     // One building: a silhouette follows the cursor, green / red / yellow (inside a live creep
     // camp's aggro radius, creep-camp.md), a drill shows its ore cells and rate (drill.md); click places.
     // Conveyor: press and drag a line, it turns where the mouse turns, arrows show the direction
     // of every cell, the tip shows the total cost (conveyors.md). Bridge: first end, then second
     // end on a straight line within range. R rotates a single conveyor cell or bridge.
-    // Right click or Esc cancels. Placing ends the mode; with Shift the building joins the workers'
-    // queue and the mode stays for the next one (order-queue.md).
-    [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
+    // The mode stays on for the next silhouette until right click or Esc (or a headquarters that can
+    // be only one); a building joins the builder's build, or replaces what else it does — Shift
+    // always queues it after everything ordered (order-queue.md).
+    [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class PlacementController : MonoBehaviour
     {
         private enum Mode { None, Single, Line, Bridge }
@@ -29,13 +32,15 @@ namespace Game.Presentation
         [SerializeField] private Color _spanColor = new Color(0.55f, 0.65f, 0.80f);
 
         private readonly List<Vector2Int> _path = new List<Vector2Int>();
-        private readonly List<int> _workers = new List<int>();
         private readonly List<Transform> _tiles = new List<Transform>();
         private readonly List<Transform> _arrows = new List<Transform>();
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
 
+        // A replacing order is on its way through the input delay (network.md): until the builder
+        // shows it, further silhouettes join it instead of replacing it.
+        private static readonly int PendingTicks = LockstepSettings.TurnTicks * (LockstepSettings.DelayTurns + 2);
+
         private SimRunner? _runner;
-        private SelectionController? _selection;
         private LocalPlayer? _localPlayer;
         private Transform? _root;
         private Material? _baseMaterial;
@@ -47,6 +52,7 @@ namespace Game.Presentation
         private Vector2Int? _bridgeStart;
         private int _endedFrame = -1;
         private int _tilesUsed, _arrowsUsed;
+        private int _replaceSentTick = -1;
 
         public bool IsActive => _mode != Mode.None;
 
@@ -63,16 +69,17 @@ namespace Game.Presentation
         private void Awake()
         {
             _runner = GetComponent<SimRunner>();
-            _selection = GetComponent<SelectionController>();
             _localPlayer = GetComponent<LocalPlayer>();
             _root = new GameObject("Placement").transform;
             _root.SetParent(transform, worldPositionStays: false);
+            // Another player may be of another faction.
+            _localPlayer.Changed += End;
         }
 
         public void Begin(string buildingId)
         {
             Simulation? simulation = _runner!.Simulation;
-            if (simulation == null || !simulation.State.Data.TryGetBuilding(buildingId, out BuildingStats? stats) || !CollectWorkers(simulation.State))
+            if (simulation == null || _runner.IsReplay || !simulation.State.Data.TryGetBuilding(buildingId, out BuildingStats? stats))
                 return;
             _stats = stats;
             _mode = stats!.LinePlacement ? Mode.Line
@@ -104,13 +111,6 @@ namespace Game.Presentation
             Simulation? simulation = _runner!.Simulation;
             if (_mode == Mode.None || simulation == null || _camera == null)
                 return;
-            SimState state = simulation.State;
-            if (!CollectWorkers(state))
-            {
-                End();
-                return;
-            }
-
             Keyboard? keyboard = Keyboard.current;
             Mouse? mouse = Mouse.current;
             if (mouse == null || (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || mouse.rightButton.wasPressedThisFrame)
@@ -137,6 +137,9 @@ namespace Game.Presentation
             }
             if (_mode == Mode.None)
                 return;
+            // build-mode.md, fail cases: the silhouette shows, the click sends nothing.
+            if (tip != null && simulation.State.FindBuilder(_localPlayer!.PlayerId) == null)
+                tip += "\n" + BuilderAway(simulation.State, _localPlayer.PlayerId);
             HideUnused();
             _hud?.ShowTip(tip, pointer);
         }
@@ -378,31 +381,43 @@ namespace Game.Presentation
             return delta.y > 0 ? Direction.Up : Direction.Down;
         }
 
-        // Shift queues the building and keeps the mode for the next one; otherwise placing ends it.
+        // build-mode.md: the silhouette goes to the local builder. It joins the builder's build (or
+        // starts at once when it is idle); anything else the builder does is dropped for it, unless
+        // Shift puts it after everything ordered. The mode stays for the next silhouette.
         private void Order(Simulation simulation, BuildSite[] sites)
         {
-            bool queued = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
-            _runner!.Submit(new BuildCommand(_localPlayer!.PlayerId, simulation.State.Tick, _workers.ToArray(), _stats!.Id, sites, queued));
-            if (!queued)
+            SimState state = simulation.State;
+            int playerId = _localPlayer!.PlayerId;
+            Unit? builder = state.FindBuilder(playerId);
+            if (builder != null)
             {
-                End();
-                return;
+                UnitOrderKind kind = builder.Order.Kind;
+                bool shift = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+                bool pending = _replaceSentTick >= 0 && state.Tick - _replaceSentTick <= PendingTicks
+                    && kind != UnitOrderKind.Build;
+                bool queued = shift || pending || kind == UnitOrderKind.Build || kind == UnitOrderKind.Idle;
+                if (!queued)
+                    _replaceSentTick = state.Tick;
+                else if (!pending)
+                    _replaceSentTick = -1;
+                _runner!.Submit(new BuildCommand(playerId, state.Tick, new[] { builder.Id }, _stats!.Id, sites, queued));
             }
             _dragging = false;
             _bridgeStart = null;
             _path.Clear();
+            // There can be one headquarters only: nothing more to place.
+            if (_stats!.Behavior == BuildingBehavior.Headquarters && state.GetPlayer(playerId).Faction?.SingleHeadquarters == true)
+                End();
         }
 
-        private bool CollectWorkers(SimState state)
+        // The dead builder comes back at the headquarters (builder.md); without one it does not.
+        private static string BuilderAway(SimState state, int playerId)
         {
-            _workers.Clear();
-            foreach (int id in _selection!.Selected)
-            {
-                Unit? unit = state.FindUnit(id);
-                if (unit != null && unit.Worker != null)
-                    _workers.Add(id);
-            }
-            return _workers.Count > 0;
+            int ticks = state.GetPlayer(playerId).BuilderRespawnTick - state.Tick;
+            if (ticks <= 0)
+                return "Строителя нет — некому строить";
+            int seconds = (ticks + Simulation.TicksPerSecond - 1) / Simulation.TicksPerSecond;
+            return $"Строитель вернётся через {seconds} с";
         }
 
         // creep-camp.md: placing inside a live camp's aggro radius is allowed, with a warning.
@@ -490,6 +505,8 @@ namespace Game.Presentation
 
         private void OnDestroy()
         {
+            if (_localPlayer != null)
+                _localPlayer.Changed -= End;
             foreach (Material material in _materials.Values)
                 Destroy(material);
         }

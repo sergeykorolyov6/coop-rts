@@ -30,6 +30,7 @@ namespace Game.Presentation
         private SimRunner? _runner;
         private SelectionController? _selection;
         private LocalPlayer? _localPlayer;
+        private PlacementController? _placement;
         private VisualElement? _panel;
         private VisualElement? _paths;
         private VisualElement? _grid;
@@ -46,6 +47,7 @@ namespace Game.Presentation
             _runner = GetComponent<SimRunner>();
             _selection = GetComponent<SelectionController>();
             _localPlayer = GetComponent<LocalPlayer>();
+            _placement = GetComponent<PlacementController>();
             _ring = new GroundDashes(transform, "AbilityArea", _ringColor, 0.12f);
         }
 
@@ -133,7 +135,12 @@ namespace Game.Presentation
             if (simulation == null || !simulation.State.Data.TryGetAbility(abilityId, out AbilityStats? ability))
                 return;
             if (ability!.AtPoint)
+            {
+                // build-mode.md: the build mode lives on with any selection; aiming takes the mouse from it.
+                if (_placement != null)
+                    _placement.Cancel();
                 _targeting = abilityId;
+            }
             else
                 Issue(simulation, abilityId, 0, 0);
         }
@@ -157,6 +164,9 @@ namespace Game.Presentation
             if (ids.Count > 0)
                 _runner!.Submit(new UseAbilityCommand(_localPlayer!.PlayerId, simulation.State.Tick, ids.ToArray(), abilityId, x, y));
         }
+
+        // build-mode.md: a building key ends the aiming and starts the build mode.
+        public void CancelTargeting() => EndTargeting();
 
         private void EndTargeting()
         {
