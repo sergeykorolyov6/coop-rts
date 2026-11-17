@@ -396,7 +396,11 @@ public class BeltMergeTests
         Assert.That(ConveyorInputs(sim, merge), Is.EqualTo(2));
     }
 
-    private static int ConveyorInputs(Simulation sim, Building belt) => PlacementPreview.BeltInputs(sim.State, belt);
+    private static int ConveyorInputs(Simulation sim, Building belt)
+    {
+        (bool back, bool left, bool right) = PlacementPreview.BeltInputs(sim.State, belt);
+        return (back ? 1 : 0) + (left ? 1 : 0) + (right ? 1 : 0);
+    }
 
     [Test]
     public void Edge_MergeCellRelaid_WhoEnteredLastIsReset()
@@ -418,7 +422,13 @@ public class BeltMergeTests
     public void Inputs_CountedForTheUi()
     {
         (Simulation sim, Building merge, _, _, _) = ThreeReady();
-        Assert.That(PlacementPreview.BeltInputs(sim.State, merge), Is.EqualTo(3));
-        Assert.That(PlacementPreview.BeltInputs(sim.State, At(sim, 6, MergeY)), Is.EqualTo(1));
+        Assert.That(PlacementPreview.BeltInputs(sim.State, merge), Is.EqualTo((true, true, true)));
+        Assert.That(PlacementPreview.BeltInputs(sim.State, At(sim, 6, MergeY)), Is.EqualTo((true, false, false)));
+        // A corner: the last cell of the left line is fed from behind only; a cell fed from one side only.
+        Assert.That(PlacementPreview.BeltInputs(sim.State, At(sim, MergeX, MergeY - 1)), Is.EqualTo((true, false, false)));
+        Kill(At(sim, MergeX + 1, MergeY));
+        Kill(At(sim, MergeX, MergeY + 1));
+        sim.Tick();
+        Assert.That(PlacementPreview.BeltInputs(sim.State, merge), Is.EqualTo((false, true, false)));
     }
 }

@@ -560,6 +560,80 @@ public class FactoryAutoTests
         Assert.That(input.Conveyor!.ItemPos, Is.EqualTo(Conveyor.CellLength));
     }
 
+    // ---------- what the UI draws beside a stock: who feeds it, where the surplus goes ----------
+
+    private static (int X, int Y, Direction Flow, bool Feeds)[] Links(Simulation sim, Building b)
+    {
+        var links = new List<(Building Link, Direction Flow, bool Feeds)>();
+        PlacementPreview.StockLinks(sim.State, b, links);
+        return links.Select(l => (l.Link.CellX, l.Link.CellY, l.Flow, l.Feeds)).ToArray();
+    }
+
+    [Test]
+    public void Links_InputBeltFeeds_BeltsLookingAwayOrPassingByTakeTheSurplus()
+    {
+        (Simulation sim, Building f, _, _, _) = Line();
+        Place(sim, A, "conveyor", 11, 9, Direction.Left);   // passes by along the top edge
+        Place(sim, B, "conveyor", 11, 5, Direction.Down);   // an ally's belt out of the bottom edge
+
+        Assert.That(Links(sim, f), Is.EquivalentTo(new[]
+        {
+            (9, 7, Direction.Right, true),
+            (13, 7, Direction.Right, false),
+            (11, 9, Direction.Left, false),
+            (11, 5, Direction.Down, false),
+        }));
+    }
+
+    [Test]
+    public void Links_AllysBeltLookingIn_Feeds_UnfinishedOrBeyondACliff_IsNoLink()
+    {
+        // x ≥ 13 is a plateau with no ramp: the belt at (13,7) is up there.
+        var sim = Field(map =>
+        {
+            for (int y = 0; y < 16; y++)
+                for (int x = 13; x < 32; x++)
+                    map.Level(x, y, 1);
+        });
+        Building f = Factory(sim);
+        Place(sim, B, "conveyor", 9, 7);
+        Place(sim, A, "conveyor", 13, 7);
+        sim.State.PlaceBuilding(A, sim.State.Data.Building("conveyor"), 11, 9, Direction.Up, complete: false);
+
+        Assert.That(Links(sim, f), Is.EqualTo(new[] { (9, 7, Direction.Right, true) }));
+    }
+
+    [Test]
+    public void Links_BridgeOutputFeeds_BridgeInputTakesTheSurplus_FlowByTheirPositions()
+    {
+        var sim = Field();
+        Building f = Factory(sim);
+        // In from the left over a gap: input (6,7) → output (9,7), which hands on into the factory.
+        Place(sim, A, "conveyor_bridge", 6, 7, Direction.Up);
+        Place(sim, A, "conveyor_bridge", 9, 7, Direction.Up);
+        // Out to the right: input (13,7) → output (16,7).
+        Place(sim, A, "conveyor_bridge", 13, 7, Direction.Up);
+        Place(sim, A, "conveyor_bridge", 16, 7, Direction.Up);
+        // An unlinked bridge end beside the factory is no link at all.
+        Place(sim, A, "conveyor_bridge", 11, 9, Direction.Up);
+
+        Assert.That(Links(sim, f), Is.EquivalentTo(new[]
+        {
+            (9, 7, Direction.Right, true),
+            (13, 7, Direction.Right, false),
+        }));
+    }
+
+    [Test]
+    public void Links_NoStock_None()
+    {
+        var sim = Field();
+        Building storage = Place(sim, A, "storage", 10, 6);
+        Place(sim, A, "conveyor", 9, 6);
+
+        Assert.That(Links(sim, storage), Is.Empty);
+    }
+
     [Test]
     public void SetRepeat_RoundTripsThroughTheCodec()
     {

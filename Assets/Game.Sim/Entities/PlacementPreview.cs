@@ -1,9 +1,12 @@
+using System.Collections.Generic;
+
 namespace Game.Sim;
 
 // What the UI asks the sim about building, read-only. Before the click: the same answer
 // BuildCommand gives for its first site, so a green silhouette never turns into a rejection
 // (drill.md, conveyors.md UI); money is told apart — a silhouette the wallet cannot pay for yet is
-// placed and waits (builder-beam.md). About what stands: a belt's inputs, a builder's reach.
+// placed and waits (builder-beam.md). About what stands: a belt's inputs, a stock's links, a
+// builder's reach.
 public static class PlacementPreview
 {
     public static RejectReason? Check(SimState state, int playerId, string buildingTypeId, int x, int y, Direction direction)
@@ -28,8 +31,15 @@ public static class PlacementPreview
     public static bool InBuildRange(SimState state, Unit unit, Building building) =>
         Construction.InBuildRange(state, unit, building);
 
-    // belt-merge.md: how many own belts feed this one (behind, left, right) — shown on hover.
-    public static int BeltInputs(SimState state, Building belt) => ConveyorSystem.InputCount(state, belt);
+    // belt-merge.md: which sides of this belt own belts feed it from — its inputs on hover, and
+    // the bars that join a side line to it.
+    public static (bool Back, bool Left, bool Right) BeltInputs(SimState state, Building belt) =>
+        ConveyorSystem.Inputs(state, belt);
+
+    // factory-auto.md: the belts and bridge ends beside a building with a stock — those that feed it
+    // and those its surplus goes on to, with the way the resource flows on each.
+    public static void StockLinks(SimState state, Building building, List<(Building Link, Direction Flow, bool Feeds)> links) =>
+        Logistics.StockLinks(state, building, links);
 
     // Both bridge ends on one straight line, apart, within the bridge range (conveyors.md).
     public static bool InBridgeRange(SimState state, int x1, int y1, int x2, int y2) =>

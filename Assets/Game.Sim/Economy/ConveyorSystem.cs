@@ -42,17 +42,30 @@ internal static class ConveyorSystem
         Feeders[2] = FeederAt(state, belt, belt.CellX + d.Dy(), belt.CellY - d.Dx());
     }
 
-    // For the UI (PlacementPreview.BeltInputs).
-    public static int InputCount(SimState state, Building belt)
+    // For the UI (PlacementPreview.BeltInputs): which sides of the belt are fed.
+    public static (bool Back, bool Left, bool Right) Inputs(SimState state, Building belt)
     {
         FindFeeders(state, belt);
-        int count = 0;
-        foreach (Building? b in Feeders)
-        {
-            if (b != null)
-                count++;
-        }
-        return count;
+        return (Feeders[0] != null, Feeders[1] != null, Feeders[2] != null);
+    }
+
+    // Which way a resource moves on a belt cell or on a linked bridge end (from its input end to
+    // its output end); false for an unlinked end and for anything else.
+    public static bool TryFlow(SimState state, Building b, out Direction flow)
+    {
+        flow = b.Direction;
+        if (b.Conveyor != null)
+            return true;
+        if (b.Bridge == null)
+            return false;
+        bool output = b.Bridge.IsOutputEnd;
+        Building? other = state.FindBuilding(output ? b.Bridge.LinkedFromId : b.Bridge.LinkedToId);
+        if (other == null)
+            return false;
+        int dx = output ? b.CellX - other.CellX : other.CellX - b.CellX;
+        int dy = output ? b.CellY - other.CellY : other.CellY - b.CellY;
+        flow = dx > 0 ? Direction.Right : dx < 0 ? Direction.Left : dy > 0 ? Direction.Up : Direction.Down;
+        return true;
     }
 
     // An own complete conveyor at (x, y) pointing into belt, with no cliff between (heights.md).
@@ -238,18 +251,22 @@ internal static class ConveyorSystem
             c.ItemPos = L;  // nowhere to go: stands at the front edge, the line jams behind it
     }
 
-    // A bridge input takes a unit when it is linked to a finished output and the last unit
-    // that entered has moved one spacing on. It never takes from the side facing its output.
-    public static bool TryEnterBridge(SimState state, Building giver, Building input, int resourceType)
+    // A bridge end takes from a giver when it is an input linked to a finished output; never from
+    // the side facing its output.
+    public static bool BridgeTakesFrom(SimState state, Building giver, Building input)
     {
-        ConveyorBridge bridge = input.Bridge!;
-        Building? output = state.FindBuilding(bridge.LinkedToId);
+        Building? output = state.FindBuilding(input.Bridge!.LinkedToId);
         if (output == null || output.IsDead || !output.IsComplete)
             return false;
         int dx = System.Math.Sign(output.CellX - input.CellX), dy = System.Math.Sign(output.CellY - input.CellY);
-        if (giver.OccupiesCell(input.CellX + dx, input.CellY + dy))
-            return false;
-        List<BridgeItem> items = bridge._items;
+        return !giver.OccupiesCell(input.CellX + dx, input.CellY + dy);
+    }
+
+    // An input that takes from the giver (BridgeTakesFrom) takes a unit once the last one that
+    // entered has moved one spacing on.
+    public static bool TryEnterBridge(SimState state, Building input, int resourceType)
+    {
+        List<BridgeItem> items = input.Bridge!._items;
         if (items.Count > 0 && items[items.Count - 1].Pos < state.Rules.ConveyorItemSpacingMilli)
             return false;
         items.Add(new BridgeItem(resourceType, 0));

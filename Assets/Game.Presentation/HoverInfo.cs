@@ -135,7 +135,8 @@ namespace Game.Presentation
             // belt-merge.md: an own belt says how many belts feed it — they enter in turn.
             if (poi != null && !poi.IsDead && poi.Conveyor != null && poi.OwnerId == playerId && poi.IsComplete)
             {
-                int inputs = PlacementPreview.BeltInputs(state, poi);
+                (bool back, bool left, bool right) = PlacementPreview.BeltInputs(state, poi);
+                int inputs = (back ? 1 : 0) + (left ? 1 : 0) + (right ? 1 : 0);
                 return inputs > 1 ? $"Лента: входов {inputs} — принимает от них по очереди" : $"Лента: входов {inputs}";
             }
             // terrain.md: what the rock is and whether a miner can get through it.

@@ -253,6 +253,8 @@ namespace Game.Presentation
                 visual.Transform.gameObject.SetActive(shown);
                 if (visual.Arrow != null)
                     visual.Arrow.gameObject.SetActive(shown);
+                if (building.Conveyor != null)
+                    SyncSideInputs(state, visual, building, shown && building.IsComplete);
                 if (visual.Item != null && building.Conveyor != null)
                     SyncItem(visual.Item, building, shown);
                 else if (visual.Item != null)
@@ -398,6 +400,34 @@ namespace Game.Presentation
 
         private Transform Part(PrimitiveType type, Color color) => CreatePrimitive(type, type.ToString(), color);
 
+        // belt-merge.md UI: a belt fed from a side shows a bar from that edge to its middle, so a
+        // side line reads as joined to it and a corner as a corner. The sim says which sides feed.
+        private void SyncSideInputs(SimState state, BuildingVisual visual, Building belt, bool shown)
+        {
+            bool left = false, right = false;
+            if (shown)
+                (_, left, right) = PlacementPreview.BeltInputs(state, belt);
+            visual.InputLeft = SideInput(visual.InputLeft, belt, left, turns: 1);
+            visual.InputRight = SideInput(visual.InputRight, belt, right, turns: 3);
+        }
+
+        // turns: quarter turns counter-clockwise from the belt's direction to the side (1 — left, 3 — right).
+        private Transform? SideInput(Transform? bar, Building belt, bool shown, int turns)
+        {
+            if (bar == null && shown)
+            {
+                Quaternion toSide = Ground.Facing((Direction)(((int)belt.Direction + turns) % 4));
+                bar = CreatePrimitive(PrimitiveType.Cube, "SideInput", _arrowColor);
+                bar.localRotation = toSide;
+                bar.localScale = new Vector3(0.16f, 0.04f, 0.5f);
+                bar.localPosition = CellCentre(belt) + new Vector3(0f, PrimitiveModels.BuildingHeight(belt.Stats) + 0.02f, 0f)
+                    + toSide * new Vector3(0f, 0f, 0.25f);
+            }
+            if (bar != null)
+                bar.gameObject.SetActive(shown);
+            return bar;
+        }
+
         // ItemPos runs 0..CellLength from the back edge to the front edge of the cell.
         private void SyncItem(Transform item, Building building, bool shown)
         {
@@ -538,6 +568,8 @@ namespace Game.Presentation
             }
 
             public Transform? Arrow { get; set; }
+            public Transform? InputLeft { get; set; }
+            public Transform? InputRight { get; set; }
             public Transform? Item { get; set; }
             public Transform? Rotor { get; set; }
             public bool Spinning { get; set; }
@@ -550,6 +582,10 @@ namespace Game.Presentation
                 base.DestroyObjects();
                 if (Arrow != null)
                     Destroy(Arrow.gameObject);
+                if (InputLeft != null)
+                    Destroy(InputLeft.gameObject);
+                if (InputRight != null)
+                    Destroy(InputRight.gameObject);
                 if (Item != null)
                     Destroy(Item.gameObject);
                 if (Rotor != null)

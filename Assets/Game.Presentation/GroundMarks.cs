@@ -77,6 +77,22 @@ namespace Game.Presentation
             arrow.localPosition = Ground.Lift(new Vector3(x + 0.5f, lift, y + 0.5f)) + facing * new Vector3(0f, 0f, ArrowForward);
         }
 
+        // A chevron over the cell (x, y), `size` of the cell long, pointing the way of `direction`:
+        // two bars meeting at its tip.
+        public void Chevron(int x, int y, Direction direction, Color color, float size, float lift)
+        {
+            Quaternion facing = Ground.Facing(direction);
+            Vector3 tip = Ground.Lift(new Vector3(x + 0.5f, lift, y + 0.5f)) + facing * new Vector3(0f, 0f, size * 0.5f);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Transform bar = Take(color);
+                Quaternion rotation = facing * Quaternion.Euler(0f, side * 40f, 0f);
+                bar.localScale = new Vector3(size * 0.22f, 0.05f, size * 0.8f);
+                bar.localRotation = rotation;
+                bar.localPosition = tip - rotation * new Vector3(0f, 0f, size * 0.4f);
+            }
+        }
+
         // The border cells of a frame of cells, each as a small square.
         public void Frame(RectInt cells, Color color, float size, float thickness, float lift)
         {

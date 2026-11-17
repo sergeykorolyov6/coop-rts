@@ -122,7 +122,7 @@
 | буры рамкой, сдвиг сетки (`drill-fill.md`, U9) | `DrillFill.Plan` → `DrillFillPlan` (`DrillFillCell`, `DrillFillCellKind`), правило `drill_fill_min_ore_pct` (`GameRules.DrillFillMinOrePercent`) |
 | идти с боем; идти, не отвлекаясь (`attack-move.md`, U8) | `AttackMoveCommand` (№ 17, приказ `UnitOrderKind.AttackMove`); `MoveCommand`; тег `scout` — `UnitTags.Scout` |
 | врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` (`FromBack`, `FromLeft`, `FromRight`), `PlacementPreview.BeltInputs` |
-| повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `Factory.Paid`, `SetRepeatCommand` (№ 19); `Logistics.TryGive` → `BuildingStats.Needs` (считается при загрузке данных), `PassOn`, `Building.PassCursor` |
+| повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `Factory.Paid`, `SetRepeatCommand` (№ 19); `Logistics.TryGive` → `BuildingStats.Needs` (считается при загрузке данных), `PassOn`, `Building.PassCursor`; кто кому отдаёт — `Logistics.Connects`; для стрелок у здания — `PlacementPreview.StockLinks`, `StockLinksView` |
 | призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `GhostRules` (`Leave`, `NearestFor`), `RebuildCommand` (№ 20), `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, `Construction.TickRebuild`, правило `ghost_limit`; вид — `GhostView` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.

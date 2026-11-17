@@ -62,10 +62,9 @@ internal static class Logistics
         }
     }
 
-    // Hands one unit over if the receiver takes it now. For Belt givers into a conveyor the
-    // caller has already applied the single-input rule; here a conveyor only takes from
-    // buildings (drill, storage, bridge output) with a free slot at its start.
-    public static bool TryGive(SimState state, Building giver, Giver kind, Building receiver, int resourceType)
+    // Whether the receiver ever takes from this giver: who they are, where they stand, which way
+    // they look — whatever room it has right now. TryGive asks first; the UI asks to draw the links.
+    internal static bool Connects(SimState state, Building giver, Giver kind, Building receiver)
     {
         if (receiver.IsDead || !receiver.IsComplete)
             return false;
@@ -73,15 +72,40 @@ internal static class Logistics
         // links its two ends by itself and so carries over a cliff.
         if (!state.Map.LevelsJoin(giver.CellX, giver.CellY, receiver.CellX, receiver.CellY))
             return false;
-        bool own = giver.OwnerId == receiver.OwnerId;
-        bool ally = state.Relations.IsAlly(giver.OwnerId, receiver.OwnerId);
-        if (!ally)
+        if (!state.Relations.IsAlly(giver.OwnerId, receiver.OwnerId))
+            return false;
+        // factory.md M2: a factory, cave or ammo turret supplied by conveyor takes from belts, drills
+        // and storages, own or ally.
+        if (receiver.Stock != null)
+            return true;
+
+        // A belt never feeds someone else's belt or bridge, even an ally's (answer 14).
+        bool foreignBelt = kind == Giver.Belt && giver.OwnerId != receiver.OwnerId;
+        switch (receiver.Stats.Behavior)
+        {
+            case BuildingBehavior.Headquarters:
+            case BuildingBehavior.Storage:
+                return kind != Giver.Storage;
+            case BuildingBehavior.Conveyor:
+                // Never from the building it looks into.
+                return !foreignBelt && !giver.OccupiesCell(receiver.CellX + receiver.Direction.Dx(), receiver.CellY + receiver.Direction.Dy());
+            case BuildingBehavior.Bridge:
+                return !foreignBelt && ConveyorSystem.BridgeTakesFrom(state, giver, receiver);
+        }
+        return false;
+    }
+
+    // Hands one unit over if the receiver takes it now. A conveyor here takes only from buildings
+    // (drill, storage, bridge output, a stock passing on) with its cell free; belt to belt goes
+    // through ConveyorSystem and its turns (belt-merge.md).
+    public static bool TryGive(SimState state, Building giver, Giver kind, Building receiver, int resourceType)
+    {
+        if (!Connects(state, giver, kind, receiver))
             return false;
 
-        // factory.md M2: a factory, cave or ammo turret supplied by conveyor takes from belts, drills and storages,
-        // own or ally, up to factory_stock of each resource. factory-auto.md: what it does not need, or
-        // has full, it passes on to a belt or bridge input leading away; with nowhere to pass, it keeps
-        // what still fits; else the giver stands.
+        // A stock takes up to factory_stock of each resource. factory-auto.md: what it does not need,
+        // or has full, it passes on to a belt or bridge input leading away; with nowhere to pass, it
+        // keeps what still fits; else the giver stands.
         Wallet? stock = receiver.Stock;
         if (stock != null)
         {
@@ -102,33 +126,51 @@ internal static class Logistics
         switch (receiver.Stats.Behavior)
         {
             case BuildingBehavior.Headquarters:
-                if (kind == Giver.Storage)
-                    return false;
                 // Only a headquarters credits a wallet: its owner's (answers 2, 15).
                 state.GetPlayer(receiver.OwnerId).Wallet.Credit(resourceType, 1);
                 return true;
 
             case BuildingBehavior.Storage:
-                if (kind == Giver.Storage || receiver.Storage!.Total >= state.Rules.StorageCapacity)
+                if (receiver.Storage!.Total >= state.Rules.StorageCapacity)
                     return false;
                 receiver.Storage.Add(resourceType);
                 return true;
 
             case BuildingBehavior.Conveyor:
-                if (kind == Giver.Belt && !own)
-                    return false;
                 Conveyor c = receiver.Conveyor!;
-                if (c.HasItem || giver.OccupiesCell(receiver.CellX + receiver.Direction.Dx(), receiver.CellY + receiver.Direction.Dy()))
+                if (c.HasItem)
                     return false;
                 c.ItemType = resourceType;
                 c.ItemPos = 0;
                 return true;
 
             case BuildingBehavior.Bridge:
-                if (kind == Giver.Belt && !own)
-                    return false;
-                return ConveyorSystem.TryEnterBridge(state, giver, receiver, resourceType);
+                return ConveyorSystem.TryEnterBridge(state, receiver, resourceType);
         }
         return false;
+    }
+
+    private static readonly List<Building> Beside = new List<Building>();
+
+    // factory-auto.md, for the UI: the belts and bridge ends beside a building with a stock that
+    // hand it resources (Feeds), and those its surplus is passed on to — each with the way the
+    // resource flows on it. Asks Connects, as the handing over itself does.
+    public static void StockLinks(SimState state, Building b, List<(Building Link, Direction Flow, bool Feeds)> links)
+    {
+        links.Clear();
+        if (b.Stock == null || b.IsDead || !b.IsComplete)
+            return;
+        Neighbours(state, b, Beside);
+        foreach (Building n in Beside)
+        {
+            if (!ConveyorSystem.TryFlow(state, n, out Direction flow))
+                continue;
+            if (Connects(state, b, Giver.Storage, n))
+                links.Add((n, flow, false));
+            // A belt, or the output end of a bridge, whose next cell along the flow is the building.
+            else if (n.IsComplete && (n.Conveyor != null || n.Bridge!.IsOutputEnd)
+                && b.OccupiesCell(n.CellX + flow.Dx(), n.CellY + flow.Dy()) && Connects(state, n, Giver.Belt, b))
+                links.Add((n, flow, true));
+        }
     }
 }

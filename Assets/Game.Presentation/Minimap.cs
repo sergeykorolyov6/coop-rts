@@ -137,6 +137,18 @@ namespace Game.Presentation
                         FillCell(x, y, color);
             }
 
+            // rebuild-ghosts.md: what was destroyed — a dot per cell in the owner's colour, own and allies'.
+            foreach (Ghost ghost in state.Ghosts)
+            {
+                if (!state.Relations.IsAlly(playerId, ghost.OwnerId) || !state.Fog.IsDiscovered(playerId, ghost.CellX, ghost.CellY)
+                    || !state.Data.TryGetBuilding(ghost.BuildingTypeId, out BuildingStats? lost))
+                    continue;
+                Color32 color = _entities!.OwnerColor(state, ghost.OwnerId);
+                for (int y = ghost.CellY; y < ghost.CellY + lost!.SizeH; y++)
+                    for (int x = ghost.CellX; x < ghost.CellX + lost.SizeW; x++)
+                        Set(x * PixelsPerCell + PixelsPerCell / 2, y * PixelsPerCell + PixelsPerCell / 2, color);
+            }
+
             foreach (CreepCamp camp in state.CreepCamps)
             {
                 if (!state.Fog.IsDiscovered(playerId, camp.CenterX, camp.CenterY))
