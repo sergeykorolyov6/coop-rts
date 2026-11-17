@@ -3,7 +3,8 @@ using System.IO;
 
 namespace Game.Sim;
 
-// factory.md: drop the last unit of the queue and get its full price back.
+// factory.md: drop the last unit of the queue and get its full price back — if it was paid
+// (factory-auto.md: an unpaid repeat goes for nothing).
 public sealed class CancelProductionCommand : ICommand
 {
     public const int Id = 8;
@@ -35,9 +36,13 @@ public sealed class CancelProductionCommand : ICommand
         }
         List<string> queue = b.Factory._queue;
         UnitStats stats = state.Data.Unit(queue[queue.Count - 1]);
+        bool paid = b.Factory._paid[queue.Count - 1];
         queue.RemoveAt(queue.Count - 1);
+        b.Factory._paid.RemoveAt(b.Factory._paid.Count - 1);
         if (queue.Count == 0)
             b.Factory.Progress = 0;
+        if (!paid)
+            return;
 
         Wallet wallet = ProduceCommand.Payer(state, b);
         wallet.Add(Resources.Primary, stats.CostPrimary);

@@ -15,8 +15,9 @@ namespace Game.Sim;
 internal static class Snapshot
 {
     private const int Magic = 0x50414E53; // "SNAP"
-    // 2: Worker.WaitingForResources (builder-beam.md); 3: Conveyor.LastFeeder (belt-merge.md).
-    private const int Version = 3;
+    // 2: Worker.WaitingForResources (builder-beam.md); 3: Conveyor.LastFeeder (belt-merge.md);
+    // 4: Factory.Repeat, paid places, Building.PassCursor (factory-auto.md).
+    private const int Version = 4;
 
     public static byte[] Write(SimState state)
     {
@@ -294,6 +295,7 @@ internal static class Snapshot
         }
         w.Write(b.Stock != null);
         b.Stock?.WriteSnapshot(w);
+        w.Write(b.PassCursor);
         w.Write(b.Factory != null);
         if (b.Factory != null)
         {
@@ -301,9 +303,13 @@ internal static class Snapshot
             w.Write(b.Factory.HasRally);
             w.Write(b.Factory.RallyX);
             w.Write(b.Factory.RallyY);
+            w.Write(b.Factory.Repeat);
             w.Write(b.Factory._queue.Count);
-            foreach (string unit in b.Factory._queue)
-                w.Write(unit);
+            for (int i = 0; i < b.Factory._queue.Count; i++)
+            {
+                w.Write(b.Factory._queue[i]);
+                w.Write(b.Factory._paid[i]);
+            }
         }
         w.Write(b.Turret != null);
         if (b.Turret != null)
@@ -376,6 +382,7 @@ internal static class Snapshot
         if (r.ReadBoolean() != (b.Stock != null))
             throw Mismatch(b);
         b.Stock?.ReadSnapshot(r);
+        b.PassCursor = r.ReadInt32();
         if (r.ReadBoolean() != (b.Factory != null))
             throw Mismatch(b);
         if (b.Factory != null)
@@ -384,8 +391,12 @@ internal static class Snapshot
             b.Factory.HasRally = r.ReadBoolean();
             b.Factory.RallyX = r.ReadInt32();
             b.Factory.RallyY = r.ReadInt32();
+            b.Factory.Repeat = r.ReadBoolean();
             for (int n = Count(r, stream); n > 0; n--)
+            {
                 b.Factory._queue.Add(state.Data.Unit(r.ReadString()).Id);
+                b.Factory._paid.Add(r.ReadBoolean());
+            }
         }
         if (r.ReadBoolean() != (b.Turret != null))
             throw Mismatch(b);

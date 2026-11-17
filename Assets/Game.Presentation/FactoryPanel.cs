@@ -9,6 +9,8 @@ namespace Game.Presentation
     // with icon, price and time (dimmed when its stock cannot pay or the queue is full), the stock that
     // belts fill (M2) as two bars, the queue as slots with the first unit's progress, a cancel button
     // that drops the last unit (full refund, in the sim), and a hint about the rally point.
+    // factory-auto.md: a "repeat" switch; repeats not yet paid are dimmed, the first one waiting
+    // for the stock says so.
     [RequireComponent(typeof(SimRunner), typeof(SelectionController), typeof(LocalPlayer))]
     public sealed class FactoryPanel : MonoBehaviour
     {
@@ -29,6 +31,8 @@ namespace Game.Presentation
         private VisualElement? _grid;
         private VisualElement? _queue;
         private Button? _cancel;
+        private Button? _repeat;
+        private bool? _shownRepeat;
         private string _shownNote = "";
 
         private void Awake()
@@ -64,7 +68,8 @@ namespace Game.Presentation
             _hud.AttachTip(_stock, () => new HudTip
             {
                 Title = "Склад завода",
-                Body = "Завод платит за юнитов из своего склада, а не из кошелька. Склад пополняют ленты от бура или склада, подведённые к заводу.",
+                Body = "Завод платит за юнитов из своего склада, а не из кошелька. Склад пополняют ленты от бура или склада, подведённые к заводу. "
+                    + "Излишек уходит дальше по лентам, которые смотрят от здания.",
             });
 
             _note = HudKit.Text(_panel, "", "hud-note");
@@ -85,6 +90,15 @@ namespace Game.Presentation
             Hud.StyleButton(_cancel);
             _hud.AttachTip(_cancel, () => new HudTip { Title = "Отменить", Body = "Убирает последнего юнита из очереди; ресурс вернётся на склад полностью." });
             _queue.Add(_cancel);
+            _repeat = new Button(ToggleRepeat) { text = "Повтор: выкл" };
+            Hud.StyleButton(_repeat);
+            _hud.AttachTip(_repeat, () => new HudTip
+            {
+                Title = "Повтор",
+                Body = "Очередь идёт по кругу, пока хватает склада: готовый юнит снова встаёт в конец и оплачивается со склада, когда дойдёт его черёд.",
+                Note = "Выключили — неоплаченные места уходят из очереди.",
+            });
+            _queue.Add(_repeat);
 
             _panel.style.display = DisplayStyle.None;
             _hud.BottomBar.Add(_panel);
@@ -126,8 +140,11 @@ namespace Game.Presentation
 
             // What to do next, in words: an empty stock is the usual reason a factory stands.
             bool empty = factory.Stock != null && primary + secondary == 0 && queue.Count == 0;
+            bool waiting = queue.Count > 0 && !factory.Factory.Paid[0];
             string note = empty
                 ? "Склад пуст: подведите к заводу ленту от бура или склада — без неё юнитов не на что делать."
+                : waiting
+                    ? $"Ждёт ресурса: на складе не хватает на {DisplayNames.Unit(queue[0]).ToLowerInvariant()}."
                 : factory.Factory.HasRally
                     ? "Новые юниты идут к точке сбора. ПКМ по зданию — убрать её."
                     : "ПКМ по земле — точка сбора для новых юнитов.";
@@ -135,7 +152,7 @@ namespace Game.Presentation
             {
                 _shownNote = note;
                 _note!.text = note;
-                _note.EnableInClassList("hud-note--warning", empty);
+                _note.EnableInClassList("hud-note--warning", empty || waiting);
             }
 
             foreach ((CommandButton button, UnitStats stats) in _buttons)
@@ -163,8 +180,19 @@ namespace Game.Presentation
                 if (used)
                     HudKit.SetIcon(icon, queue[i], DisplayNames.Unit(queue[i]));
                 fill.style.width = Length.Percent(i == 0 && used ? share * 100f : 0f);
+                // factory-auto.md: a repeat not yet paid is dimmed.
+                slot.style.opacity = used && !factory.Factory.Paid[i] ? 0.45f : 1f;
             }
             _cancel!.SetEnabled(queue.Count > 0);
+            bool repeat = factory.Factory.Repeat;
+            if (_shownRepeat != repeat)
+            {
+                _shownRepeat = repeat;
+                _repeat!.text = repeat ? "Повтор: вкл" : "Повтор: выкл";
+                // Lit while on: the queue goes round by itself.
+                _repeat.style.color = repeat ? new StyleColor(new Color(0.55f, 0.95f, 0.65f)) : new StyleColor(StyleKeyword.Null);
+            }
+            _repeat!.SetEnabled(factory.IsComplete);
         }
 
         private static void SetText(Label label, string text)
@@ -215,6 +243,15 @@ namespace Game.Presentation
             if (simulation == null || _selection!.SelectedBuildingId == 0)
                 return;
             _runner!.Submit(new CancelProductionCommand(_localPlayer!.PlayerId, simulation.State.Tick, _selection.SelectedBuildingId));
+        }
+
+        private void ToggleRepeat()
+        {
+            Simulation? simulation = _runner!.Simulation;
+            Building? factory = simulation != null ? SelectedFactory(simulation.State) : null;
+            if (factory == null)
+                return;
+            _runner!.Submit(new SetRepeatCommand(_localPlayer!.PlayerId, simulation!.State.Tick, factory.Id, !factory.Factory!.Repeat));
         }
 
         private Building? SelectedFactory(SimState state)

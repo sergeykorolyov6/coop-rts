@@ -16,6 +16,14 @@ internal static class FactorySystem
                 continue;
 
             UnitStats stats = state.Data.Unit(factory._queue[0]);
+            // factory-auto.md: an unpaid repeat at the front is paid the first turn the stock has
+            // enough, and only then made; until then the factory waits on it.
+            if (!factory._paid[0])
+            {
+                if (!ProduceCommand.Payer(state, b).TryPay(stats.CostPrimary, stats.CostSecondary))
+                    continue;
+                factory._paid[0] = true;
+            }
             if (factory.Progress < stats.BuildTimeTicks)
                 factory.Progress++;
             if (factory.Progress < stats.BuildTimeTicks)
@@ -29,7 +37,13 @@ internal static class FactorySystem
             if (factory.HasRally)
                 unit.Order = UnitOrder.MoveTo(factory.RallyX, factory.RallyY);
             factory._queue.RemoveAt(0);
+            factory._paid.RemoveAt(0);
             factory.Progress = 0;
+            if (factory.Repeat)
+            {
+                factory._queue.Add(stats.Id);
+                factory._paid.Add(false);
+            }
             events.Add(new UnitProduced(state.Tick, b.OwnerId, b.Id, unit.Id));
         }
     }

@@ -8,6 +8,14 @@ public sealed class Factory
 {
     internal readonly List<string> _queue = new List<string>();
 
+    // factory-auto.md: per place of the queue, whether it is paid; a repeat goes in unpaid and
+    // is paid from the stock when it reaches the front.
+    internal readonly List<bool> _paid = new List<bool>();
+
+    public IReadOnlyList<bool> Paid => _paid;
+
+    // factory-auto.md: a finished unit goes back to the end of the queue, unpaid.
+    public bool Repeat { get; internal set; }
 
     // Unit type ids, the one in production first.
     public IReadOnlyList<string> Queue => _queue;

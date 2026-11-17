@@ -43,6 +43,7 @@ public sealed class ProduceCommand : ICommand
         Wallet wallet = Payer(state, factory!);
         wallet.TryPay(stats!.CostPrimary, stats.CostSecondary);
         factory!.Factory!._queue.Add(stats.Id);
+        factory.Factory._paid.Add(true);
     }
 
     private RejectReason? Check(SimState state, out Building? factory, out UnitStats? stats)

@@ -53,6 +53,9 @@ public sealed class Building : Entity
     // for units from it, an ammo turret for shots); null for the rest.
     public Wallet? Stock { get; internal set; }
 
+    // factory-auto.md: round-robin over the neighbours a stock passes surplus on to (as a drill's).
+    internal int PassCursor { get; set; }
+
     public Conveyor? Conveyor { get; internal set; }
     public ConveyorBridge? Bridge { get; internal set; }
     public Storage? Storage { get; internal set; }

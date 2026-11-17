@@ -17,6 +17,44 @@ internal static class Logistics
         Belt,
     }
 
+    private static readonly List<Building> PassTo = new List<Building>();
+
+    // factory-auto.md: a resource the building uses — in the price of a unit it makes, or (ammo
+    // turret) the primary.
+    internal static bool Needs(SimState state, BuildingStats stats, int resourceType)
+    {
+        if (stats.Ammo > 0)
+            return resourceType == Resources.Primary;
+        foreach (string id in stats.Produces)
+        {
+            UnitStats unit = state.Data.Unit(id);
+            if (resourceType == Resources.Primary ? unit.CostPrimary > 0 : unit.CostSecondary > 0)
+                return true;
+        }
+        return false;
+    }
+
+    // One unit on to the next neighbouring belt or bridge input that takes it, round-robin, as a
+    // storage gives (own or ally; the belt that brought it looks into the building and refuses).
+    private static bool PassOn(SimState state, Building b, int resourceType)
+    {
+        Neighbours(state, b, PassTo);
+        int n = PassTo.Count;
+        for (int k = 0; k < n; k++)
+        {
+            int index = (b.PassCursor + k) % n;
+            Building next = PassTo[index];
+            if (next.Conveyor == null && next.Bridge == null)
+                continue;
+            if (TryGive(state, b, Giver.Storage, next, resourceType))
+            {
+                b.PassCursor = (index + 1) % n;
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Neighbours sharing an edge with the footprint, in a fixed order (bottom row left to right,
     // right column up, top row right to left, left column down), each building once.
     public static void Neighbours(SimState state, Building b, List<Building> result)
@@ -56,11 +94,21 @@ internal static class Logistics
             return false;
 
         // factory.md M2: a factory, cave or ammo turret supplied by conveyor takes from belts, drills and storages,
-        // own or ally, up to factory_stock of each resource.
+        // own or ally, up to factory_stock of each resource. factory-auto.md: what it does not need, or
+        // has full, it passes on to a belt or bridge input leading away; with nowhere to pass, it keeps
+        // what still fits; else the giver stands.
         Wallet? stock = receiver.Stock;
         if (stock != null)
         {
-            if (stock.Get(resourceType) >= state.Rules.FactoryStock)
+            bool fits = stock.Get(resourceType) < state.Rules.FactoryStock;
+            if (fits && Needs(state, receiver.Stats, resourceType))
+            {
+                stock.Add(resourceType, 1);
+                return true;
+            }
+            if (PassOn(state, receiver, resourceType))
+                return true;
+            if (!fits)
                 return false;
             stock.Add(resourceType, 1);
             return true;

@@ -137,6 +137,9 @@ namespace Game.Presentation
                     case ConstructionCompleted completed when completed.OwnerId == me:
                         Show($"Построено: {BuildingName(state, completed.BuildingId)}", Weight.Info);
                         break;
+                    // factory-auto.md: a repeating factory turns units out by itself — no line for each.
+                    case UnitProduced repeated when repeated.OwnerId == me && state.FindBuilding(repeated.FactoryId)?.Factory?.Repeat == true:
+                        break;
                     case UnitProduced produced when produced.OwnerId == me:
                         Unit? unit = state.FindUnit(produced.UnitId);
                         Show($"Готов: {(unit != null ? DisplayNames.Unit(unit.Stats.Id) : "юнит")}", Weight.Info);

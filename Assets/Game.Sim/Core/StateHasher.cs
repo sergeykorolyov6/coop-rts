@@ -227,6 +227,7 @@ internal sealed class StateHasher
             for (int type = 0; type < b.Stock.ResourceTypeCount; type++)
                 _writer.Write(b.Stock.Get(type));
         }
+        _writer.Write(b.PassCursor);
         if (b.Factory != null)
         {
             _writer.Write(b.Factory.Progress);
@@ -234,9 +235,13 @@ internal sealed class StateHasher
             _writer.Write(b.Factory.RallyX);
             _writer.Write(b.Factory.RallyY);
 
+            _writer.Write(b.Factory.Repeat);
             _writer.Write(b.Factory.Queue.Count);
-            foreach (string unit in b.Factory.Queue)
-                _writer.Write(unit);
+            for (int i = 0; i < b.Factory.Queue.Count; i++)
+            {
+                _writer.Write(b.Factory.Queue[i]);
+                _writer.Write(b.Factory.Paid[i]);
+            }
         }
         if (b.Turret != null)
         {
