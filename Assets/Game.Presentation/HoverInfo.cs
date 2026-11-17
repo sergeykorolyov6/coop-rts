@@ -123,6 +123,12 @@ namespace Game.Presentation
                         return $"Нейтральный {DisplayNames.Building(poi.Stats.Id).ToLowerInvariant()}: подведите юнита на {seconds} с — станет вашим";
                 }
             }
+            // belt-merge.md: an own belt says how many belts feed it — they enter in turn.
+            if (poi != null && !poi.IsDead && poi.Conveyor != null && poi.OwnerId == playerId && poi.IsComplete)
+            {
+                int inputs = PlacementPreview.BeltInputs(state, poi);
+                return inputs > 1 ? $"Лента: входов {inputs} — принимает от них по очереди" : $"Лента: входов {inputs}";
+            }
             // terrain.md: what the rock is and whether a miner can get through it.
             TerrainStats? rock = map.TerrainAt(cellX, cellY);
             if (rock != null)

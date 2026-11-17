@@ -121,8 +121,8 @@
 | умная линия, изгиб, пролёт, прилипание конца (`smart-line.md`, U3) | `LinePlanner.Plan`, `LinePlan` (`BrokenSpan`, `StuckToId`, `MergesIntoBelt`), `LineCell`, `LineCellKind` |
 | буры рамкой, сдвиг сетки (`drill-fill.md`, U9) | `DrillFill.Plan` → `DrillFillPlan` (`DrillFillCell`, `DrillFillCellKind`), правило `drill_fill_min_ore_pct` (`GameRules.DrillFillMinOrePercent`) |
 | идти с боем; идти, не отвлекаясь (`attack-move.md`, U8) | `AttackMoveCommand` (№ 17, приказ `UnitOrderKind.AttackMove`); `MoveCommand`; тег `scout` — `UnitTags.Scout` |
+| врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` (`FromBack`, `FromLeft`, `FromRight`), `PlacementPreview.BeltInputs` |
 | **веха U — в коде этого ещё нет, имена закреплены заранее** (`plan-convenience.md`) | |
-| врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` |
 | призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `RebuildCommand`, `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, правило `ghost_limit` |
 | повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `SetRepeatCommand`; правило в `Logistics.TryGive` |
 

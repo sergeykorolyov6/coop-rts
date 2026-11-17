@@ -18,6 +18,12 @@ public sealed class Conveyor
 
     public bool HasItem => ItemType != Empty;
 
+    // belt-merge.md: which input entered last — they take turns round the circle back → left → right.
+    // Sides are relative to this cell's own direction.
+    public const int FromNobody = 0, FromBack = 1, FromLeft = 2, FromRight = 3;
+
+    public int LastFeeder { get; internal set; }
+
     internal void Clear()
     {
         ItemType = Empty;

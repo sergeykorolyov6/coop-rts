@@ -3,43 +3,59 @@ using System.Collections.Generic;
 namespace Game.Sim;
 
 // Moves resources along conveyors and over bridges (conveyors.md, appendix).
-// Each tick every chain is walked from its head (the cell that hands off to something other
-// than an own conveyor) back to its tail, so a unit can move into the room its leader freed
+// Each tick the belts are walked from their heads (cells that hand off to something other than an
+// own conveyor) back through all their inputs, so a unit can move into the room its leader freed
 // in the same tick: one unit per CellLength / speed ticks = 4 units/s.
+// belt-merge.md: a cell takes from every own belt pointing into it — behind, left, right; when
+// several are ready on one tick they go in turn round that circle after the one that entered last.
+// "Ready" is judged on the positions at the start of the tick, so the walking order never decides.
 internal static class ConveyorSystem
 {
     private static readonly List<Building> Belts = new List<Building>();
     private static readonly List<Building> Order = new List<Building>();
     private static readonly List<bool> Visited = new List<bool>();
+    private static readonly List<bool> Ready = new List<bool>();
+    private static readonly List<int> Stack = new List<int>();
+    private static readonly Building?[] Inputs = new Building?[3];
 
     public static void Tick(SimState state)
     {
         CollectBelts(state);
+        int speed = state.Rules.ConveyorItemSpeedMilliPerTick;
+        Ready.Clear();
+        foreach (Building b in Belts)
+            Ready.Add(b.Conveyor!.HasItem && b.Conveyor.ItemPos + speed >= Conveyor.CellLength);
         BuildOrder(state);
         foreach (Building belt in Order)
             MoveItem(state, belt);
         MoveBridges(state);
     }
 
-    // The conveyor feeding this one: the one behind it if it points here, otherwise the
-    // lowest-id one pointing here from a side. Others stand as before a wall (no merging, answer 14).
-    public static Building? AcceptedInput(SimState state, Building belt)
+    // The own complete conveyors pointing into belt: [0] behind, [1] left, [2] right (null where none).
+    private static void FeedersOf(SimState state, Building belt, Building?[] into)
     {
         Direction d = belt.Direction;
-        Building? back = FeederAt(state, belt, belt.CellX - d.Dx(), belt.CellY - d.Dy());
-        if (back != null)
-            return back;
-        // Sides: rotate the direction by ±90°.
-        Building? left = FeederAt(state, belt, belt.CellX - d.Dy(), belt.CellY + d.Dx());
-        Building? right = FeederAt(state, belt, belt.CellX + d.Dy(), belt.CellY - d.Dx());
-        if (left == null)
-            return right;
-        if (right == null)
-            return left;
-        return left.Id < right.Id ? left : right;
+        into[0] = FeederAt(state, belt, belt.CellX - d.Dx(), belt.CellY - d.Dy());
+        // Sides: the direction turned by ±90°.
+        into[1] = FeederAt(state, belt, belt.CellX - d.Dy(), belt.CellY + d.Dx());
+        into[2] = FeederAt(state, belt, belt.CellX + d.Dy(), belt.CellY - d.Dx());
     }
 
-    // An own complete conveyor at (x, y) pointing into belt.
+    // For the UI (PlacementPreview.BeltInputs).
+    public static int InputCount(SimState state, Building belt)
+    {
+        var inputs = new Building?[3];
+        FeedersOf(state, belt, inputs);
+        int count = 0;
+        foreach (Building? b in inputs)
+        {
+            if (b != null)
+                count++;
+        }
+        return count;
+    }
+
+    // An own complete conveyor at (x, y) pointing into belt, with no cliff between (heights.md).
     private static Building? FeederAt(SimState state, Building belt, int x, int y)
     {
         if (!state.Map.InBounds(x, y))
@@ -47,10 +63,13 @@ internal static class ConveyorSystem
         Building? f = state.FindBuilding(state.Map.BuildingAt(x, y));
         if (f == null || f.IsDead || !f.IsComplete || f.Conveyor == null || f.OwnerId != belt.OwnerId)
             return null;
-        return f.CellX + f.Direction.Dx() == belt.CellX && f.CellY + f.Direction.Dy() == belt.CellY ? f : null;
+        if (f.CellX + f.Direction.Dx() != belt.CellX || f.CellY + f.Direction.Dy() != belt.CellY)
+            return null;
+        return state.Map.LevelsJoin(f.CellX, f.CellY, belt.CellX, belt.CellY) ? f : null;
     }
 
-    // The own conveyor this one feeds into, if that conveyor accepts it.
+    // The own conveyor this one feeds into: any own complete belt ahead that does not point back
+    // here (head-on belts give each other nothing).
     private static Building? Next(SimState state, Building belt)
     {
         Building? front = FrontBuilding(state, belt.CellX + belt.Direction.Dx(), belt.CellY + belt.Direction.Dy());
@@ -59,7 +78,34 @@ internal static class ConveyorSystem
         // heights.md: no belt-to-belt over a cliff.
         if (!state.Map.LevelsJoin(belt.CellX, belt.CellY, front.CellX, front.CellY))
             return null;
-        return AcceptedInput(state, front) == belt ? front : null;
+        if (front.CellX + front.Direction.Dx() == belt.CellX && front.CellY + front.Direction.Dy() == belt.CellY)
+            return null;
+        return front;
+    }
+
+    // Whose turn it is to enter next among its ready inputs: the first ready one round the circle
+    // after the one that entered last. True when that is belt.
+    private static bool HasTurn(SimState state, Building next, Building belt, out int side)
+    {
+        FeedersOf(state, next, Inputs);
+        side = Conveyor.FromNobody;
+        int last = next.Conveyor!.LastFeeder;
+        for (int k = 1; k <= 3; k++)
+        {
+            int candidate = (last + k - 1) % 3 + 1;
+            Building? feeder = Inputs[candidate - 1];
+            if (feeder == null || !Ready[IndexOf(feeder)])
+                continue;
+            side = candidate;
+            return feeder == belt;
+        }
+        // Not ready by the start of the tick yet over the edge cannot happen; let it through.
+        for (int i = 0; i < 3; i++)
+        {
+            if (Inputs[i] == belt)
+                side = i + 1;
+        }
+        return true;
     }
 
     private static Building? FrontBuilding(SimState state, int x, int y)
@@ -80,8 +126,9 @@ internal static class ConveyorSystem
         }
     }
 
-    // Heads first, each followed by its chain backwards; leftover cells form loops, which
-    // start from their lowest id. All by id order, so every machine walks the same way.
+    // Heads first, each followed by all its inputs backwards (behind first), so every cell moves
+    // before the cells that feed it; leftover cells form loops, which start from their lowest id.
+    // All by id order, so every machine walks the same way.
     private static void BuildOrder(SimState state)
     {
         Order.Clear();
@@ -103,13 +150,24 @@ internal static class ConveyorSystem
 
     private static void Walk(SimState state, int index)
     {
-        while (index >= 0 && !Visited[index])
+        var feeders = new Building?[3];
+        Stack.Clear();
+        Stack.Add(index);
+        while (Stack.Count > 0)
         {
-            Visited[index] = true;
-            Building belt = Belts[index];
+            int i = Stack[Stack.Count - 1];
+            Stack.RemoveAt(Stack.Count - 1);
+            if (i < 0 || Visited[i])
+                continue;
+            Visited[i] = true;
+            Building belt = Belts[i];
             Order.Add(belt);
-            Building? prev = AcceptedInput(state, belt);
-            index = prev == null ? -1 : IndexOf(prev);
+            FeedersOf(state, belt, feeders);
+            for (int f = 2; f >= 0; f--)
+            {
+                if (feeders[f] != null)
+                    Stack.Add(IndexOf(feeders[f]!));
+            }
         }
     }
 
@@ -155,6 +213,12 @@ internal static class ConveyorSystem
                 c.ItemPos = target;
                 return;
             }
+            // belt-merge.md: several inputs ready — the others wait at the edge for their turn.
+            if (!HasTurn(state, next, belt, out int side))
+            {
+                c.ItemPos = L;
+                return;
+            }
             // Over the edge into the next cell, still keeping the spacing to the unit after it.
             Building? after = Next(state, next);
             int limitNext = after != null && after.Conveyor!.HasItem ? System.Math.Min(L, L + after.Conveyor.ItemPos - spacing) : L;
@@ -166,6 +230,7 @@ internal static class ConveyorSystem
             }
             n.ItemType = c.ItemType;
             n.ItemPos = posNext;
+            n.LastFeeder = side;
             c.Clear();
             return;
         }

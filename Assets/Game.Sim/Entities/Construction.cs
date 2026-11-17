@@ -144,6 +144,8 @@ internal static class Construction
                         return;
                     }
                     belt.Direction = plan.Direction;
+                    // belt-merge.md: its sides are other cells now — the turn starts afresh.
+                    belt.Conveyor!.LastFeeder = Conveyor.FromNobody;
                 }
                 if (belt.IsComplete)
                 {

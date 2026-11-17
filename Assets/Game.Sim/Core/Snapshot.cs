@@ -15,8 +15,8 @@ namespace Game.Sim;
 internal static class Snapshot
 {
     private const int Magic = 0x50414E53; // "SNAP"
-    // 2: Worker.WaitingForResources (builder-beam.md).
-    private const int Version = 2;
+    // 2: Worker.WaitingForResources (builder-beam.md); 3: Conveyor.LastFeeder (belt-merge.md).
+    private const int Version = 3;
 
     public static byte[] Write(SimState state)
     {
@@ -277,6 +277,7 @@ internal static class Snapshot
         {
             w.Write(b.Conveyor.ItemType);
             w.Write(b.Conveyor.ItemPos);
+            w.Write(b.Conveyor.LastFeeder);
         }
         w.Write(b.Bridge != null);
         if (b.Bridge != null)
@@ -360,6 +361,7 @@ internal static class Snapshot
         {
             b.Conveyor.ItemType = r.ReadInt32();
             b.Conveyor.ItemPos = r.ReadInt32();
+            b.Conveyor.LastFeeder = r.ReadInt32();
         }
         if (r.ReadBoolean() != (b.Bridge != null))
             throw Mismatch(b);

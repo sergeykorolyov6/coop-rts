@@ -22,6 +22,9 @@ public static class PlacementPreview
             System.Math.Max(0, stats.CostSecondary - wallet.Secondary));
     }
 
+    // belt-merge.md: how many own belts feed this one (behind, left, right) — shown on hover.
+    public static int BeltInputs(SimState state, Building belt) => ConveyorSystem.InputCount(state, belt);
+
     // Both bridge ends on one straight line, apart, within the bridge range (conveyors.md).
     public static bool InBridgeRange(SimState state, int x1, int y1, int x2, int y2) =>
         ConveyorSystem.InBridgeRange(state, x1, y1, x2, y2);

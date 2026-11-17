@@ -200,6 +200,7 @@ internal sealed class StateHasher
         {
             _writer.Write(b.Conveyor.ItemType);
             _writer.Write(b.Conveyor.ItemPos);
+            _writer.Write(b.Conveyor.LastFeeder);
         }
         if (b.Bridge != null)
         {
