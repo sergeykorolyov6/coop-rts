@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 
 namespace Game.Presentation
 {
-    // Help for someone who did not make the game (решение Claude, 15.11.2026, open-questions.md):
+    // Help for someone who did not make the game (решение Claude, 15.11.2026, decisions.md):
     // - F1 opens "Как играть": the loop of the game in six steps and the controls (hotkeys.md);
     //   alone it pauses the match, in a network game the match goes on;
     // - "Первые шаги" under the objective: a checklist of the economy's first moves that ticks

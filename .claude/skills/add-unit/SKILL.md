@@ -13,7 +13,7 @@ description: Добавить новый юнит в CoopRTS от строки �
 
 - Проверь, что юнит есть в текущей вехе `PLAN.md` (раздел 3 и вехи). Нет — **остановись и скажи**, что это за пределами скоупа.
 - Найди строку юнита в `Docs/Design/units.csv`. Числа в CSV — в человеческих единицах. Обязательные колонки:
-  `id, name_ru, faction, hp, armor, damage, damage_vs_buildings, attack_range, attack_cooldown_s, move_speed, vision, cost_primary, cost_secondary, build_time_s, produced_at, size, tags, abilities`
+  `id, name_ru, faction, hp, armor, damage, damage_vs_buildings, attack_range, attack_cooldown_s, move_speed, vision, cost_primary, cost_secondary, build_time_s, produced_at, size, tags, abilities`; необязательные — `dig_rate` (копатель), `projectile` и `description` (только для UI), `reference`, `notes`
   - `faction` — id из `factions.csv` (`blue_walls`, `red_lightning`, `black_legion`, `grey_creatures` …); юнит производится там, где его перечисляет `produces` здания этой фракции;
   - `tags` — умения, на которые реагирует Sim (`worker`, `builder`, `repairer`, `boss`, `creep`), и силуэт (`melee`, `ranged`, `scout`, `siege`, `armored`, `fast`);
   - `abilities` — id из `abilities.csv` (`factions.md`), через `;`;
@@ -28,7 +28,7 @@ description: Добавить новый юнит в CoopRTS от строки �
 - Если юниту нужно новое поведение (не покрытое `UnitBehaviour`: например, осадный урон по зданиям ×3) — добавь компонент в `Entities/Components/`, не наследуйся от `Unit`.
 - Все числа — `int`. Никаких `float`.
 - Тест в `Game.Sim.Tests/Units/<Id>Tests.cs`:
-  - юнит производится за `build_time_s × 20` тиков и списывает ресурсы **из кошелька своего владельца** (не союзника),
+  - юнит производится за `build_time_s × 20` тиков и оплачивается **со склада завода**, а не из кошелька (`factory.md`; завод Легиона платит из кошелька),
   - производится под тем же `PlayerId`, что и здание,
   - двигается на ожидаемое расстояние за N тиков,
   - наносит `damage - armor_цели` (мин. 1) с интервалом `attack_cooldown_s × 20` тиков,

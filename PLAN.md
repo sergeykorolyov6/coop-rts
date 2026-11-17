@@ -7,14 +7,15 @@
 | **Что ждёт человека** — плейтесты, проверки мышью, что показать брату | `PENDING.md` |
 | Что сделано и проверено по каждой вехе | `Docs/journal.md` |
 | Видение: портрет игрока, JTBD, фракции | `Docs/Design/vision.md` (из «CoopRTS v0.3.pdf») |
-| Механики | `Docs/Design/mechanics/*.md`, формат — `_TEMPLATE.md` |
-| Вопросы и решения геймдизайна | `Docs/Design/open-questions.md` |
+| Механики | `Docs/Design/mechanics/*.md`; указатель по темам — `README.md` там же |
+| Решения геймдизайна: ответы брата, решения Сергея и Claude, по номерам | `Docs/Design/decisions.md` |
+| Термины дизайна → имена в коде | `Docs/Design/glossary.md` |
 | Числа юнитов, зданий, правил, волн | `Docs/Design/*.csv`; обоснование — `Docs/Design/balance-notes.md` |
 | Клавиши | `Docs/Design/hotkeys.md` |
 | Подробные планы вех T и U | `Docs/Design/plan-terrain-and-factions.md`, `Docs/Design/plan-convenience.md` |
 | Как ставить задачи Claude Code, что подключено | `Docs/tooling.md` |
 
-Если план расходится со спекой механики, права спека, а расхождение уходит в открытые вопросы. Порядок источников геймдизайна: ответы брата → PDF → решение Claude; мелкие вопросы Claude решает сам.
+Если план расходится со спекой механики, права спека, а расхождение записывается в `decisions.md`. Порядок источников геймдизайна: ответы брата → PDF → решение Claude; мелкие вопросы Claude решает сам.
 
 ## 1. Видение (кратко)
 

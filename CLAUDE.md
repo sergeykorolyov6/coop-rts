@@ -7,10 +7,11 @@
 - `PENDING.md` — что ждёт человека: плейтесты, проверки мышью, что показать брату.
 - `Docs/journal.md` — журнал вех: что сделано и что проверено, с датами.
 - `Docs/Design/vision.md` — видение (портрет игрока, JTBD, фракции).
-- `Docs/Design/mechanics/*.md` — спецификации механик. Если спека и `PLAN.md` расходятся, права спека.
-- `Docs/Design/open-questions.md` — вопросы и решения геймдизайна.
+- `Docs/Design/mechanics/*.md` — спецификации механик; указатель по темам и правила ведения — `README.md` там же. Если спека и `PLAN.md` расходятся, права спека.
+- `Docs/Design/decisions.md` — решения геймдизайна по номерам: ответы брата, решения Сергея и Claude.
+- `Docs/Design/glossary.md` — как термины спек называются в коде.
 
-**Приоритет источников геймдизайна: ответы брата → «CoopRTS v0.3.pdf» (`vision.md`) → решение Claude.** Мелкие вопросы решай сам по референсам (Mindustry, SC2, другие RTS), помечай «решение Claude» и записывай в `open-questions.md` (раздел «Решено Claude»). Не задавай вопросов, ответ на которые следует из ответов брата или PDF. Брату уходит вопрос, только если без него никак: новая механика или фракция, изменение скоупа, противоречие между ответами брата и PDF. То, что есть в `PLAN.md`, но нет ни в ответах брата, ни в PDF, — придумано Claude, это можно менять без вопросов.
+**Приоритет источников геймдизайна: ответы брата → «CoopRTS v0.3.pdf» (`vision.md`) → решение Claude.** Мелкие вопросы решай сам по референсам (Mindustry, SC2, другие RTS), помечай «решение Claude» и записывай в `decisions.md` (строкой в конец, со следующим номером). Не задавай вопросов, ответ на которые следует из ответов брата или PDF. Брату уходит вопрос, только если без него никак: новая механика или фракция, изменение скоупа, противоречие между ответами брата и PDF. То, что есть в `PLAN.md`, но нет ни в ответах брата, ни в PDF, — придумано Claude, это можно менять без вопросов.
 
 ## Архитектура (не нарушать)
 
@@ -42,6 +43,7 @@
 - Порядок: сначала тесты — по одному на каждую строку Given/When/Then и Edge cases, имя теста начинается с её номера (`GWT1_…`, `Edge_PartialOre_…`); покажи их; потом реализация.
 - Пункт спеки помечен ❓ (крупный вопрос к брату) — не реализуй его, сделай остальное и напиши, что ждёт ответа. Пункты с пометкой «решение Claude» реализуй как написано.
 - Раздел «Что нужно от UI и арта» — чек-лист для Presentation; в отчёте отметь, что сделано, а что нет.
+- Механика меняется — правь текст её спеки на месте, чтобы спека описывала то, что действует сейчас; раздел «веха N» в конец не дописывай. Номера строк проверки не меняй: на них стоят имена тестов (`mechanics/README.md`, «Как вести спеки»).
 
 ## Тесты
 
@@ -59,75 +61,7 @@
 
 ## Глоссарий (дизайн → код)
 
-| В спеках | В коде |
-|---|---|
-| месторождение, клетка руды | `Deposit`, `OreCell` |
-| бур | `Drill` |
-| буфер бура | `Drill.Buffer` |
-| рабочий, ручная добыча | `Worker`, `ManualMining` (у игрока рабочего делает строитель; `Worker` — компонент «строит и копает») |
-| строитель игрока, возрождение | id `builder` (тег `builder`), `Player.BuilderRespawnTick`, события `BuilderDied`, `BuilderRespawned` |
-| ремонтник, авторемонт | id `repairer` (тег `repairer`), `AutoRepair` |
-| точка сбора завода, склад завода | `Factory.HasRally`, `SetRallyCommand`; `Factory.Stock`, колонка `supply` |
-| нейтральное здание, захват, пещера, маяк | `NeutralPlayerId`, `Capture`, `CaptureProgress`, `BuildingCaptured`; `cave`; `lighthouse`, `LighthouseLit` |
-| самоуничтожение (снос) | `DemolishCommand`, `Building.DemolishTicksLeft`, `DemolishSystem` |
-| юнит атакован | `UnitAttacked` |
-| миссия (данные), цель, босс | `MissionStats`, `MissionCatalog`, `MissionLauncher`, `MissionGoal` (`DestroyLegion`, `KillBoss`), тег `boss` |
-| сохранение | `SaveGame`, `Simulation.CommandLog` |
-| стройка, совместная стройка, предел строителей | `Construction`, builders, `MaxBuilders` |
-| превью размещения (силуэт до клика) | `PlacementPreview`, `DrillPreview` |
-| очередь приказов (Shift) | `Unit.OrderQueue`, `QueuedOrder`, `Queued` у команд |
-| ремонт | `Repair` |
-| конвейер, лента | `Conveyor` |
-| мост (конвейерный) | `ConveyorBridge` |
-| груз рабочего | `Worker.Cargo` |
-| штаб | `Headquarters` (один на игрока одновременно, разрушенный можно отстроить; у ИИ — несколько) |
-| завод, очередь производства | `Factory`, `Factory.Queue` |
-| бой, удар, урон, тревога «здание атаковано» | `Combat`, `PendingHit` (событие удара — `HitLanded`), `DamageRules`, `BuildingAttacked` |
-| юниты MVP: разведчик, пехотинец, стрелок, тяжёлый, осадный | id в `units.csv`: `scout`, `infantry`, `shooter`, `heavy`, `siege` |
-| пещерные юниты: зверь, плевун; босс | `cave_beast`, `cave_spitter`; `creep_boss` |
-| юниты Легиона: рабочий, рейдер, стрелок, громила; крипы: малый, большой | `legion_worker`, `legion_raider`, `legion_gunner`, `legion_brute`; `creep_small`, `creep_big` |
-| склад | `Storage` |
-| ИИ Легиона, слот базы, точка сбора, волна, предупреждение о волне, атаковать с движением | `LegionAi`, `BaseSlot`, `Rally`, `Wave`, `WaveIncoming`, `UnitOrderKind.AttackMove` |
-| завод Легиона | `legion_factory` |
-| миссия, победа, поражение | `MissionOutcome` (`Victory`, `Defeat`), событие `MissionEnded` |
-| турель | `Turret` |
-| точка интереса | `PointOfInterest` |
-| лагерь крипов, крип, радиус агрессии, поводок, трофей | `CreepCamp`, `Creep`, `AggroRadius`, `LeashRadius`, `Trophy` |
-| владелец, союзник | `OwnerId` (`PlayerId`), `Relation.Ally` |
-| кошелёк ресурсов игрока | `Wallet` (`Player.Wallet`) |
-| отношения игроков (союзник/враг/нейтрал) | `Relations`, `Relation` |
-| фракция игрока, что строит фракция, роль фракции | `FactionStats` (`factions.csv`), `Player.Faction`, `PlayerFaction`, `FactionRole` |
-| поведение здания (штаб, бур, лента, мост, склад, маяк) | `BuildingStats.Behavior` (`BuildingBehavior`, колонка `behavior`). Логика смотрит на поведение, а не на id здания; id — только для арта (`BuildingIds` в Presentation) |
-| способность, Рывок, Перегрузка, Жажда; черты фракции (первый удар, регенерация, самопочинка, мародёрство) | `AbilityStats` (`abilities.csv`), `UseAbilityCommand`, `AbilitySystem`, `rl_blink`, `rl_overdrive`, `legion_frenzy`; `FactionTraits`, колонки `factions.csv` |
-| юниты и здания Красных Молний: Искра, Бегун, Разрядник, Копейщик, Дуговик; Узел молний, Кузня, Тесла | `rl_builder`, `rl_runner`, `rl_striker`, `rl_lancer`, `rl_arc`; `rl_hq`, `rl_factory`, `rl_tesla` |
-| стена (Синие Стены); Цитадель и Шип Легиона | `wall`; `legion_hq`, `legion_turret` |
-| Мусорщики: Старьёвщик, Лом, Дробовик, Мортира, Жестянщик; Свалка, Мастерская, Малый бур, Смазчик, Ломомёт; склад здания, боеприпасы, ускорение буров | `bs_builder`, `bs_scrapper`, `bs_shotgun`, `bs_mortar`, `bs_repairbot`; `bs_hq`, `bs_factory`, `bs_drill_small`, `bs_pump`, `bs_scrap_gun`; `Building.Stock`, колонка `ammo`, поведение `booster` (`boost_pct`) |
-| Жёлтая Звезда: герой (Звёздный рыцарь), опыт, уровень, аура, Звездопад, Воодушевление; Подмастерье, Оруженосец, Лучник, Послушник, Катапульта; Святилище, Казарма, Сторожевая башня | тег `hero`, `ys_hero`, `HeroSystem`, `Player.HeroXp`/`HeroLevel`/`HeroRespawnTick`, `hero_levels.csv`, события `HeroDied`/`HeroRespawned`/`HeroLevelUp`; `ys_nova` (nova), `ys_inspire` (inspire); `ys_builder`, `ys_squire`, `ys_archer`, `ys_acolyte`, `ys_catapult`; `ys_hq`, `ys_barracks`, `ys_tower` |
-| путь героя (Воин, Маг, Покровитель); способность сработала; описание, снаряд, эффект | `HeroPathStats` (`hero_paths.csv`), `ChooseHeroPathCommand`, `Player.HeroPathId`; событие `AbilityUsed`; колонки `description`, `projectile` (юниты, здания), `effect` (способности) — только для UI |
-| источники данных для загрузки | `GameDataSources` → `GameData.Parse` |
-| замер стоимости тика, стенд масштаба | `TickCostProbe` (`dotnet test Game.Sim.Tests -c Release --filter TickCostProbe`); миссия `bench256` — карта из `Tools/make_bench_map.py`, не игровая; миссия `heights` — проверочная карта высот |
-| здания по корзинам карты (поиск цели) | `BuildingIndex`, `SimState.BuildingListVersion` |
-| уровень высоты, рампа; вид местности, порода (данные карты, T2 — на ходьбу, обзор и бой пока не влияют) | `MapState.LevelAt`, `MapState.IsRamp`, `MapSetup.MaxLevel`; `TerrainStats` (`terrain.csv`), `MapState.TerrainAt`, `GameData.TerrainBySymbol` |
-| высоты (`mechanics/heights.md`): шаг через обрыв, рядом по высоте, уровень стояния и глаз, кто кого видит; раскрытие выстрелом; преимущество высоты; отказы стройки и способностей; высота земли в Presentation | `MapState.CanStep`, `MapState.LevelsJoin`, `MapState.EyeLevel`, `Sight` (`StandLevel`, `EyeLevel`, `LevelAdjacent`, `Sees`, `HighGroundBonus`); `Entity.RevealedUntilTick`, `RevealedToPlayerId`, правило `attack_reveal`; тег `ranged`, правило `high_ground_range_bonus`; `RejectReason.UnevenGround`, `OnRamp`, `NoVision`; `Ground` (`Y`, `Lift`, `LevelHeight`) |
-| порода, шахтёр, копать, ход (`mechanics/terrain.md`) | `MapState.RockHp`, `IsDestructibleRock`, `IsOpaque`, `DamageRock`, `RockChecksum`; `TerrainStats.Hp`, `OreType`; id `miner`, тег `digger`, колонка `dig_rate` (`UnitStats.DigPerTick`); `DigCommand`, `UnitOrderKind.Dig`, `Digging.PlanTunnel`, `TickDig`; событие `RockDestroyed`; отказы `NoDigger`, `NothingToDig`, `CannotDig`; линия обзора `Sight.LineParent`, `LineOfSight` |
-| сетевой кооп: хост, игрок, ход, задержка ввода, лобби, место, рассинхронизация (`network.md`) | `Relay` (хост: лобби, сбор ходов, сверка хешей), `LockstepClient`, `LockstepSettings` (`TurnTicks`, `DelayTurns`), `LobbyEntry`, `MatchStart`, `NetNotice` (`Desync`, `PlayerLeft`, `HostLost`); транспорт `IConnection` (`TcpConnection`, `LoopbackConnection`), `TcpServer`, `TcpConnector`; в Presentation `NetSession`, `SimRunner.Submit` |
-| играбельные фракции: Синие Стены, Красные Молнии, Коричневые Мусорщики, Жёлтая Звезда | `blue_walls`, `red_lightning`, `brown_scavengers`, `yellow_star` (все четыре есть) |
-| неиграбельные фракции: Серые Существа (нейтральные крипы), Чёрный Легион (враг-ИИ) | `grey_creatures`, `black_legion` |
-| несколько баз Легиона, игроки базы, спящая база, расчётное время прихода волны (`legion-ai.md`, T5) | `MapSetup.LegionBases` (`LegionBaseSetup`), `MatchSetup.LegionPlayerIds`, `SimState.Legions`, `SimState.IsLegionPlayer`, `MissionLauncher.LegionPlayerIdFor` (9, 12, 13, …); `LegionAi.TargetPlayerIds`, `IsDormant`; `LegionAi.NextWaveArrivalTick`, `WaveIncoming.ArrivalTick`, `WaveLaunched.ArrivalTick`, `LegionPlayerId` в событиях волн |
-| снимок состояния (`save-load.md`, T5) | `Snapshot`, `Simulation.WriteSnapshot`, `Simulation.FromSnapshot`, `SaveGame.Snapshot`, `SaveGame.TryRestoreSnapshot`; `MapState.LayoutChecksum`, `SimState.Seed` |
-| метка для союзника, передача ресурса (`coop-tools.md`) | `PingCommand`, событие `Pinged`; `GiveResourcesCommand`, событие `ResourcesGiven` |
-| карта «Каньоны» (первая большая, T5) | миссии `canyons2`, `canyons4`; `maps/canyons.txt` из `Tools/make_canyons_map.py` (заготовка: после первой ручной правки карты генератор удалить) |
-| стройка без выделения строителя, режим размещения (`build-mode.md`, U1) | только Presentation: `BuildMenu`, `PlacementController`; строитель — `SimState.FindBuilder` |
-| дальность стройки (луч), стройка на ходу, ожидание ресурса, нехватка при размещении (`builder-beam.md`, U7) | правило `build_range` (`GameRules.BuildRangeMilli`), `Worker.WaitingForResources`, `Worker.CurrentPlan`, событие `ConstructionWaiting`, `PlacementPreview.Shortfall`; луч — `BuildBeamView` |
-| перекладка ленты; снос рамкой (`relay-and-demolish.md`, U4) | `Construction.RelayableBelt`, `Building.Direction` меняется; `DemolishAreaCommand` (№ 18; что берёт рамка — `Takes`, тем же спрашивает превью); режим сноса — `PlacementController.BeginDemolish` |
-| умная линия, изгиб, пролёт, прилипание конца (`smart-line.md`, U3) | `LinePlanner.Plan`, `LinePlan` (`Stop` — `LineStop`, `BrokenSpan`, `StuckToId`, `MergesIntoBelt`), `LineCell`, `LineCellKind` |
-| буры рамкой, сдвиг сетки (`drill-fill.md`, U9) | `DrillFill.Plan` → `DrillFillPlan` (`DrillFillCell`, `DrillFillCellKind`), правило `drill_fill_min_ore_pct` (`GameRules.DrillFillMinOrePercent`) |
-| идти с боем; идти, не отвлекаясь (`attack-move.md`, U8) | `AttackMoveCommand` (№ 17, приказ `UnitOrderKind.AttackMove`); `MoveCommand`; тег `scout` — `UnitTags.Scout` |
-| врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` (`FromBack`, `FromLeft`, `FromRight`), `PlacementPreview.BeltInputs` |
-| повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `Factory.Paid`, `SetRepeatCommand` (№ 19); `Logistics.TryGive` → `BuildingStats.Needs` (считается при загрузке данных), `PassOn`, `Building.PassCursor`; кто кому отдаёт — `Logistics.Connects`; для стрелок у здания — `PlacementPreview.StockLinks`, `StockLinksView` |
-| призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `GhostRules` (`Leave`, `NearestFor`), `RebuildCommand` (№ 20), `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, `Construction.TickRebuild`, правило `ghost_limit`; вид — `GhostView` |
-
-Новый термин из спеки — добавь сюда, прежде чем называть класс.
+Таблица «термин из спек → имя в коде» — в `Docs/Design/glossary.md`, по темам. Прочитай нужный раздел, прежде чем искать код механики или называть новый класс. Новый термин из спеки — добавь туда, прежде чем называть класс.
 
 ## Рабочий процесс
 
@@ -142,6 +76,17 @@
 - Хуки (`.claude/settings.json` → `.claude/hooks/sim-check.sh`) запускают `dotnet test` и проверку на `float`/`double`/`Random`/`DateTime`/`Time.`/`UnityEngine`/`Dictionary`/`HashSet` в `Game.Sim` после каждой правки. Эти слова не пишем в Sim даже в комментариях. Красный хук — чинить сразу, не откладывать.
 - Не трогай `ProjectSettings/`, `Packages/manifest.json` без явной просьбы.
 - Если непонятно, как должна работать механика, — реши по приоритету источников (см. выше) и запиши решение. Спрашивай, только если это крупный вопрос.
+
+## Документация — что куда писать
+
+У каждого вида записи одно место. Не дублируй: копии расходятся.
+
+- **Состояние вехи** — только таблица в `PLAN.md`, раздел 5. В `CLAUDE.md`, спеках и планах вех его не повторяй.
+- **Что сделано** (этап, задача, проверка в редакторе) — запись в `Docs/journal.md`: дата, что сделано, сколько тестов, что проверено. В `PLAN.md` отчёты не пишутся — он остаётся коротким.
+- **Что ждёт человека** (проверка мышью, плейтест, показать или спросить у брата) — строкой в `PENDING.md`, сразу, а не только в отчёте.
+- **Решение геймдизайна** — строкой в `Docs/Design/decisions.md` со следующим номером; если оно отменяет старое, пометь обе строки.
+- **Как работает механика** — её спека, один действующий текст. **Термин** — `glossary.md`. **Клавиша** — `hotkeys.md`. **Число** — CSV.
+- `CLAUDE.md` — только правила, нужные в каждой сессии. Справочное (таблицы, списки, история) живёт в `Docs/`.
 
 ## Структура репозитория
 
@@ -177,8 +122,9 @@ Docs/
   Archive/             отработавшие разовые документы
   Design/
     vision.md          видение
-    open-questions.md  вопросы и решения геймдизайна
-    mechanics/         спеки механик (_TEMPLATE.md, drill.md, …)
+    decisions.md       решения геймдизайна по номерам (бывш. open-questions.md)
+    glossary.md        термины спек → имена в коде
+    mechanics/         спеки механик (README.md — указатель и правила, _TEMPLATE.md, drill.md, …)
     *.csv              таблицы чисел в человеческих единицах (rules.csv — общие числа механик)
     maps/*.txt         карты текстом (легенда в начале файла) → Assets/Data/maps/*.json
     maps/*.tmj         или карта из редактора Tiled (Tools/tiled.py; набор тайлов cooprts.tsj/.png) — у карты один файл
