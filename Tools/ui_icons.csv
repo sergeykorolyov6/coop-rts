@@ -75,3 +75,5 @@ ui_target,a target crosshair reticle
 ui_alert,a warning triangle with an exclamation mark
 ui_army,three soldier helmets in a row
 ui_time,an hourglass
+ui_demolish,"a big round wrecking ball on a thick chain hitting the side of a small boxy bunker building, the building tilting and breaking into three chunks"
+ui_rebuild,"a small boxy bunker building with a flat roof, and above it one thick arrow curving in an arc from left to right and pointing down at the building, the symbol of bringing a building back"

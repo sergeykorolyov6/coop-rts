@@ -198,7 +198,7 @@ namespace Game.Presentation
             _shownGhosts = -1;
         }
 
-        // rebuild-ghosts.md: the count of own ghosts on the button, dimmed with none.
+        // rebuild-ghosts.md: the count of own ghosts as the button's badge, dimmed with none.
         private void UpdateRebuild(SimState state, Player player)
         {
             if (_rebuild == null)
@@ -212,7 +212,7 @@ namespace Game.Presentation
             if (count == _shownGhosts)
                 return;
             _shownGhosts = count;
-            _rebuild.SetName(count > 0 ? $"Восстановить ({count})" : "Восстановить");
+            _rebuild.SetBadge(count > 0 ? count.ToString() : "");
             _rebuild.SetBlocked(count == 0);
         }
 
