@@ -40,8 +40,6 @@ public class SmartLineTests
 
     private static LineCell At(LinePlan plan, int x, int y) => plan.Cells.Single(c => c.X == x && c.Y == y);
 
-    private static int Cost(Simulation sim, LinePlan plan) => plan.CostPrimary;
-
     // ---------- shape ----------
 
     [Test]
@@ -103,7 +101,7 @@ public class SmartLineTests
 
         Assert.That(plan.Cells.Where(c => c.Kind == LineCellKind.Build).Select(c => c.X), Is.EqualTo(new[] { 2, 3 }));
         Assert.That(plan.Cells.Where(c => c.Kind == LineCellKind.Broken).Select(c => c.X), Is.EqualTo(new[] { 4, 5, 6, 7, 8, 9 }));
-        Assert.That(plan.BrokenSpan, Is.EqualTo(4));
+        Assert.That((plan.Stop, plan.BrokenSpan), Is.EqualTo((LineStop.BridgeTooFar, 4)));
         Assert.That(plan.CostPrimary, Is.EqualTo(2));
     }
 
@@ -242,7 +240,7 @@ public class SmartLineTests
         var sim = Rocks((2, 2));
         LinePlan plan = Plan(sim, 2, 2, 6, 2);
 
-        Assert.That(plan.Blocked, Is.True);
+        Assert.That(plan.Stop, Is.EqualTo(LineStop.FirstCell));
         Assert.That(plan.Cells.All(c => c.Kind == LineCellKind.Broken), Is.True);
         Assert.That(plan.CostPrimary, Is.EqualTo(0));
     }
@@ -340,6 +338,62 @@ public class SmartLineTests
 
         Assert.That(At(plan, 3, 2).Kind, Is.EqualTo(LineCellKind.Build));
         Assert.That(plan.Cells.Where(c => c.X >= 4).All(c => c.Kind == LineCellKind.Broken), Is.True);
+    }
+
+    [Test]
+    public void Edge_CliffWithAnOwnBeltOnTheFarSide_StopsAndSaysWhy()
+    {
+        // x ≥ 5 is a plateau without a ramp; an own belt already lies on (5, 2), along the path:
+        // a bridge end cannot stand on it, so the order stops at the cliff — and the plan says so.
+        var sim = Field(map =>
+        {
+            for (int y = 0; y < 12; y++)
+                for (int x = 5; x < 24; x++)
+                    map.Level(x, y, 1);
+        });
+        Place(sim, A, "conveyor", 5, 2);
+        LinePlan plan = Plan(sim, 2, 2, 8, 2);
+
+        Assert.That(plan.Stop, Is.EqualTo(LineStop.NoBridge));
+        Assert.That(plan.Cells.Where(c => c.Kind == LineCellKind.Build).Select(c => c.X), Is.EqualTo(new[] { 2, 3, 4 }));
+        Assert.That(plan.Cells.Where(c => c.X >= 5).All(c => c.Kind == LineCellKind.Broken), Is.True);
+    }
+
+    [Test]
+    public void Edge_PathAlongAnExistingLine_EndingBesideAStorage_TheLineIsNotTurnedIntoIt()
+    {
+        // The belt (2..8, 2) runs on past x = 5; drawing over its first cells must not cut it there.
+        var sim = Field();
+        for (int x = 2; x <= 8; x++)
+            Place(sim, A, "conveyor", x, 2);
+        Place(sim, A, "storage", 5, 3);
+        LinePlan plan = Plan(sim, 2, 2, 5, 2);
+
+        Assert.That(plan.Cells.All(c => c.Kind == LineCellKind.Skip && c.Direction == Direction.Right), Is.True);
+        Assert.That(plan.StuckToId, Is.EqualTo(0));
+        Assert.That(plan.HasOrders, Is.False);
+    }
+
+    [Test]
+    public void Edge_EndOneCellBeforeAnOwnBelt_LooksIntoIt_ReportedAsMerge()
+    {
+        var sim = Field();
+        for (int y = 1; y <= 3; y++)
+            Place(sim, A, "conveyor", 5, y, Direction.Up);
+        LinePlan plan = Plan(sim, 2, 2, 4, 2);
+
+        Assert.That(plan.Cells.Select(c => c.X), Is.EqualTo(new[] { 2, 3, 4 }));
+        Assert.That(plan.MergesIntoBelt, Is.True);
+    }
+
+    [Test]
+    public void Edge_EndFacingAnOwnBeltHeadOn_IsNoMerge()
+    {
+        var sim = Field();
+        Place(sim, A, "conveyor", 5, 2, Direction.Left);
+        LinePlan plan = Plan(sim, 2, 2, 4, 2);
+
+        Assert.That(plan.MergesIntoBelt, Is.False);
     }
 
     [Test]

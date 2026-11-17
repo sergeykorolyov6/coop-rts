@@ -12,24 +12,18 @@ namespace Game.Presentation
     {
         [SerializeField, Range(0f, 1f)] private float _darken = 0.45f;
 
-        private readonly List<Transform> _tiles = new List<Transform>();
-        private readonly List<Transform> _arrows = new List<Transform>();
         private readonly HashSet<long> _drawn = new HashSet<long>();
-        private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
 
         private SimRunner? _runner;
         private EntityView? _entities;
-        private Transform? _root;
-        private Material? _baseMaterial;
+        private GroundMarks? _marks;
         private int _lastTick = -1;
-        private int _tilesUsed, _arrowsUsed;
 
         private void Awake()
         {
             _runner = GetComponent<SimRunner>();
             _entities = GetComponent<EntityView>();
-            _root = new GameObject("PlannedSites").transform;
-            _root.SetParent(transform, worldPositionStays: false);
+            _marks = new GroundMarks(transform, "PlannedSites");
         }
 
         private void LateUpdate()
@@ -39,7 +33,7 @@ namespace Game.Presentation
                 return;
             SimState state = simulation.State;
             _lastTick = state.Tick;
-            _tilesUsed = _arrowsUsed = 0;
+            _marks!.Begin();
             _drawn.Clear();
 
             foreach (Unit unit in state.Units)
@@ -53,10 +47,7 @@ namespace Game.Presentation
                         Draw(state, unit, plan);
             }
 
-            for (int i = _tilesUsed; i < _tiles.Count; i++)
-                _tiles[i].gameObject.SetActive(false);
-            for (int i = _arrowsUsed; i < _arrows.Count; i++)
-                _arrows[i].gameObject.SetActive(false);
+            _marks.End();
         }
 
         private void Draw(SimState state, Unit unit, PlannedBuild plan)
@@ -69,62 +60,11 @@ namespace Game.Presentation
             Color color = Color.Lerp(_entities!.OwnerColor(state, unit.OwnerId), Color.black, _darken);
             for (int y = plan.CellY; y < plan.CellY + stats!.SizeH; y++)
                 for (int x = plan.CellX; x < plan.CellX + stats.SizeW; x++)
-                    Tile(x, y, color);
+                    _marks!.Tile(x, y, color, 0.86f, 0.03f, 0.02f);
             if (stats.IsBelt)
-                Arrow(plan.CellX, plan.CellY, plan.Direction, color);
+                _marks!.Arrow(plan.CellX, plan.CellY, plan.Direction, Color.Lerp(color, Color.white, 0.6f), new Vector3(0.16f, 0.05f, 0.42f), 0.05f);
         }
 
-        private void Tile(int x, int y, Color color)
-        {
-            Transform tile = Pooled(_tiles, ref _tilesUsed, "PlannedTile");
-            tile.localScale = new Vector3(0.86f, 0.03f, 0.86f);
-            tile.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.02f, y + 0.5f));
-            tile.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(color);
-        }
-
-        private void Arrow(int x, int y, Direction direction, Color color)
-        {
-            Transform arrow = Pooled(_arrows, ref _arrowsUsed, "PlannedArrow");
-            float yaw = direction switch { Direction.Right => 90f, Direction.Up => 0f, Direction.Left => 270f, _ => 180f };
-            Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
-            arrow.localRotation = rotation;
-            arrow.localScale = new Vector3(0.16f, 0.05f, 0.42f);
-            arrow.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.05f, y + 0.5f)) + rotation * new Vector3(0f, 0f, 0.18f);
-            arrow.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(Color.Lerp(color, Color.white, 0.6f));
-        }
-
-        private Transform Pooled(List<Transform> pool, ref int used, string name)
-        {
-            if (used < pool.Count)
-            {
-                Transform existing = pool[used++];
-                existing.gameObject.SetActive(true);
-                return existing;
-            }
-            GameObject go = Primitives.Create(PrimitiveType.Cube);
-            go.name = name;
-            Destroy(go.GetComponent<Collider>());
-            _baseMaterial ??= go.GetComponent<MeshRenderer>().sharedMaterial;
-            go.transform.SetParent(_root, worldPositionStays: false);
-            pool.Add(go.transform);
-            used++;
-            return go.transform;
-        }
-
-        private Material MaterialFor(Color color)
-        {
-            if (!_materials.TryGetValue(color, out Material? material))
-            {
-                material = new Material(_baseMaterial) { color = color };
-                _materials.Add(color, material);
-            }
-            return material;
-        }
-
-        private void OnDestroy()
-        {
-            foreach (Material material in _materials.Values)
-                Destroy(material);
-        }
+        private void OnDestroy() => _marks?.Destroy();
     }
 }

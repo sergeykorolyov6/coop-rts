@@ -46,6 +46,23 @@ internal static class UnitOrders
         return true;
     }
 
+    // A build order with its silhouettes (BuildCommand, RebuildCommand). Queued while the worker
+    // builds with nothing else queued — the silhouettes join the current build, built in order
+    // (order-queue.md); otherwise as any order: into the queue, or instead of what the worker does.
+    public static void GiveBuild(Unit unit, PlannedBuild[] plans, bool queued, ref bool full)
+    {
+        Worker worker = unit.Worker!;
+        if (queued && unit.Order.Kind == UnitOrderKind.Build && unit._queue.Count == 0)
+        {
+            worker._plans.AddRange(plans);
+            return;
+        }
+        if (Defer(unit, queued, UnitOrder.Build(), plans, ref full))
+            return;
+        Replace(unit, UnitOrder.Build());
+        worker._plans.AddRange(plans);
+    }
+
     // Start of the unit's turn with nothing to do: the next queued order becomes current.
     // Targets are checked again by the order's own tick; a mining cell is checked here,
     // since starting to mine changes the worker's state.

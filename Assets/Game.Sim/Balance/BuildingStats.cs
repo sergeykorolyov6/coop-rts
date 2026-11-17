@@ -74,6 +74,20 @@ public sealed class BuildingStats
     // (factories) and ammo (turrets) are paid from it; empty — from the owner's wallet.
     public bool SuppliedByConveyor { get; }
 
+    // factory-auto.md: the resources this building's stock is for — in the price of a unit it makes,
+    // or the primary for an ammo turret; the rest it passes on. Set once the units are known (GameData).
+    public bool NeedsPrimary { get; private set; }
+    public bool NeedsSecondary { get; private set; }
+
+    public bool Needs(int resourceType) =>
+        resourceType == Resources.Primary ? NeedsPrimary : resourceType == Resources.Secondary && NeedsSecondary;
+
+    internal void SetNeeds(bool primary, bool secondary)
+    {
+        NeedsPrimary = primary;
+        NeedsSecondary = secondary;
+    }
+
     // neutral-buildings.md: points of interest nobody can damage.
     public bool Invulnerable { get; }
 

@@ -44,14 +44,10 @@ public sealed class SetRepeatCommand : ICommand
         factory.Repeat = On;
         if (On)
             return;
-        for (int i = factory._queue.Count - 1; i >= 0; i--)
+        for (int i = factory.Queue.Count - 1; i >= 0; i--)
         {
-            if (factory._paid[i])
-                continue;
-            factory._queue.RemoveAt(i);
-            factory._paid.RemoveAt(i);
-            if (i == 0)
-                factory.Progress = 0;
+            if (!factory.Paid[i])
+                factory.RemoveAt(i);
         }
     }
 }

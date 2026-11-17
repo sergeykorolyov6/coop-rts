@@ -45,10 +45,7 @@ public sealed class MoveCommand : ICommand
 
     public void Execute(SimState state, List<SimEvent> events)
     {
-        // Clamp into the map: a click past the edge means "as far as you can go".
-        int maxX = Grid.CellToMilli(state.Map.Width) - 1, maxY = Grid.CellToMilli(state.Map.Height) - 1;
-        int x = X < 0 ? 0 : X > maxX ? maxX : X;
-        int y = Y < 0 ? 0 : Y > maxY ? maxY : Y;
+        (int x, int y) = state.Map.ClampMilli(X, Y);
 
         bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))

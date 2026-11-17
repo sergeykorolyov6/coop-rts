@@ -362,7 +362,7 @@ namespace Game.Presentation
             if (building.Stats.IsBelt)
             {
                 // A bar from the cell centre towards the exit side, as in the placement silhouette.
-                Quaternion rotation = DirectionRotation(building.Direction);
+                Quaternion rotation = Ground.Facing(building.Direction);
                 Transform arrow = CreatePrimitive(PrimitiveType.Cube, "Arrow", _arrowColor);
                 arrow.localRotation = rotation;
                 arrow.localScale = new Vector3(0.16f, 0.04f, 0.5f);
@@ -407,21 +407,12 @@ namespace Game.Presentation
             if (!carrying)
                 return;
             float along = conveyor.ItemPos / (float)Conveyor.CellLength - 0.5f;
-            item.localPosition = CellCentre(building) + new Vector3(0f, 0.28f, 0f) + DirectionRotation(building.Direction) * new Vector3(0f, 0f, along);
+            item.localPosition = CellCentre(building) + new Vector3(0f, 0.28f, 0f) + Ground.Facing(building.Direction) * new Vector3(0f, 0f, along);
             item.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(ResourceColor(conveyor.ItemType));
         }
 
         private static Vector3 CellCentre(Building building) =>
             Ground.Lift(new Vector3(building.CellX + building.Width * 0.5f, 0f, building.CellY + building.Height * 0.5f));
-
-        // Direction.Up is +Y in cells, which is +Z in the world.
-        private static Quaternion DirectionRotation(Direction direction) => direction switch
-        {
-            Direction.Right => Quaternion.Euler(0f, 90f, 0f),
-            Direction.Up => Quaternion.identity,
-            Direction.Left => Quaternion.Euler(0f, 270f, 0f),
-            _ => Quaternion.Euler(0f, 180f, 0f),
-        };
 
         private Transform CreatePrimitive(PrimitiveType type, string name, Color color)
         {

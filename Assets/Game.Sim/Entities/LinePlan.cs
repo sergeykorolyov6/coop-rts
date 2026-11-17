@@ -7,14 +7,14 @@ namespace Game.Sim;
 public sealed class LinePlan
 {
     internal LinePlan(List<LineCell> cells, string buildingTypeId, string? bridgeTypeId, int costPrimary, int costSecondary,
-        bool blocked, int brokenSpan, bool mergesIntoBelt, int stuckToId)
+        LineStop stop, int brokenSpan, bool mergesIntoBelt, int stuckToId)
     {
         Cells = cells;
         BuildingTypeId = buildingTypeId;
         BridgeTypeId = bridgeTypeId;
         CostPrimary = costPrimary;
         CostSecondary = costSecondary;
-        Blocked = blocked;
+        Stop = stop;
         BrokenSpan = brokenSpan;
         MergesIntoBelt = mergesIntoBelt;
         StuckToId = stuckToId;
@@ -30,14 +30,15 @@ public sealed class LinePlan
     public int CostPrimary { get; }
     public int CostSecondary { get; }
 
-    // The first cell is an obstacle: nothing can be ordered.
-    public bool Blocked { get; }
+    // Why the order stops before the cursor (the cells past the stop are Broken), None when it does not.
+    public LineStop Stop { get; }
 
-    // Cells of the span no bridge reached, 0 when the order goes through; -1 when it stopped
-    // for another reason (an existing belt or a bridge end at the span, a bend at it).
+    public bool Blocked => Stop == LineStop.FirstCell;
+
+    // With Stop == BridgeTooFar: how many cells the bridge would have to span.
     public int BrokenSpan { get; }
 
-    // The line ends one cell before an own belt across it and looks into it (belt-merge.md).
+    // The last cell looks into an own belt and will feed it (belt-merge.md).
     public bool MergesIntoBelt { get; }
 
     // The building the last cell was turned to (a receiver beside the end), 0 for none.

@@ -59,6 +59,15 @@ namespace Game.Presentation
         // A sim point at a fixed height, not lifted: for what follows the ground itself (GroundDashes).
         public static Vector3 Flat(int milliX, int milliY, float y = 0f) => new Vector3(Cells(milliX), y, Cells(milliY));
 
+        // Which way a belt or bridge looks: Direction.Up is +Y in cells, which is +Z in the world.
+        public static Quaternion Facing(Direction direction) => direction switch
+        {
+            Direction.Right => Quaternion.Euler(0f, 90f, 0f),
+            Direction.Up => Quaternion.identity,
+            Direction.Left => Quaternion.Euler(0f, 270f, 0f),
+            _ => Quaternion.Euler(0f, 180f, 0f),
+        };
+
         // The point lifted onto the ground: its own y becomes the height above the ground.
         public static Vector3 Lift(Vector3 point)
         {

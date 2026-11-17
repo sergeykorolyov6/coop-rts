@@ -67,6 +67,13 @@ public sealed class MapState
 
     public bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;
 
+    // A point in milli-cells pulled into the map: an order past the edge means "as far as you can go".
+    public (int X, int Y) ClampMilli(int x, int y)
+    {
+        int maxX = Grid.CellToMilli(Width) - 1, maxY = Grid.CellToMilli(Height) - 1;
+        return (x < 0 ? 0 : x > maxX ? maxX : x, y < 0 ? 0 : y > maxY ? maxY : y);
+    }
+
     public int Index(int x, int y) => y * Width + x;
 
     public bool IsBlocked(int x, int y) => _blocked[Index(x, y)];

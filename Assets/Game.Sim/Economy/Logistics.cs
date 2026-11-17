@@ -19,21 +19,6 @@ internal static class Logistics
 
     private static readonly List<Building> PassTo = new List<Building>();
 
-    // factory-auto.md: a resource the building uses — in the price of a unit it makes, or (ammo
-    // turret) the primary.
-    internal static bool Needs(SimState state, BuildingStats stats, int resourceType)
-    {
-        if (stats.Ammo > 0)
-            return resourceType == Resources.Primary;
-        foreach (string id in stats.Produces)
-        {
-            UnitStats unit = state.Data.Unit(id);
-            if (resourceType == Resources.Primary ? unit.CostPrimary > 0 : unit.CostSecondary > 0)
-                return true;
-        }
-        return false;
-    }
-
     // One unit on to the next neighbouring belt or bridge input that takes it, round-robin, as a
     // storage gives (own or ally; the belt that brought it looks into the building and refuses).
     private static bool PassOn(SimState state, Building b, int resourceType)
@@ -101,7 +86,7 @@ internal static class Logistics
         if (stock != null)
         {
             bool fits = stock.Get(resourceType) < state.Rules.FactoryStock;
-            if (fits && Needs(state, receiver.Stats, resourceType))
+            if (fits && receiver.Stats.Needs(resourceType))
             {
                 stock.Add(resourceType, 1);
                 return true;

@@ -11,4 +11,8 @@ public static class Grid
     public static int MilliToCell(int milli) => IntMath.FloorDiv(milli, MilliPerCell);
 
     public static int CellCenter(int cell) => cell * MilliPerCell + MilliPerCell / 2;
+
+    // A footprint (x, y, w, h) shares a cell with the frame of cells minX..maxX, minY..maxY.
+    public static bool Touches(int x, int y, int w, int h, int minX, int minY, int maxX, int maxY) =>
+        x <= maxX && x + w - 1 >= minX && y <= maxY && y + h - 1 >= minY;
 }

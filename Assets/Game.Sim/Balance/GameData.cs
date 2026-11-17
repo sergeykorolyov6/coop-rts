@@ -114,7 +114,7 @@ public sealed class GameData
         }
 
         var data = new GameData(units, buildings, camps, legion, waves, factions, abilities, heroLevels, heroPaths, terrain, rules);
-        data.Validate();
+        data.ValidateAndLink();
         return data;
     }
 
@@ -261,7 +261,8 @@ public sealed class GameData
 
 
     // Catches typos in the design tables at load time instead of mid-match.
-    private void Validate()
+    // Cross-checks the tables, and fills what one table derives from another (BuildingStats.Needs).
+    private void ValidateAndLink()
     {
         foreach (UnitStats u in _units)
         {
@@ -296,11 +297,16 @@ public sealed class GameData
                 if (b.VisionMilli < need)
                     throw new FormatException($"buildings.json: \"{b.Id}\" has vision {b.VisionMilli} mc, needs at least {need} (range + half diagonal + 1 cell).");
             }
+            // An ammo turret's stock is for shots (primary); a factory's — for what its units cost.
+            bool needsPrimary = b.Ammo > 0, needsSecondary = false;
             foreach (string unit in b.Produces)
             {
-                if (!TryGetUnit(unit, out _))
+                if (!TryGetUnit(unit, out UnitStats? made))
                     throw new FormatException($"buildings.json: \"{b.Id}\" produces unknown unit \"{unit}\".");
+                needsPrimary |= made!.CostPrimary > 0;
+                needsSecondary |= made.CostSecondary > 0;
             }
+            b.SetNeeds(needsPrimary, needsSecondary);
         }
 
         foreach (FactionStats f in _factions)

@@ -46,7 +46,6 @@ namespace Game.Presentation
         public enum Intent { None, Attack, Deliver, Repair, Carry, Mine, Rally, Dig, Rebuild }
 
         private bool _showingTip;
-        private Vector3 _lastGround;
 
         // What a right click would do right now; CursorView picks the cursor by it.
         public Intent CurrentIntent { get; private set; }
@@ -88,8 +87,7 @@ namespace Game.Presentation
             SplitSelection(state);
             Intent intent = Resolve(state, pointer, ground, out int targetId);
             CurrentIntent = intent;
-            _lastGround = ground;
-            ShowTip(state, intent, targetId, pointer);
+            ShowTip(state, intent, targetId, pointer, ground);
             if (mouse.rightButton.wasPressedThisFrame)
                 Order(simulation, intent, targetId, ground);
         }
@@ -221,14 +219,14 @@ namespace Game.Presentation
             foreach (int id in _others)
             {
                 Unit? u = state.FindUnit(id);
-                if (u != null && u.Worker == null && (u.Stats.Damage > 0 || u.Stats.DamageVsBuildings > 0) && !u.Stats.HasTag(UnitTags.Scout))
+                if (u != null && AttackMoveCommand.Fights(u))
                     return true;
             }
             return false;
         }
 
         // A hint at the cursor for what the right click does, so mining and the rest are discoverable.
-        private void ShowTip(SimState state, Intent intent, int targetId, Vector2 pointer)
+        private void ShowTip(SimState state, Intent intent, int targetId, Vector2 pointer, Vector3 ground)
         {
             string? text = intent switch
             {
@@ -243,7 +241,7 @@ namespace Game.Presentation
             };
             // attack-move.md: over bare ground with fighters selected, say what the right click now does.
             if (text == null && intent == Intent.None && AnyFighter(state)
-                && state.BuildingAt(Mathf.FloorToInt(_lastGround.x), Mathf.FloorToInt(_lastGround.z)) == null
+                && state.BuildingAt(Mathf.FloorToInt(ground.x), Mathf.FloorToInt(ground.z)) == null
                 && _selection!.UnitAt(state, pointer, _ => true) == null)
                 text = NotDistracted() ? "ПКМ — идти, не отвлекаясь" : "ПКМ — идти с боем · Ctrl — не отвлекаясь";
             if (text == null)

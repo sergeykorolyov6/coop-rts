@@ -31,6 +31,60 @@ public class SnapshotTests
         }
     }
 
+    // Веха U: a builder waiting for resources, a repeating factory with an unpaid place and a pass
+    // cursor, ghosts, an ally's silhouette over one of them, a belt cell that remembers who entered
+    // last — all of it comes back from a snapshot.
+    [Test]
+    public void ConvenienceMilestoneState_RestoresInStep()
+    {
+        const int a = Setups.PlayerA, b = Setups.PlayerB;
+        MatchSetup setup = Setups.Coop(new MapSetup(32, 16).Start(a, 2, 2).Start(b, 26, 2));
+        var sim = new Simulation(setup);
+        SimState s = sim.State;
+        Spawn(sim, a, "scout", 10, 9);
+        Spawn(sim, b, "scout", 16, 10);
+        sim.Tick();
+        BuildingStats belt = s.Data.Building("conveyor");
+
+        Building factory = s.PlaceBuilding(a, s.Data.Building("factory"), 8, 11, Direction.Right, complete: true);
+        factory.Factory!.Repeat = true;
+        factory.Factory.Enqueue("scout", paid: false);
+        factory.PassCursor = 3;
+
+        Building merge = s.PlaceBuilding(a, belt, 14, 8, Direction.Left, complete: true);
+        s.PlaceBuilding(a, belt, 14, 7, Direction.Up, complete: true);
+        merge.Conveyor!.LastFeeder = Conveyor.FromLeft;
+
+        foreach (int x in new[] { 20, 22 })
+        {
+            Building ruined = s.PlaceBuilding(a, belt, x, 12, Direction.Up, complete: true);
+            GhostRules.Leave(s, ruined);
+            Kill(ruined);
+        }
+        s.RemoveDead();
+        Unit allyBuilder = s.FindBuilder(b)!;
+        sim.Enqueue(new RebuildCommand(b, s.Tick, new[] { allyBuilder.Id }, 20, 12, 20, 12, includeAllies: true));
+
+        Wallet wallet = s.GetPlayer(a).Wallet;
+        wallet.TrySpend(Resources.Primary, wallet.Get(Resources.Primary));
+        Unit builder = s.FindBuilder(a)!;
+        sim.Enqueue(new BuildCommand(a, s.Tick, new[] { builder.Id }, "storage", new[] { new BuildSite(6, 8, Direction.Right) }));
+        sim.Run(40);
+
+        Assert.That(builder.Worker!.WaitingForResources, Is.True);
+        Assert.That(allyBuilder.Worker!.Plans.Select(p => p.OwnerId), Is.EqualTo(new[] { a }));
+        Assert.That(s.Ghosts, Has.Count.EqualTo(2));
+        Assert.That(factory.Factory.Paid, Is.EqualTo(new[] { false }));
+
+        Simulation restored = Restored(sim, setup);
+        Building factoryR = restored.State.FindBuilding(factory.Id)!;
+        Assert.That((factoryR.Factory!.Repeat, factoryR.PassCursor), Is.EqualTo((true, 3)));
+        Assert.That(restored.State.FindBuilding(merge.Id)!.Conveyor!.LastFeeder, Is.EqualTo(Conveyor.FromLeft));
+        // The ally's builder reaches the ghost and rebuilds it for its owner within these seconds.
+        AssertInStep(sim, restored, 15 * Second);
+        Assert.That(s.FindBuilding(s.Map.BuildingAt(20, 12))?.OwnerId, Is.EqualTo(a));
+    }
+
     // The M2 mission three minutes in: one of every kind of building, a factory at work, belts with
     // cargo, a builder with a queue of orders, the Legion's wave on its way.
     private static Simulation RichM2(out MatchSetup setup)

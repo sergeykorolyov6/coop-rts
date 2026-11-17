@@ -1,8 +1,9 @@
 namespace Game.Sim;
 
-// What the build menu shows before the click: the same answer BuildCommand gives for its first
-// site, so a green silhouette never turns into a rejection (drill.md, conveyors.md UI).
-// Money is told apart: a silhouette the wallet cannot pay for yet is placed and waits (builder-beam.md).
+// What the UI asks the sim about building, read-only. Before the click: the same answer
+// BuildCommand gives for its first site, so a green silhouette never turns into a rejection
+// (drill.md, conveyors.md UI); money is told apart — a silhouette the wallet cannot pay for yet is
+// placed and waits (builder-beam.md). About what stands: a belt's inputs, a builder's reach.
 public static class PlacementPreview
 {
     public static RejectReason? Check(SimState state, int playerId, string buildingTypeId, int x, int y, Direction direction)
@@ -21,6 +22,11 @@ public static class PlacementPreview
         return (System.Math.Max(0, stats!.CostPrimary - wallet.Get(Resources.Primary)),
             System.Math.Max(0, stats.CostSecondary - wallet.Secondary));
     }
+
+    // builder-beam.md: the unit builds or repairs this building from where it stands (the beam is
+    // drawn then): within build_range of its edge and with no cliff between.
+    public static bool InBuildRange(SimState state, Unit unit, Building building) =>
+        Construction.InBuildRange(state, unit, building);
 
     // belt-merge.md: how many own belts feed this one (behind, left, right) — shown on hover.
     public static int BeltInputs(SimState state, Building belt) => ConveyorSystem.InputCount(state, belt);

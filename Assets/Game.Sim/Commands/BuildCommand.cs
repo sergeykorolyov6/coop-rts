@@ -95,24 +95,12 @@ public sealed class BuildCommand : ICommand
         bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
         {
-            Worker? worker = unit.Worker;
-            if (worker == null)
+            if (unit.Worker == null)
                 continue;
             var plans = new PlannedBuild[_sites.Length];
             for (int i = 0; i < _sites.Length; i++)
                 plans[i] = new PlannedBuild(BuildingTypeId, _sites[i].CellX, _sites[i].CellY, _sites[i].Direction);
-
-            // Shift while building with nothing else queued: the silhouettes join the current
-            // build, built in order (order-queue.md).
-            if (Queued && unit.Order.Kind == UnitOrderKind.Build && unit._queue.Count == 0)
-            {
-                worker._plans.AddRange(plans);
-                continue;
-            }
-            if (UnitOrders.Defer(unit, Queued, UnitOrder.Build(), plans, ref full))
-                continue;
-            UnitOrders.Replace(unit, UnitOrder.Build());
-            worker._plans.AddRange(plans);
+            UnitOrders.GiveBuild(unit, plans, Queued, ref full);
         }
         if (full)
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));

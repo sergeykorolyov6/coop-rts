@@ -12,17 +12,17 @@ internal static class FactorySystem
         {
             Building b = buildings[i];
             Factory? factory = b.Factory;
-            if (factory == null || b.IsDead || !b.IsComplete || factory._queue.Count == 0)
+            if (factory == null || b.IsDead || !b.IsComplete || factory.Queue.Count == 0)
                 continue;
 
-            UnitStats stats = state.Data.Unit(factory._queue[0]);
+            UnitStats stats = state.Data.Unit(factory.Queue[0]);
             // factory-auto.md: an unpaid repeat at the front is paid the first turn the stock has
             // enough, and only then made; until then the factory waits on it.
-            if (!factory._paid[0])
+            if (!factory.Paid[0])
             {
                 if (!ProduceCommand.Payer(state, b).TryPay(stats.CostPrimary, stats.CostSecondary))
                     continue;
-                factory._paid[0] = true;
+                factory.MarkPaid(0);
             }
             if (factory.Progress < stats.BuildTimeTicks)
                 factory.Progress++;
@@ -36,14 +36,9 @@ internal static class FactorySystem
             Unit unit = state.SpawnUnit(b.OwnerId, stats, Grid.CellCenter(cells[0].X), Grid.CellCenter(cells[0].Y));
             if (factory.HasRally)
                 unit.Order = UnitOrder.MoveTo(factory.RallyX, factory.RallyY);
-            factory._queue.RemoveAt(0);
-            factory._paid.RemoveAt(0);
-            factory.Progress = 0;
+            factory.RemoveAt(0);
             if (factory.Repeat)
-            {
-                factory._queue.Add(stats.Id);
-                factory._paid.Add(false);
-            }
+                factory.Enqueue(stats.Id, paid: false);
             events.Add(new UnitProduced(state.Tick, b.OwnerId, b.Id, unit.Id));
         }
     }

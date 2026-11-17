@@ -47,10 +47,7 @@ public sealed class AttackMoveCommand : ICommand
 
     public void Execute(SimState state, List<SimEvent> events)
     {
-        // Clamped into the map, as a move is.
-        int maxX = Grid.CellToMilli(state.Map.Width) - 1, maxY = Grid.CellToMilli(state.Map.Height) - 1;
-        int x = X < 0 ? 0 : X > maxX ? maxX : X;
-        int y = Y < 0 ? 0 : Y > maxY ? maxY : Y;
+        (int x, int y) = state.Map.ClampMilli(X, Y);
 
         bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
@@ -63,7 +60,7 @@ public sealed class AttackMoveCommand : ICommand
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
     }
 
-    // Who fights on the way: armed, not a worker, not a scout.
-    private static bool Fights(Unit unit) =>
+    // Who fights on the way: armed, not a worker, not a scout. The UI asks the same for its tip.
+    public static bool Fights(Unit unit) =>
         unit.Worker == null && Combat.CanAttack(unit) && !unit.Stats.HasTag(UnitTags.Scout);
 }

@@ -42,8 +42,7 @@ public sealed class ProduceCommand : ICommand
         }
         Wallet wallet = Payer(state, factory!);
         wallet.TryPay(stats!.CostPrimary, stats.CostSecondary);
-        factory!.Factory!._queue.Add(stats.Id);
-        factory.Factory._paid.Add(true);
+        factory!.Factory!.Enqueue(stats.Id, paid: true);
     }
 
     private RejectReason? Check(SimState state, out Building? factory, out UnitStats? stats)
@@ -53,7 +52,7 @@ public sealed class ProduceCommand : ICommand
         if (factory == null || factory.IsDead || factory.Factory == null || factory.OwnerId != PlayerId)
             return RejectReason.NotAllowed;
         if (!factory.IsComplete || !factory.Stats.CanProduce(UnitTypeId)
-            || factory.Factory._queue.Count >= state.Rules.FactoryQueue
+            || factory.Factory.Queue.Count >= state.Rules.FactoryQueue
             || !state.Data.TryGetUnit(UnitTypeId, out stats))
             return RejectReason.CannotProduce;
 

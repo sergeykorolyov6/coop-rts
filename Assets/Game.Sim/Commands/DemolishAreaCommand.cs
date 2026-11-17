@@ -40,6 +40,14 @@ public sealed class DemolishAreaCommand : ICommand
     public static DemolishAreaCommand Read(int playerId, int tick, BinaryReader reader) =>
         new DemolishAreaCommand(playerId, tick, reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
 
+    // What a player's frame takes down: own, standing, not invulnerable, not a headquarters (only
+    // its own button demolishes that), not going already, and touching the frame. The preview of
+    // the frame asks the same.
+    public static bool Takes(Building b, int playerId, int minX, int minY, int maxX, int maxY) =>
+        !b.IsDead && b.OwnerId == playerId && !b.Stats.Invulnerable && b.DemolishTicksLeft == 0
+        && b.Stats.Behavior != BuildingBehavior.Headquarters
+        && Grid.Touches(b.CellX, b.CellY, b.Width, b.Height, minX, minY, maxX, maxY);
+
     public void Execute(SimState state, List<SimEvent> events)
     {
         MapState map = state.Map;
@@ -51,11 +59,8 @@ public sealed class DemolishAreaCommand : ICommand
         // In id order (the building list is), as every same-tick rule.
         foreach (Building b in state.Buildings)
         {
-            if (b.IsDead || b.OwnerId != PlayerId || b.Stats.Invulnerable || b.DemolishTicksLeft > 0
-                || b.Stats.Behavior == BuildingBehavior.Headquarters
-                || !Touches(b.CellX, b.CellY, b.Width, b.Height, minX, minY, maxX, maxY))
-                continue;
-            b.DemolishTicksLeft = DemolishSystem.DemolishTicks(state.Rules, b.Stats);
+            if (Takes(b, PlayerId, minX, minY, maxX, maxY))
+                b.DemolishTicksLeft = DemolishSystem.DemolishTicks(state.Rules, b.Stats);
         }
 
         // rebuild-ghosts.md: the owner's own ghosts in the frame go too.
@@ -105,9 +110,6 @@ public sealed class DemolishAreaCommand : ICommand
     {
         if (plan.ExistingSiteId != 0 || !state.Data.TryGetBuilding(plan.BuildingTypeId, out BuildingStats? stats))
             return false;
-        return Touches(plan.CellX, plan.CellY, stats!.SizeW, stats.SizeH, minX, minY, maxX, maxY);
+        return Grid.Touches(plan.CellX, plan.CellY, stats!.SizeW, stats.SizeH, minX, minY, maxX, maxY);
     }
-
-    private static bool Touches(int x, int y, int w, int h, int minX, int minY, int maxX, int maxY) =>
-        x <= maxX && x + w - 1 >= minX && y <= maxY && y + h - 1 >= minY;
 }

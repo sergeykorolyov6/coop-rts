@@ -145,8 +145,7 @@ public class FactoryAutoTests
         SetStock(f, 100);
         sim.Order(Produce(sim, f, "shooter"));
         sim.Tick();
-        f.Factory!._queue.Add("infantry");
-        f.Factory._paid.Add(false);
+        f.Factory!.Enqueue("infantry", paid: false);
         int stock = Stock(f);
 
         sim.Order(Repeat(sim, f, false));
@@ -164,8 +163,7 @@ public class FactoryAutoTests
         SetStock(f, 100);
         sim.Order(Produce(sim, f, "shooter"));
         sim.Tick();
-        f.Factory!._queue.Add("infantry");
-        f.Factory._paid.Add(false);
+        f.Factory!.Enqueue("infantry", paid: false);
         int stock = Stock(f);
 
         sim.Order(new CancelProductionCommand(A, sim.State.Tick, f.Id));
@@ -478,8 +476,7 @@ public class FactoryAutoTests
     {
         var sim = Field();
         Building f = Factory(sim);
-        f.Factory!._queue.Add("infantry");
-        f.Factory._paid.Add(false);
+        f.Factory!.Enqueue("infantry", paid: false);
         SetStock(f, 30);
 
         sim.Order(Produce(sim, f, "infantry"));

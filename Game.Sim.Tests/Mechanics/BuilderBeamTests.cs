@@ -139,6 +139,30 @@ public class BuilderBeamTests
         Assert.That(builder.Worker!.WaitingForResources, Is.True);
     }
 
+    // builder-beam.md, limits: one waiting for resources holds no place in max_builders — an ally
+    // with the same cell in its own plans is not kept waiting behind it.
+    [Test]
+    public void Limit_WaitingBuilder_HoldsNoBuildersPlace_AllyBuildsThatCell()
+    {
+        var sim = Field();
+        Spawn(sim, B, "scout", 12, 9);
+        Unit owner = Builder(sim, A), ally = Builder(sim, B);
+        Put(owner, Center(8), Center(10));
+        Put(ally, Center(13), Center(10));
+        SetWallet(sim, A, 0);
+        SetWallet(sim, B, 100);
+        sim.Order(Line(sim, owner, 10, 10, 1));
+        sim.RunUntil(s => owner.Worker!.WaitingForResources, 100);
+
+        sim.Order(Line(sim, ally, 10, 10, 1));
+        sim.RunUntil(s => SiteAt(s, 10, 10)?.IsComplete == true, 200);
+
+        Assert.That(SiteAt(sim, 10, 10)!.OwnerId, Is.EqualTo(B));
+        sim.Run(2);
+        Assert.That(owner.Worker!.Plans, Is.Empty, "the cell is built: the owner's silhouette is done with");
+        Assert.That(owner.Worker.WaitingForResources, Is.False);
+    }
+
     // ---------- U7.2: build range ----------
 
     [Test]

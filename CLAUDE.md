@@ -117,12 +117,12 @@
 | карта «Каньоны» (первая большая, T5) | миссии `canyons2`, `canyons4`; `maps/canyons.txt` из `Tools/make_canyons_map.py` (заготовка: после первой ручной правки карты генератор удалить) |
 | стройка без выделения строителя, режим размещения (`build-mode.md`, U1) | только Presentation: `BuildMenu`, `PlacementController`; строитель — `SimState.FindBuilder` |
 | дальность стройки (луч), стройка на ходу, ожидание ресурса, нехватка при размещении (`builder-beam.md`, U7) | правило `build_range` (`GameRules.BuildRangeMilli`), `Worker.WaitingForResources`, `Worker.CurrentPlan`, событие `ConstructionWaiting`, `PlacementPreview.Shortfall`; луч — `BuildBeamView` |
-| перекладка ленты; снос рамкой (`relay-and-demolish.md`, U4) | `Construction.RelayableBelt`, `Building.Direction` меняется; `DemolishAreaCommand` (№ 18); режим сноса — `PlacementController.BeginDemolish` |
-| умная линия, изгиб, пролёт, прилипание конца (`smart-line.md`, U3) | `LinePlanner.Plan`, `LinePlan` (`BrokenSpan`, `StuckToId`, `MergesIntoBelt`), `LineCell`, `LineCellKind` |
+| перекладка ленты; снос рамкой (`relay-and-demolish.md`, U4) | `Construction.RelayableBelt`, `Building.Direction` меняется; `DemolishAreaCommand` (№ 18; что берёт рамка — `Takes`, тем же спрашивает превью); режим сноса — `PlacementController.BeginDemolish` |
+| умная линия, изгиб, пролёт, прилипание конца (`smart-line.md`, U3) | `LinePlanner.Plan`, `LinePlan` (`Stop` — `LineStop`, `BrokenSpan`, `StuckToId`, `MergesIntoBelt`), `LineCell`, `LineCellKind` |
 | буры рамкой, сдвиг сетки (`drill-fill.md`, U9) | `DrillFill.Plan` → `DrillFillPlan` (`DrillFillCell`, `DrillFillCellKind`), правило `drill_fill_min_ore_pct` (`GameRules.DrillFillMinOrePercent`) |
 | идти с боем; идти, не отвлекаясь (`attack-move.md`, U8) | `AttackMoveCommand` (№ 17, приказ `UnitOrderKind.AttackMove`); `MoveCommand`; тег `scout` — `UnitTags.Scout` |
 | врезка лент, входы клетки, очередь входов (`belt-merge.md`, U2) | `Conveyor.LastFeeder` (`FromBack`, `FromLeft`, `FromRight`), `PlacementPreview.BeltInputs` |
-| повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `Factory.Paid`, `SetRepeatCommand` (№ 19); `Logistics.TryGive` → `Logistics.Needs`, `PassOn`, `Building.PassCursor` |
+| повтор производства, неоплаченное место очереди; проходной склад, нужный ресурс (`factory-auto.md`, U6) | `Factory.Repeat`, `Factory.Paid`, `SetRepeatCommand` (№ 19); `Logistics.TryGive` → `BuildingStats.Needs` (считается при загрузке данных), `PassOn`, `Building.PassCursor` |
 | призрак разрушенного, восстановить (`rebuild-ghosts.md`, U5) | `Ghost`, `SimState.Ghosts`, `GhostRules` (`Leave`, `NearestFor`), `RebuildCommand` (№ 20), `PlannedBuild.OwnerId`, `UnitOrderKind.Rebuild`, `Construction.TickRebuild`, правило `ghost_limit`; вид — `GhostView` |
 
 Новый термин из спеки — добавь сюда, прежде чем называть класс.

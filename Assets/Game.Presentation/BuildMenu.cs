@@ -75,7 +75,10 @@ namespace Game.Presentation
             VisualElement title = HudKit.Child(_panel, "hud-commands__title");
             HudKit.Text(title, "СТРОЙКА", "hud-caption");
             _hint = HudKit.Text(title, "", "hud-caption");
+            // build-mode.md: always shown, so it folds like the other plates — to its title; the keys still work.
+            _hud.AddFold(_panel, title, "build");
             _grid = HudKit.Child(_panel, "hud-commands__grid");
+            _grid.AddToClassList("hud-fold");
             _hud.BottomBar.Add(_panel);
         }
 
@@ -242,21 +245,17 @@ namespace Game.Presentation
             };
         }
 
-        // To the own builder, as a building order would go (build-mode.md): after its build, or now.
+        // To the own builder, the way a building order goes (PlacementController.BuilderForOrder).
         private void RebuildAll()
         {
             Simulation? simulation = _runner!.Simulation;
             if (simulation == null || _localPlayer == null || _runner.IsReplay)
                 return;
             SimState state = simulation.State;
-            Unit? builder = state.FindBuilder(_localPlayer.PlayerId);
-            if (builder == null)
-                return;
-            Keyboard? keyboard = Keyboard.current;
-            bool queued = (keyboard != null && keyboard.shiftKey.isPressed)
-                || builder.Order.Kind == UnitOrderKind.Build || builder.Order.Kind == UnitOrderKind.Idle;
-            _runner.Submit(new RebuildCommand(_localPlayer.PlayerId, state.Tick, new[] { builder.Id },
-                0, 0, state.Map.Width - 1, state.Map.Height - 1, includeAllies: false, queued));
+            Unit? builder = _placement!.BuilderForOrder(state, out bool queued);
+            if (builder != null)
+                _runner.Submit(new RebuildCommand(_localPlayer.PlayerId, state.Tick, new[] { builder.Id },
+                    0, 0, state.Map.Width - 1, state.Map.Height - 1, includeAllies: false, queued));
         }
 
         private Wallet? CurrentWallet()

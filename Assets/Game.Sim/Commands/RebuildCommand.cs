@@ -6,7 +6,7 @@ namespace Game.Sim;
 // rebuild-ghosts.md (U5): the ghosts in a rectangle become silhouettes of the selected workers —
 // own ghosts, and an ally's when includeAllies (the worker's player pays, the building stays the
 // ally's). Nearest to the worker first, then each time nearest to the previous one; ties: destroyed
-// earlier. Joins the worker's build like a BuildCommand with Queued.
+// earlier. Reaches the worker as a BuildCommand does (UnitOrders.GiveBuild).
 public sealed class RebuildCommand : ICommand
 {
     public const int Id = 20;
@@ -70,19 +70,8 @@ public sealed class RebuildCommand : ICommand
         bool full = false;
         foreach (Unit unit in UnitSelection.Resolve(state, PlayerId, _unitIds))
         {
-            Worker? worker = unit.Worker;
-            if (worker == null)
-                continue;
-            PlannedBuild[] plans = InOrder(state, unit, picked);
-            if (Queued && unit.Order.Kind == UnitOrderKind.Build && unit._queue.Count == 0)
-            {
-                worker._plans.AddRange(plans);
-                continue;
-            }
-            if (UnitOrders.Defer(unit, Queued, UnitOrder.Build(), plans, ref full))
-                continue;
-            UnitOrders.Replace(unit, UnitOrder.Build());
-            worker._plans.AddRange(plans);
+            if (unit.Worker != null)
+                UnitOrders.GiveBuild(unit, InOrder(state, unit, picked), Queued, ref full);
         }
         if (full)
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));

@@ -81,7 +81,9 @@ internal static class Construction
         state.BuildAssignments.Clear();
         foreach (Unit u in state.Units)
         {
-            if (!u.IsDead && u.Worker != null && u.Order.Kind == UnitOrderKind.Build && u.Worker.CurrentPlanKey >= 0)
+            // builder-beam.md: one waiting for resources holds no place — there is no site yet.
+            if (!u.IsDead && u.Worker != null && u.Order.Kind == UnitOrderKind.Build && u.Worker.CurrentPlanKey >= 0
+                && !u.Worker.WaitingForResources)
                 Assign(state, u.Worker.CurrentPlanKey);
         }
         foreach (Building b in state.Buildings)
@@ -138,7 +140,7 @@ internal static class Construction
             {
                 if (belt.Direction != plan.Direction)
                 {
-                    if (!InBuildRange(state, unit, plan, stats))
+                    if (!InBuildRange(state, unit, belt))
                     {
                         Movement.StepToRectangle(state, unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH);
                         return;
@@ -200,14 +202,8 @@ internal static class Construction
 
             if (site.WorkersThisTick >= stats.MaxBuilders)
                 return;
-            site.WorkersThisTick++;
-            // One builder does build_speed_pct hundredths of a tick of work per tick, exactly.
-            site.BuildSpeedAccumulator += state.Rules.BuildSpeedPercent;
-            site.AddWork(site.BuildSpeedAccumulator / 100);
-            site.BuildSpeedAccumulator %= 100;
-            if (site.IsComplete)
+            if (Work(state, site, events))
             {
-                events.Add(new ConstructionCompleted(state.Tick, site.OwnerId, site.Id));
                 DropPlan(worker, plan);
                 if (plans.Count == 0)
                     unit.Order = UnitOrder.Idle;
@@ -218,77 +214,74 @@ internal static class Construction
         }
     }
 
-    // rebuild-ghosts.md, U5.3: a repairer (no Worker) rebuilds a ghost by itself: walks into build range,
-    // pays in full from its own player and places the building for the ghost's owner, then builds it
-    // as a worker would. Someone started it first — it helps with that site; otherwise it gives up.
-    public static void TickRebuild(SimState state, Unit unit, List<SimEvent> events)
+    // One builder's tick of work on a site: build_speed_pct hundredths of a tick of work, exactly.
+    // True when that finished the building.
+    private static bool Work(SimState state, Building site, List<SimEvent> events)
     {
-        Building? site = unit.TargetId != 0 ? state.FindBuilding(unit.TargetId) : null;
-        if (site == null)
-        {
-            Ghost? ghost = GhostRules.Find(state, unit.Order.TargetId);
-            if (ghost == null)
-            {
-                Building? there = state.FindBuilding(state.Map.BuildingAt(unit.Order.X, unit.Order.Y));
-                if (there == null || there.IsDead || there.IsComplete || !state.Relations.IsAlly(unit.OwnerId, there.OwnerId))
-                {
-                    UnitOrders.Give(unit, UnitOrder.Idle);
-                    return;
-                }
-                site = there;
-                unit.TargetId = there.Id;
-            }
-            else
-            {
-                BuildingStats stats = state.Data.Building(ghost.BuildingTypeId);
-                if (Movement.DistanceToRectangle(unit, ghost.CellX, ghost.CellY, stats.SizeW, stats.SizeH) > state.Rules.BuildRangeMilli
-                    || !Sight.LevelAdjacent(state.Map, unit, ghost.CellX, ghost.CellY))
-                {
-                    Movement.StepToRectangle(state, unit, ghost.CellX, ghost.CellY, stats.SizeW, stats.SizeH);
-                    return;
-                }
-                if (CheckPlacement(state, ghost.OwnerId, stats, ghost.CellX, ghost.CellY, ghost.Direction) != null
-                    || !state.GetPlayer(unit.OwnerId).Wallet.TryPay(stats.CostPrimary, stats.CostSecondary))
-                {
-                    UnitOrders.Give(unit, UnitOrder.Idle);
-                    return;
-                }
-                site = state.PlaceBuilding(ghost.OwnerId, stats, ghost.CellX, ghost.CellY, ghost.Direction, complete: false);
-                unit.TargetId = site.Id;
-            }
-        }
-
-        if (site.IsDead || site.IsComplete)
-        {
-            UnitOrders.Give(unit, UnitOrder.Idle);
-            return;
-        }
-        if (Movement.DistanceToBuilding(unit.X, unit.Y, site) > state.Rules.BuildRangeMilli || !Sight.LevelAdjacent(state.Map, unit, site))
-        {
-            Movement.StepToRectangle(state, unit, site.CellX, site.CellY, site.Width, site.Height);
-            return;
-        }
-        // Enough builders on it already: look for something else.
-        if (site.WorkersThisTick >= site.Stats.MaxBuilders)
-        {
-            UnitOrders.Give(unit, UnitOrder.Idle);
-            return;
-        }
         site.WorkersThisTick++;
         site.BuildSpeedAccumulator += state.Rules.BuildSpeedPercent;
         site.AddWork(site.BuildSpeedAccumulator / 100);
         site.BuildSpeedAccumulator %= 100;
-        if (site.IsComplete)
+        if (!site.IsComplete)
+            return false;
+        events.Add(new ConstructionCompleted(state.Tick, site.OwnerId, site.Id));
+        return true;
+    }
+
+    // rebuild-ghosts.md, U5.3: a repairer (no Worker) rebuilds a ghost by itself: walks into build range,
+    // pays in full from its own player and places the building for the ghost's owner, then builds it
+    // as a worker would. The ghost is gone — started by this unit or by anyone else — it helps with
+    // the unfinished building on that cell; with none there, it gives up.
+    public static void TickRebuild(SimState state, Unit unit, List<SimEvent> events)
+    {
+        Ghost? ghost = GhostRules.Find(state, unit.Order.TargetId);
+        Building? site;
+        if (ghost != null)
         {
-            events.Add(new ConstructionCompleted(state.Tick, site.OwnerId, site.Id));
-            UnitOrders.Give(unit, UnitOrder.Idle);
+            BuildingStats stats = state.Data.Building(ghost.BuildingTypeId);
+            if (!InBuildRange(state, unit, ghost.CellX, ghost.CellY, stats.SizeW, stats.SizeH))
+            {
+                Movement.StepToRectangle(state, unit, ghost.CellX, ghost.CellY, stats.SizeW, stats.SizeH);
+                return;
+            }
+            if (CheckPlacement(state, ghost.OwnerId, stats, ghost.CellX, ghost.CellY, ghost.Direction) != null
+                || !state.GetPlayer(unit.OwnerId).Wallet.TryPay(stats.CostPrimary, stats.CostSecondary))
+            {
+                UnitOrders.Give(unit, UnitOrder.Idle);
+                return;
+            }
+            site = state.PlaceBuilding(ghost.OwnerId, stats, ghost.CellX, ghost.CellY, ghost.Direction, complete: false);
         }
+        else
+        {
+            site = state.FindBuilding(state.Map.BuildingAt(unit.Order.X, unit.Order.Y));
+            if (site == null || site.IsDead || site.IsComplete || !state.Relations.IsAlly(unit.OwnerId, site.OwnerId))
+            {
+                UnitOrders.Give(unit, UnitOrder.Idle);
+                return;
+            }
+            if (!InBuildRange(state, unit, site))
+            {
+                Movement.StepToRectangle(state, unit, site.CellX, site.CellY, site.Width, site.Height);
+                return;
+            }
+        }
+
+        // Enough builders on it already, or this tick finished it: look for something else.
+        if (site.WorkersThisTick >= site.Stats.MaxBuilders || Work(state, site, events))
+            UnitOrders.Give(unit, UnitOrder.Idle);
     }
 
     // builder-beam.md: within build_range of the footprint's edge and level-adjacent to it.
+    internal static bool InBuildRange(SimState state, Unit unit, int cellX, int cellY, int w, int h) =>
+        Movement.DistanceToRectangle(unit, cellX, cellY, w, h) <= state.Rules.BuildRangeMilli
+        && Sight.LevelAdjacent(state.Map, unit, cellX, cellY);
+
+    internal static bool InBuildRange(SimState state, Unit unit, Building b) =>
+        InBuildRange(state, unit, b.CellX, b.CellY, b.Width, b.Height);
+
     private static bool InBuildRange(SimState state, Unit unit, PlannedBuild plan, BuildingStats stats) =>
-        Movement.DistanceToRectangle(unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH) <= state.Rules.BuildRangeMilli
-        && Sight.LevelAdjacent(state.Map, unit, plan.CellX, plan.CellY);
+        InBuildRange(state, unit, plan.CellX, plan.CellY, stats.SizeW, stats.SizeH);
 
     // builder-beam.md, U7.3: while building, one step towards the first later silhouette out of
     // reach — kept only if the current one is still within reach from where the step ends.
@@ -345,7 +338,7 @@ internal static class Construction
         if (target is Building b)
         {
             // builder-beam.md: buildings from build_range, units (below) from interact_range.
-            if (Movement.DistanceToBuilding(unit.X, unit.Y, b) > state.Rules.BuildRangeMilli || !Sight.LevelAdjacent(state.Map, unit, b))
+            if (!InBuildRange(state, unit, b))
             {
                 Movement.StepToRectangle(state, unit, b.CellX, b.CellY, b.Width, b.Height);
                 return;
@@ -433,17 +426,13 @@ internal static class Construction
         return true;
     }
 
+    // The plan the worker is on; one that is gone from its list takes the key with it.
     private static PlannedBuild? CurrentPlan(Worker worker)
     {
-        if (worker.CurrentPlanKey < 0)
-            return null;
-        foreach (PlannedBuild p in worker._plans)
-        {
-            if (PlanKey(p) == worker.CurrentPlanKey)
-                return p;
-        }
-        worker.CurrentPlanKey = -1;
-        return null;
+        PlannedBuild? plan = worker.CurrentPlan;
+        if (plan == null)
+            worker.CurrentPlanKey = -1;
+        return plan;
     }
 
     // The first plan in line that still has room for a builder.

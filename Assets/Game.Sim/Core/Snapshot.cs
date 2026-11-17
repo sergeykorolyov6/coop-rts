@@ -327,11 +327,11 @@ internal static class Snapshot
             w.Write(b.Factory.RallyX);
             w.Write(b.Factory.RallyY);
             w.Write(b.Factory.Repeat);
-            w.Write(b.Factory._queue.Count);
-            for (int i = 0; i < b.Factory._queue.Count; i++)
+            w.Write(b.Factory.Queue.Count);
+            for (int i = 0; i < b.Factory.Queue.Count; i++)
             {
-                w.Write(b.Factory._queue[i]);
-                w.Write(b.Factory._paid[i]);
+                w.Write(b.Factory.Queue[i]);
+                w.Write(b.Factory.Paid[i]);
             }
         }
         w.Write(b.Turret != null);
@@ -417,8 +417,7 @@ internal static class Snapshot
             b.Factory.Repeat = r.ReadBoolean();
             for (int n = Count(r, stream); n > 0; n--)
             {
-                b.Factory._queue.Add(state.Data.Unit(r.ReadString()).Id);
-                b.Factory._paid.Add(r.ReadBoolean());
+                b.Factory.Enqueue(state.Data.Unit(r.ReadString()).Id, r.ReadBoolean());
             }
         }
         if (r.ReadBoolean() != (b.Turret != null))

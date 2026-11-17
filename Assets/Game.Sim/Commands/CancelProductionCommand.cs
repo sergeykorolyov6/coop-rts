@@ -29,18 +29,15 @@ public sealed class CancelProductionCommand : ICommand
     public void Execute(SimState state, List<SimEvent> events)
     {
         Building? b = state.FindBuilding(FactoryId);
-        if (b == null || b.IsDead || b.Factory == null || b.OwnerId != PlayerId || b.Factory._queue.Count == 0)
+        if (b == null || b.IsDead || b.Factory == null || b.OwnerId != PlayerId || b.Factory.Queue.Count == 0)
         {
             events.Add(new CommandRejected(state.Tick, PlayerId, RejectReason.NotAllowed));
             return;
         }
-        List<string> queue = b.Factory._queue;
-        UnitStats stats = state.Data.Unit(queue[queue.Count - 1]);
-        bool paid = b.Factory._paid[queue.Count - 1];
-        queue.RemoveAt(queue.Count - 1);
-        b.Factory._paid.RemoveAt(b.Factory._paid.Count - 1);
-        if (queue.Count == 0)
-            b.Factory.Progress = 0;
+        int last = b.Factory.Queue.Count - 1;
+        UnitStats stats = state.Data.Unit(b.Factory.Queue[last]);
+        bool paid = b.Factory.Paid[last];
+        b.Factory.RemoveAt(last);
         if (!paid)
             return;
 

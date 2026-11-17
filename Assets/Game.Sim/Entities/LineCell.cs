@@ -16,7 +16,5 @@ public readonly struct LineCell
     public Direction Direction { get; }
     public LineCellKind Kind { get; }
 
-    internal LineCell With(LineCellKind kind) => new LineCell(X, Y, Direction, kind);
-
     internal LineCell With(Direction direction, LineCellKind kind) => new LineCell(X, Y, direction, kind);
 }

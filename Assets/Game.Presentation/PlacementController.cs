@@ -44,9 +44,6 @@ namespace Game.Presentation
 
         private readonly List<(string TypeId, BuildSite[] Sites)> _orders = new List<(string, BuildSite[])>();
         private readonly List<BuildSite> _segment = new List<BuildSite>();
-        private readonly List<Transform> _tiles = new List<Transform>();
-        private readonly List<Transform> _arrows = new List<Transform>();
-        private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
 
         // A replacing order is on its way through the input delay (network.md): until the builder
         // shows it, further silhouettes join it instead of replacing it.
@@ -54,25 +51,22 @@ namespace Game.Presentation
 
         private SimRunner? _runner;
         private LocalPlayer? _localPlayer;
-        private Transform? _root;
-        private Material? _baseMaterial;
+        private GroundMarks? _marks;
 
         private Mode _mode;
         private BuildingStats? _stats;
         private Direction _rotation = Direction.Right;
+        // A press that is held: a line, a frame of drills or of demolition grows from _pressCell.
         private bool _dragging;
+        private Vector2Int _pressCell;
         private Vector2Int? _bridgeStart;
-        private Vector2Int _frameStart;
-        // smart-line.md: the line's press cell and which axis it takes first (R flips it while dragging).
-        private Vector2Int _lineStart;
+        // smart-line.md: which axis the line takes first (R flips it while dragging).
         private bool _axisChosen;
         private bool _horizontalFirst = true;
-        // drill-fill.md: where a drill press started, and the drill a plain click would place there.
-        private Vector2Int _fillStart;
+        // drill-fill.md: the drill a plain click would place, and whether the press became a frame.
         private BuildSite _pressSite;
         private bool _filling;
         private int _endedFrame = -1;
-        private int _tilesUsed, _arrowsUsed;
         private int _replaceSentTick = -1;
 
         public bool IsActive => _mode != Mode.None;
@@ -94,8 +88,7 @@ namespace Game.Presentation
         {
             _runner = GetComponent<SimRunner>();
             _localPlayer = GetComponent<LocalPlayer>();
-            _root = new GameObject("Placement").transform;
-            _root.SetParent(transform, worldPositionStays: false);
+            _marks = new GroundMarks(transform, "Placement");
             // Another player may be of another faction.
             _localPlayer.Changed += End;
         }
@@ -109,8 +102,7 @@ namespace Game.Presentation
             _mode = stats!.LinePlacement ? Mode.Line
                 : stats.Behavior == BuildingBehavior.Bridge ? Mode.Bridge
                 : Mode.Single;
-            _dragging = false;
-            _bridgeStart = null;
+            ResetPress();
         }
 
         public void Cancel() => End();
@@ -123,7 +115,13 @@ namespace Game.Presentation
                 return;
             _stats = null;
             _mode = Mode.Demolish;
+            ResetPress();
+        }
+
+        private void ResetPress()
+        {
             _dragging = false;
+            _filling = false;
             _bridgeStart = null;
         }
 
@@ -134,10 +132,9 @@ namespace Game.Presentation
             _mode = Mode.None;
             _stats = null;
             Footprint = null;
-            _dragging = false;
-            _bridgeStart = null;
+            ResetPress();
             _endedFrame = Time.frameCount;
-            HideAll();
+            _marks!.Clear();
             _hud?.ShowTip(null, Vector2.zero);
         }
 
@@ -166,7 +163,7 @@ namespace Game.Presentation
             }
 
             Vector2 pointer = mouse.position.ReadValue();
-            _tilesUsed = _arrowsUsed = 0;
+            _marks!.Begin();
             Footprint = null;
             string? tip = null;
             if (_camera.GroundPoint(pointer, out Vector3 ground))
@@ -185,7 +182,7 @@ namespace Game.Presentation
             // build-mode.md, fail cases: the silhouette shows, the click sends nothing.
             if (tip != null && _mode != Mode.Demolish && simulation.State.FindBuilder(_localPlayer!.PlayerId) == null)
                 tip += "\n" + BuilderAway(simulation.State, _localPlayer.PlayerId);
-            HideUnused();
+            _marks.End();
             _hud?.ShowTip(tip, pointer);
         }
 
@@ -262,13 +259,13 @@ namespace Game.Presentation
             {
                 _dragging = true;
                 _filling = false;
-                _fillStart = cursor;
+                _pressCell = cursor;
                 int px = Mathf.FloorToInt(ground.x - (stats.SizeW - 1) * 0.5f), py = Mathf.FloorToInt(ground.z - (stats.SizeH - 1) * 0.5f);
                 _pressSite = new BuildSite(px, py, _rotation);
             }
             if (!_dragging)
                 return null;
-            if (cursor != _fillStart)
+            if (cursor != _pressCell)
                 _filling = true;
 
             if (!mouse.leftButton.isPressed)
@@ -276,7 +273,7 @@ namespace Game.Presentation
                 _dragging = false;
                 if (_filling)
                 {
-                    DrillFillPlan released = DrillFill.Plan(state, playerId, stats.Id, _fillStart.x, _fillStart.y, cursor.x, cursor.y);
+                    DrillFillPlan released = DrillFill.Plan(state, playerId, stats.Id, _pressCell.x, _pressCell.y, cursor.x, cursor.y);
                     if (released.Sites.Count > 0)
                     {
                         var sites = new BuildSite[released.Sites.Count];
@@ -294,22 +291,9 @@ namespace Game.Presentation
             if (!_filling)
                 return null;
 
-            int minX = Mathf.Min(_fillStart.x, cursor.x), maxX = Mathf.Max(_fillStart.x, cursor.x);
-            int minY = Mathf.Min(_fillStart.y, cursor.y), maxY = Mathf.Max(_fillStart.y, cursor.y);
-            for (int fx = minX; fx <= maxX; fx++)
-            {
-                PlaceTile(fx, minY, _spanColor, 0.35f);
-                if (maxY != minY)
-                    PlaceTile(fx, maxY, _spanColor, 0.35f);
-            }
-            for (int fy = minY + 1; fy < maxY; fy++)
-            {
-                PlaceTile(minX, fy, _spanColor, 0.35f);
-                if (maxX != minX)
-                    PlaceTile(maxX, fy, _spanColor, 0.35f);
-            }
+            _marks!.Frame(FrameTo(cursor), _spanColor, 0.35f, TileThickness, TileLift);
 
-            DrillFillPlan plan = DrillFill.Plan(state, playerId, stats.Id, _fillStart.x, _fillStart.y, cursor.x, cursor.y);
+            DrillFillPlan plan = DrillFill.Plan(state, playerId, stats.Id, _pressCell.x, _pressCell.y, cursor.x, cursor.y);
             bool nearCamp = false;
             foreach (DrillFillCell site in plan.Sites)
             {
@@ -358,20 +342,20 @@ namespace Game.Presentation
             Vector2Int cursor = CursorCell(state, ground);
             if (!_dragging)
             {
-                _lineStart = cursor;
+                _pressCell = cursor;
                 _axisChosen = false;
                 if (mouse.leftButton.wasPressedThisFrame && !overUi)
                     _dragging = true;
             }
-            else if (!_axisChosen && cursor != _lineStart)
+            else if (!_axisChosen && cursor != _pressCell)
             {
                 // The axis the cursor first left the press cell by; diagonally — horizontal.
-                Vector2Int delta = cursor - _lineStart;
+                Vector2Int delta = cursor - _pressCell;
                 _horizontalFirst = Mathf.Abs(delta.x) >= Mathf.Abs(delta.y);
                 _axisChosen = true;
             }
 
-            LinePlan plan = LinePlanner.Plan(state, playerId, stats.Id, _lineStart.x, _lineStart.y, cursor.x, cursor.y, _horizontalFirst, _rotation);
+            LinePlan plan = LinePlanner.Plan(state, playerId, stats.Id, _pressCell.x, _pressCell.y, cursor.x, cursor.y, _horizontalFirst, _rotation);
             bool belt = stats.Behavior == BuildingBehavior.Conveyor;
             int built = 0, relaid = 0, bridges = 0;
             foreach (LineCell cell in plan.Cells)
@@ -397,22 +381,27 @@ namespace Game.Presentation
             int affordable = Affordable(state, playerId, plan);
             if (affordable >= 0)
                 tip += $"\nСейчас хватает на {affordable} — остальное по мере дохода";
-            if (plan.Blocked)
+            switch (plan.Stop)
             {
-                Vector2Int first = new Vector2Int(plan.Cells.Count > 0 ? plan.Cells[0].X : _lineStart.x, plan.Cells.Count > 0 ? plan.Cells[0].Y : _lineStart.y);
-                RejectReason? reason = PlacementPreview.Check(state, playerId, stats.Id, first.x, first.y, _rotation);
-                tip += "\n" + (reason != null ? DisplayNames.Reject(reason.Value, stats.Id) : "Отсюда линию не начать");
+                case LineStop.FirstCell:
+                    RejectReason? reason = PlacementPreview.Check(state, playerId, stats.Id, _pressCell.x, _pressCell.y, _rotation);
+                    tip += "\n" + (reason != null ? DisplayNames.Reject(reason.Value, stats.Id) : "Отсюда линию не начать");
+                    break;
+                case LineStop.BridgeTooFar:
+                    tip += $"\nМост не достаёт: пролёт {plan.BrokenSpan} кл., дальность {state.Rules.BridgeRange - 1}";
+                    break;
+                case LineStop.NoBridge:
+                    tip += "\nДальше не провести: моста здесь не поставить (изгиб, своя лента или занятый конец)";
+                    break;
+                default:
+                    if (!plan.HasOrders)
+                        tip += belt ? "\nЛента уже есть" : "\nСтроить здесь нечего";
+                    break;
             }
-            else if (plan.BrokenSpan > 0)
-                tip += $"\nМост не достаёт: пролёт {plan.BrokenSpan} кл., дальность {state.Rules.BridgeRange - 1}";
-            else if (plan.BrokenSpan < 0)
-                tip += "\nДальше не провести: моста здесь не поставить (изгиб, своя лента или занятый конец)";
-            else if (!plan.HasOrders && plan.Cells.Count > 0)
-                tip += belt ? "\nЛента уже есть" : "\nСтроить здесь нечего";
             if (plan.StuckToId != 0 && state.FindBuilding(plan.StuckToId) is Building stuck)
                 tip += $"\nКонец прилипнет: {DisplayNames.Building(stuck.Stats.Id).ToLowerInvariant()}";
             if (plan.MergesIntoBelt)
-                tip += "\nКонец смотрит в ленту поперёк — врезка";
+                tip += "\nКонец входит в свою ленту — врежется в линию";
             tip += _dragging ? "\nR — изгиб с другой стороны"
                 : belt ? "\nЗажмите и тяните · R — поворот\nРесурс едет по стрелкам: конец ленты направьте в штаб" : "\nЗажмите и тяните";
 
@@ -554,41 +543,26 @@ namespace Game.Presentation
             Vector2Int cursor = CursorCell(state, ground);
             if (!_dragging)
             {
-                _frameStart = cursor;
+                _pressCell = cursor;
                 if (mouse.leftButton.wasPressedThisFrame && !overUi)
                     _dragging = true;
             }
-            int minX = Mathf.Min(_frameStart.x, cursor.x), maxX = Mathf.Max(_frameStart.x, cursor.x);
-            int minY = Mathf.Min(_frameStart.y, cursor.y), maxY = Mathf.Max(_frameStart.y, cursor.y);
-
-            for (int x = minX; x <= maxX; x++)
-            {
-                PlaceTile(x, minY, _demolishColor, 0.5f);
-                if (maxY != minY)
-                    PlaceTile(x, maxY, _demolishColor, 0.5f);
-            }
-            for (int y = minY + 1; y < maxY; y++)
-            {
-                PlaceTile(minX, y, _demolishColor, 0.5f);
-                if (maxX != minX)
-                    PlaceTile(maxX, y, _demolishColor, 0.5f);
-            }
+            RectInt frame = FrameTo(cursor);
+            int minX = frame.xMin, minY = frame.yMin, maxX = frame.xMax - 1, maxY = frame.yMax - 1;
+            _marks!.Frame(frame, _demolishColor, 0.5f, TileThickness, TileLift);
 
             int belts = 0, others = 0, refundPrimary = 0, refundSecondary = 0;
             bool headquarters = false;
             FactionStats? faction = state.GetPlayer(playerId).Faction;
             foreach (Building b in state.Buildings)
             {
-                if (b.IsDead || b.OwnerId != playerId || b.Stats.Invulnerable
-                    || b.CellX > maxX || b.CellX + b.Width - 1 < minX || b.CellY > maxY || b.CellY + b.Height - 1 < minY)
-                    continue;
-                if (b.Stats.Behavior == BuildingBehavior.Headquarters)
+                // The same question the command will ask (DemolishAreaCommand.Takes).
+                if (!DemolishAreaCommand.Takes(b, playerId, minX, minY, maxX, maxY))
                 {
-                    headquarters = true;
+                    headquarters |= !b.IsDead && b.OwnerId == playerId && b.Stats.Behavior == BuildingBehavior.Headquarters
+                        && Grid.Touches(b.CellX, b.CellY, b.Width, b.Height, minX, minY, maxX, maxY);
                     continue;
                 }
-                if (b.DemolishTicksLeft > 0)
-                    continue;
                 float top = PrimitiveModels.BuildingHeight(b.Stats) + 0.05f;
                 for (int y = b.CellY; y < b.CellY + b.Height; y++)
                     for (int x = b.CellX; x < b.CellX + b.Width; x++)
@@ -606,7 +580,7 @@ namespace Game.Presentation
                 : $"Снести: лент {belts}, зданий {others} · вернётся {refundPrimary}{(refundSecondary > 0 ? $" + {refundSecondary} втор." : "")}";
             if (headquarters)
                 tip += "\nШтаб рамкой не сносится — только кнопкой на его панели";
-            tip += "\nНезаказанные силуэты в рамке тоже снимутся · ПКМ / Esc — закончить";
+            tip += "\nСилуэты и призраки разрушенного в рамке тоже снимутся · ПКМ / Esc — закончить";
 
             if (_dragging && !mouse.leftButton.isPressed)
             {
@@ -643,6 +617,13 @@ namespace Game.Presentation
                 Mathf.Clamp(Mathf.FloorToInt(ground.x), 0, state.Map.Width - 1),
                 Mathf.Clamp(Mathf.FloorToInt(ground.z), 0, state.Map.Height - 1));
 
+        // The cells between the press and the cursor, both included.
+        private RectInt FrameTo(Vector2Int cursor)
+        {
+            int minX = Mathf.Min(_pressCell.x, cursor.x), minY = Mathf.Min(_pressCell.y, cursor.y);
+            return new RectInt(minX, minY, Mathf.Abs(cursor.x - _pressCell.x) + 1, Mathf.Abs(cursor.y - _pressCell.y) + 1);
+        }
+
         private static Direction DirectionOf(Vector2Int delta)
         {
             if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
@@ -650,9 +631,29 @@ namespace Game.Presentation
             return delta.y > 0 ? Direction.Up : Direction.Down;
         }
 
-        // build-mode.md: the silhouette goes to the local builder. It joins the builder's build (or
-        // starts at once when it is idle); anything else the builder does is dropped for it, unless
-        // Shift puts it after everything ordered. The mode stays for the next silhouette.
+        // build-mode.md: who gets an order from the build menu, and how. The local player's builder;
+        // the order joins its build (or starts at once when it is idle), replaces whatever else it does,
+        // and with Shift goes after everything ordered. Null when there is no builder. Asked once per
+        // order sent: a replacing order is remembered for the input delay.
+        public Unit? BuilderForOrder(SimState state, out bool queued)
+        {
+            queued = false;
+            Unit? builder = state.FindBuilder(_localPlayer!.PlayerId);
+            if (builder == null)
+                return null;
+            UnitOrderKind kind = builder.Order.Kind;
+            bool shift = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+            bool pending = _replaceSentTick >= 0 && state.Tick - _replaceSentTick <= PendingTicks
+                && kind != UnitOrderKind.Build;
+            queued = shift || pending || kind == UnitOrderKind.Build || kind == UnitOrderKind.Idle;
+            if (!queued)
+                _replaceSentTick = state.Tick;
+            else if (!pending)
+                _replaceSentTick = -1;
+            return builder;
+        }
+
+        // The silhouette goes to the builder; the mode stays for the next one.
         private void Order(Simulation simulation, string typeId, BuildSite[] sites)
         {
             _orders.Clear();
@@ -660,29 +661,20 @@ namespace Game.Presentation
             Order(simulation, _orders);
         }
 
-        // smart-line.md: a line goes as several orders on one tick; the first by the rule above, the
-        // rest after it (Queued), so they are built in the order of the path.
+        // smart-line.md: a line goes as several orders on one tick; the first by the builder's rule,
+        // the rest after it (Queued), so they are built in the order of the path.
         private void Order(Simulation simulation, List<(string TypeId, BuildSite[] Sites)> orders)
         {
             SimState state = simulation.State;
             int playerId = _localPlayer!.PlayerId;
-            Unit? builder = state.FindBuilder(playerId);
-            if (builder != null && orders.Count > 0)
+            bool queued = false;
+            Unit? builder = orders.Count > 0 ? BuilderForOrder(state, out queued) : null;
+            if (builder != null)
             {
-                UnitOrderKind kind = builder.Order.Kind;
-                bool shift = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
-                bool pending = _replaceSentTick >= 0 && state.Tick - _replaceSentTick <= PendingTicks
-                    && kind != UnitOrderKind.Build;
-                bool queued = shift || pending || kind == UnitOrderKind.Build || kind == UnitOrderKind.Idle;
-                if (!queued)
-                    _replaceSentTick = state.Tick;
-                else if (!pending)
-                    _replaceSentTick = -1;
                 for (int i = 0; i < orders.Count; i++)
                     _runner!.Submit(new BuildCommand(playerId, state.Tick, new[] { builder.Id }, orders[i].TypeId, orders[i].Sites, queued || i > 0));
             }
-            _dragging = false;
-            _bridgeStart = null;
+            ResetPress();
             // There can be one headquarters only: nothing more to place.
             if (_stats!.Behavior == BuildingBehavior.Headquarters && state.GetPlayer(playerId).Faction?.SingleHeadquarters == true)
                 End();
@@ -734,76 +726,21 @@ namespace Game.Presentation
         private static string Cost(BuildingStats stats) =>
             stats.CostSecondary > 0 ? $"{stats.CostPrimary} + {stats.CostSecondary}" : $"{stats.CostPrimary}";
 
+        private const float TileThickness = 0.04f, TileLift = 0.03f;
+
         // lift: over a building's top, so the mark is seen on it (relay-and-demolish.md: what goes is covered red).
-        private void PlaceTile(int x, int y, Color color, float size = 0.9f, float lift = 0.03f)
-        {
-            Transform tile = Pooled(_tiles, ref _tilesUsed, "GhostTile");
-            tile.localScale = new Vector3(size, 0.04f, size);
-            tile.localPosition = Ground.Lift(new Vector3(x + 0.5f, lift, y + 0.5f));
-            tile.localRotation = Quaternion.identity;
-            tile.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(color);
-        }
+        private void PlaceTile(int x, int y, Color color, float size = 0.9f, float lift = TileLift) =>
+            _marks!.Tile(x, y, color, size, TileThickness, lift);
 
         // A bar from the cell centre towards its exit side.
-        private void PlaceArrow(int x, int y, Direction direction)
-        {
-            Transform arrow = Pooled(_arrows, ref _arrowsUsed, "GhostArrow");
-            float yaw = direction switch { Direction.Right => 90f, Direction.Up => 0f, Direction.Left => 270f, _ => 180f };
-            Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
-            arrow.localRotation = rotation;
-            arrow.localScale = new Vector3(0.18f, 0.06f, 0.45f);
-            arrow.localPosition = Ground.Lift(new Vector3(x + 0.5f, 0.07f, y + 0.5f)) + rotation * new Vector3(0f, 0f, 0.18f);
-            arrow.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(Color.white);
-        }
-
-        private Transform Pooled(List<Transform> pool, ref int used, string name)
-        {
-            if (used < pool.Count)
-            {
-                Transform existing = pool[used++];
-                existing.gameObject.SetActive(true);
-                return existing;
-            }
-            GameObject go = Primitives.Create(PrimitiveType.Cube);
-            go.name = name;
-            Destroy(go.GetComponent<Collider>());
-            _baseMaterial ??= go.GetComponent<MeshRenderer>().sharedMaterial;
-            go.transform.SetParent(_root, worldPositionStays: false);
-            pool.Add(go.transform);
-            used++;
-            return go.transform;
-        }
-
-        private void HideUnused()
-        {
-            for (int i = _tilesUsed; i < _tiles.Count; i++)
-                _tiles[i].gameObject.SetActive(false);
-            for (int i = _arrowsUsed; i < _arrows.Count; i++)
-                _arrows[i].gameObject.SetActive(false);
-        }
-
-        private void HideAll()
-        {
-            _tilesUsed = _arrowsUsed = 0;
-            HideUnused();
-        }
-
-        private Material MaterialFor(Color color)
-        {
-            if (!_materials.TryGetValue(color, out Material? material))
-            {
-                material = new Material(_baseMaterial) { color = color };
-                _materials.Add(color, material);
-            }
-            return material;
-        }
+        private void PlaceArrow(int x, int y, Direction direction) =>
+            _marks!.Arrow(x, y, direction, Color.white, new Vector3(0.18f, 0.06f, 0.45f), 0.07f);
 
         private void OnDestroy()
         {
             if (_localPlayer != null)
                 _localPlayer.Changed -= End;
-            foreach (Material material in _materials.Values)
-                Destroy(material);
+            _marks?.Destroy();
         }
     }
 }

@@ -5,7 +5,7 @@ namespace Game.Net;
 public static class LockstepSettings
 {
     // Bump on any change of the wire format or of the numbers below.
-    public const int ProtocolVersion = 2;
+    public const int ProtocolVersion = 3;
 
     // Ticks per turn: commands of a turn run on its first tick.
     public const int TurnTicks = 2;

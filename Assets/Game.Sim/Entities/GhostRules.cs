@@ -40,7 +40,7 @@ internal static class GhostRules
     public static bool Touches(SimState state, Ghost g, int minX, int minY, int maxX, int maxY)
     {
         BuildingStats stats = state.Data.Building(g.BuildingTypeId);
-        return g.CellX <= maxX && g.CellX + stats.SizeW - 1 >= minX && g.CellY <= maxY && g.CellY + stats.SizeH - 1 >= minY;
+        return Grid.Touches(g.CellX, g.CellY, stats.SizeW, stats.SizeH, minX, minY, maxX, maxY);
     }
 
     public static Ghost? Find(SimState state, int id)
