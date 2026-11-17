@@ -11,14 +11,16 @@ namespace Game.Presentation
     // builder, whatever is selected (build-mode.md).
     // One building: a silhouette follows the cursor, green / red / yellow (inside a live creep
     // camp's aggro radius, creep-camp.md), a drill shows its ore cells and rate (drill.md); click places.
-    // Conveyor: press and drag a line, it turns where the mouse turns, arrows show the direction
-    // of every cell, the tip shows the total cost (conveyors.md). Bridge: first end, then second
-    // end on a straight line within range. R rotates a single conveyor cell or bridge.
+    // Conveyor and wall: press and drag a line from cell to cell, arrows show the direction of every
+    // belt cell, the tip shows the total cost (conveyors.md). Bridge (the separate tool): first end,
+    // then second end on a straight line within range. R rotates a single cell or bridge.
     // The mode stays on for the next silhouette until right click or Esc (or a headquarters that can
     // be only one); a building joins the builder's build, or replaces what else it does — Shift
     // always queues it after everything ordered (order-queue.md).
-    // relay-and-demolish.md: belt cells over own belts show blue — they are turned, not built; the
-    // demolition mode drags a frame and takes down everything own inside (DemolishAreaCommand).
+    // Lines (belts, walls) are planned by LinePlanner (smart-line.md): one bend, bridges over what is
+    // in the way, the end sticking to a receiver; belt cells over own belts show blue — they are turned,
+    // not built (relay-and-demolish.md). The demolition mode drags a frame and takes down everything
+    // own inside (DemolishAreaCommand).
     [RequireComponent(typeof(SimRunner), typeof(LocalPlayer))]
     public sealed class PlacementController : MonoBehaviour
     {
@@ -35,8 +37,11 @@ namespace Game.Presentation
         [Tooltip("Belt cells over own belts: turned, free (relay-and-demolish.md).")]
         [SerializeField] private Color _relayColor = new Color(0.35f, 0.75f, 1.00f);
         [SerializeField] private Color _demolishColor = new Color(0.95f, 0.20f, 0.15f);
+        [Tooltip("Line cells already there (smart-line.md): nothing is ordered on them.")]
+        [SerializeField] private Color _skipColor = new Color(0.55f, 0.55f, 0.55f);
 
-        private readonly List<Vector2Int> _path = new List<Vector2Int>();
+        private readonly List<(string TypeId, BuildSite[] Sites)> _orders = new List<(string, BuildSite[])>();
+        private readonly List<BuildSite> _segment = new List<BuildSite>();
         private readonly List<Transform> _tiles = new List<Transform>();
         private readonly List<Transform> _arrows = new List<Transform>();
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
@@ -56,6 +61,10 @@ namespace Game.Presentation
         private bool _dragging;
         private Vector2Int? _bridgeStart;
         private Vector2Int _frameStart;
+        // smart-line.md: the line's press cell and which axis it takes first (R flips it while dragging).
+        private Vector2Int _lineStart;
+        private bool _axisChosen;
+        private bool _horizontalFirst = true;
         private int _endedFrame = -1;
         private int _tilesUsed, _arrowsUsed;
         private int _replaceSentTick = -1;
@@ -96,7 +105,6 @@ namespace Game.Presentation
                 : Mode.Single;
             _dragging = false;
             _bridgeStart = null;
-            _path.Clear();
         }
 
         public void Cancel() => End();
@@ -111,7 +119,6 @@ namespace Game.Presentation
             _mode = Mode.Demolish;
             _dragging = false;
             _bridgeStart = null;
-            _path.Clear();
         }
 
         private void End()
@@ -141,7 +148,16 @@ namespace Game.Presentation
                 return;
             }
             if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
-                _rotation = (Direction)(((int)_rotation + 1) % 4);
+            {
+                // smart-line.md: while a line is dragged R puts the bend on the other side.
+                if (_mode == Mode.Line && _dragging)
+                {
+                    _horizontalFirst = !_horizontalFirst;
+                    _axisChosen = true;
+                }
+                else
+                    _rotation = (Direction)(((int)_rotation + 1) % 4);
+            }
 
             Vector2 pointer = mouse.position.ReadValue();
             _tilesUsed = _arrowsUsed = 0;
@@ -213,87 +229,156 @@ namespace Game.Presentation
 
             if (mouse.leftButton.wasPressedThisFrame && !overUi && reason == null)
             {
-                Order(simulation, new[] { new BuildSite(x, y, _rotation) });
+                Order(simulation, _stats!.Id, new[] { new BuildSite(x, y, _rotation) });
             }
             return tip;
         }
 
+        // smart-line.md: from the press cell to the cursor with one bend (LinePlanner): new cells green,
+        // already there grey, relaid blue, bridges where obstacles or a cliff are in the way, red where
+        // the order stops; the end turns to a receiver beside it. Released — one order per stretch of
+        // belt and per bridge, in the order of the path.
         private string UpdateLine(Simulation simulation, Vector3 ground, Mouse mouse, bool overUi)
         {
             SimState state = simulation.State;
             int playerId = _localPlayer!.PlayerId;
+            BuildingStats stats = _stats!;
             Vector2Int cursor = CursorCell(state, ground);
-
             if (!_dragging)
             {
-                _path.Clear();
-                _path.Add(cursor);
+                _lineStart = cursor;
+                _axisChosen = false;
                 if (mouse.leftButton.wasPressedThisFrame && !overUi)
                     _dragging = true;
             }
-            else
+            else if (!_axisChosen && cursor != _lineStart)
             {
-                Extend(cursor);
+                // The axis the cursor first left the press cell by; diagonally — horizontal.
+                Vector2Int delta = cursor - _lineStart;
+                _horizontalFirst = Mathf.Abs(delta.x) >= Mathf.Abs(delta.y);
+                _axisChosen = true;
             }
 
-            int count = _path.Count;
-            RejectReason? first = null;
-            bool overCliff = false;
-            bool belt = _stats!.Behavior == BuildingBehavior.Conveyor;
-            int relaid = 0, kept = 0;
-            for (int i = 0; i < count; i++)
+            LinePlan plan = LinePlanner.Plan(state, playerId, stats.Id, _lineStart.x, _lineStart.y, cursor.x, cursor.y, _horizontalFirst, _rotation);
+            bool belt = stats.Behavior == BuildingBehavior.Conveyor;
+            int built = 0, relaid = 0, bridges = 0;
+            foreach (LineCell cell in plan.Cells)
             {
-                Direction direction = LineDirection(i);
-                RejectReason? reason = PlacementPreview.Check(state, playerId, _stats!.Id, _path[i].x, _path[i].y, direction);
-                if (i == 0)
-                    first = reason;
-                // heights.md: a belt hands nothing over a cliff — the cell just past it is marked.
-                bool cliff = belt && i > 0 && !state.Map.LevelsJoin(_path[i - 1].x, _path[i - 1].y, _path[i].x, _path[i].y);
-                overCliff |= cliff;
-                // relay-and-demolish.md: an own belt under the line is turned, free; one already
-                // looking that way stays as it is.
-                Building? under = belt && reason == null ? OwnBelt(state, playerId, _path[i].x, _path[i].y) : null;
-                Color color = reason != null ? _blockedColor : under != null ? (under.Direction != direction ? _relayColor : _spanColor) : cliff ? _warningColor : _okColor;
-                if (under != null && under.Direction != direction)
-                    relaid++;
-                else if (under != null)
-                    kept++;
-                PlaceTile(_path[i].x, _path[i].y, color);
-                if (_stats.Behavior == BuildingBehavior.Conveyor)
-                    PlaceArrow(_path[i].x, _path[i].y, direction);
+                switch (cell.Kind)
+                {
+                    case LineCellKind.Build: PlaceTile(cell.X, cell.Y, _okColor); built++; break;
+                    case LineCellKind.Skip: PlaceTile(cell.X, cell.Y, _skipColor, 0.6f); break;
+                    case LineCellKind.Relay: PlaceTile(cell.X, cell.Y, _relayColor); relaid++; break;
+                    case LineCellKind.BridgeIn: PlaceTile(cell.X, cell.Y, _okColor); bridges++; break;
+                    case LineCellKind.BridgeOut: PlaceTile(cell.X, cell.Y, _okColor); break;
+                    case LineCellKind.UnderBridge: PlaceTile(cell.X, cell.Y, _spanColor, 0.4f); break;
+                    case LineCellKind.Broken: PlaceTile(cell.X, cell.Y, _blockedColor); break;
+                }
+                if (belt && cell.Kind != LineCellKind.UnderBridge && cell.Kind != LineCellKind.Broken)
+                    PlaceArrow(cell.X, cell.Y, cell.Direction);
             }
 
-            count -= relaid + kept;
-            int total = count * _stats!.CostPrimary;
-            int wallet = state.GetPlayer(playerId).Wallet.Get(Game.Sim.Resources.Primary);
-            string tip = $"Лента: {count} × {_stats.CostPrimary} = {total}";
+            string cost = plan.CostSecondary > 0 ? $"{plan.CostPrimary} + {plan.CostSecondary} втор." : $"{plan.CostPrimary}";
+            string tip = belt ? $"Лента: {built} · мостов: {bridges} · цена {cost}" : $"{DisplayNames.Building(stats.Id)}: {built} · цена {cost}";
             if (relaid > 0)
                 tip += $"\nПереложить: {relaid} — бесплатно, голубые клетки";
-            if (total > wallet)
-                tip += $"\nСейчас хватает на {wallet / Mathf.Max(1, _stats.CostPrimary)} — остальное по мере дохода";
-            if (first != null)
-                tip += "\n" + DisplayNames.Reject(first.Value, _stats.Id);
-            if (overCliff)
-                tip += "\nЧерез обрыв лента не передаёт: жёлтая клетка — за обрывом. Нужна рампа или мост";
-            if (!_dragging)
-                tip += "\nЗажмите и тяните · R — поворот\nРесурс едет по стрелкам: конец ленты направьте в штаб";
+            int affordable = Affordable(state, playerId, plan);
+            if (affordable >= 0)
+                tip += $"\nСейчас хватает на {affordable} — остальное по мере дохода";
+            if (plan.Blocked)
+            {
+                Vector2Int first = new Vector2Int(plan.Cells.Count > 0 ? plan.Cells[0].X : _lineStart.x, plan.Cells.Count > 0 ? plan.Cells[0].Y : _lineStart.y);
+                RejectReason? reason = PlacementPreview.Check(state, playerId, stats.Id, first.x, first.y, _rotation);
+                tip += "\n" + (reason != null ? DisplayNames.Reject(reason.Value, stats.Id) : "Отсюда линию не начать");
+            }
+            else if (plan.BrokenSpan > 0)
+                tip += $"\nМост не достаёт: пролёт {plan.BrokenSpan} кл., дальность {state.Rules.BridgeRange - 1}";
+            else if (plan.BrokenSpan < 0)
+                tip += "\nДальше не провести: моста здесь не поставить (изгиб, своя лента или занятый конец)";
+            else if (!plan.HasOrders && plan.Cells.Count > 0)
+                tip += belt ? "\nЛента уже есть" : "\nСтроить здесь нечего";
+            if (plan.StuckToId != 0 && state.FindBuilding(plan.StuckToId) is Building stuck)
+                tip += $"\nКонец прилипнет: {DisplayNames.Building(stuck.Stats.Id).ToLowerInvariant()}";
+            if (plan.MergesIntoBelt)
+                tip += "\nКонец смотрит в ленту поперёк — врезка";
+            tip += _dragging ? "\nR — изгиб с другой стороны"
+                : belt ? "\nЗажмите и тяните · R — поворот\nРесурс едет по стрелкам: конец ленты направьте в штаб" : "\nЗажмите и тяните";
 
             if (_dragging && !mouse.leftButton.isPressed)
             {
-                if (first == null)
-                {
-                    var sites = new BuildSite[_path.Count];
-                    for (int i = 0; i < _path.Count; i++)
-                        sites[i] = new BuildSite(_path[i].x, _path[i].y, LineDirection(i));
-                    Order(simulation, sites);
-                }
+                if (!plan.Blocked && plan.HasOrders)
+                    Order(simulation, Orders(plan));
                 else
-                {
-                    // The first cell decides (BuildCommand checks only it): start over.
                     _dragging = false;
-                }
             }
             return tip;
+        }
+
+        // How many of the plan's orders the wallet pays for now, in the order of the path;
+        // -1 when it pays for all.
+        private static int Affordable(SimState state, int playerId, LinePlan plan)
+        {
+            if (!state.Data.TryGetBuilding(plan.BuildingTypeId, out BuildingStats? line))
+                return -1;
+            BuildingStats? bridge = null;
+            if (plan.BridgeTypeId != null)
+                state.Data.TryGetBuilding(plan.BridgeTypeId, out bridge);
+            Wallet wallet = state.GetPlayer(playerId).Wallet;
+            int primary = wallet.Get(Game.Sim.Resources.Primary), secondary = wallet.Secondary, count = 0;
+            if (plan.CostPrimary <= primary && plan.CostSecondary <= secondary)
+                return -1;
+            foreach (LineCell cell in plan.Cells)
+            {
+                BuildingStats? stats = cell.Kind == LineCellKind.Build ? line
+                    : cell.Kind == LineCellKind.BridgeIn || cell.Kind == LineCellKind.BridgeOut ? bridge : null;
+                if (stats == null)
+                    continue;
+                primary -= stats.CostPrimary;
+                secondary -= stats.CostSecondary;
+                if (primary < 0 || secondary < 0)
+                    break;
+                count++;
+            }
+            return count;
+        }
+
+        // Stretches of new and relaid cells as one order each, every bridge as its own, path order.
+        private List<(string TypeId, BuildSite[] Sites)> Orders(LinePlan plan)
+        {
+            _orders.Clear();
+            _segment.Clear();
+            BuildSite? input = null;
+            foreach (LineCell cell in plan.Cells)
+            {
+                var site = new BuildSite(cell.X, cell.Y, cell.Direction);
+                switch (cell.Kind)
+                {
+                    case LineCellKind.Build:
+                    case LineCellKind.Relay:
+                        _segment.Add(site);
+                        continue;
+                    case LineCellKind.BridgeIn:
+                        input = site;
+                        break;
+                    case LineCellKind.BridgeOut:
+                        Flush(plan.BuildingTypeId);
+                        if (input != null && plan.BridgeTypeId != null)
+                            _orders.Add((plan.BridgeTypeId, new[] { input.Value, site }));
+                        input = null;
+                        continue;
+                }
+                Flush(plan.BuildingTypeId);
+            }
+            Flush(plan.BuildingTypeId);
+            return _orders;
+        }
+
+        private void Flush(string typeId)
+        {
+            if (_segment.Count == 0)
+                return;
+            _orders.Add((typeId, _segment.ToArray()));
+            _segment.Clear();
         }
 
         private string UpdateBridge(Simulation simulation, Vector3 ground, Mouse mouse, bool overUi)
@@ -343,7 +428,7 @@ namespace Game.Presentation
 
             if (mouse.leftButton.wasPressedThisFrame && !overUi && ok)
             {
-                Order(simulation, new[] { new BuildSite(start.x, start.y, direction), new BuildSite(cursor.x, cursor.y, direction) });
+                Order(simulation, id, new[] { new BuildSite(start.x, start.y, direction), new BuildSite(cursor.x, cursor.y, direction) });
             }
             return text;
         }
@@ -419,12 +504,6 @@ namespace Game.Presentation
             return tip;
         }
 
-        private static Building? OwnBelt(SimState state, int playerId, int x, int y)
-        {
-            Building? there = state.FindBuilding(state.Map.BuildingAt(x, y));
-            return there != null && !there.IsDead && there.OwnerId == playerId && there.Stats.Behavior == BuildingBehavior.Conveyor ? there : null;
-        }
-
         // The level most cells of the footprint stand on (ties: the lower one).
         private static int CommonLevel(MapState map, int x, int y, int w, int h)
         {
@@ -452,42 +531,6 @@ namespace Game.Presentation
                 Mathf.Clamp(Mathf.FloorToInt(ground.x), 0, state.Map.Width - 1),
                 Mathf.Clamp(Mathf.FloorToInt(ground.z), 0, state.Map.Height - 1));
 
-        // The line follows the mouse cell by cell: back over its own cells it shortens, otherwise
-        // it walks towards the cursor along the longer axis first, so a turn appears where the mouse turned.
-        private void Extend(Vector2Int cursor)
-        {
-            int index = _path.IndexOf(cursor);
-            if (index >= 0)
-            {
-                _path.RemoveRange(index + 1, _path.Count - index - 1);
-                return;
-            }
-            while (_path[_path.Count - 1] != cursor && _path.Count < BuildCommand.MaxSites)
-            {
-                Vector2Int last = _path[_path.Count - 1];
-                Vector2Int delta = cursor - last;
-                Vector2Int next = Mathf.Abs(delta.x) >= Mathf.Abs(delta.y)
-                    ? last + new Vector2Int(System.Math.Sign(delta.x), 0)
-                    : last + new Vector2Int(0, System.Math.Sign(delta.y));
-                int seen = _path.IndexOf(next);
-                if (seen >= 0)
-                {
-                    _path.RemoveRange(seen + 1, _path.Count - seen - 1);
-                    continue;
-                }
-                _path.Add(next);
-            }
-        }
-
-        // Each cell looks at the next one; the last keeps the direction of the drag
-        // (a single cell uses the R rotation).
-        private Direction LineDirection(int i)
-        {
-            if (_path.Count == 1)
-                return _rotation;
-            return i < _path.Count - 1 ? DirectionOf(_path[i + 1] - _path[i]) : DirectionOf(_path[i] - _path[i - 1]);
-        }
-
         private static Direction DirectionOf(Vector2Int delta)
         {
             if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
@@ -498,12 +541,21 @@ namespace Game.Presentation
         // build-mode.md: the silhouette goes to the local builder. It joins the builder's build (or
         // starts at once when it is idle); anything else the builder does is dropped for it, unless
         // Shift puts it after everything ordered. The mode stays for the next silhouette.
-        private void Order(Simulation simulation, BuildSite[] sites)
+        private void Order(Simulation simulation, string typeId, BuildSite[] sites)
+        {
+            _orders.Clear();
+            _orders.Add((typeId, sites));
+            Order(simulation, _orders);
+        }
+
+        // smart-line.md: a line goes as several orders on one tick; the first by the rule above, the
+        // rest after it (Queued), so they are built in the order of the path.
+        private void Order(Simulation simulation, List<(string TypeId, BuildSite[] Sites)> orders)
         {
             SimState state = simulation.State;
             int playerId = _localPlayer!.PlayerId;
             Unit? builder = state.FindBuilder(playerId);
-            if (builder != null)
+            if (builder != null && orders.Count > 0)
             {
                 UnitOrderKind kind = builder.Order.Kind;
                 bool shift = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
@@ -514,11 +566,11 @@ namespace Game.Presentation
                     _replaceSentTick = state.Tick;
                 else if (!pending)
                     _replaceSentTick = -1;
-                _runner!.Submit(new BuildCommand(playerId, state.Tick, new[] { builder.Id }, _stats!.Id, sites, queued));
+                for (int i = 0; i < orders.Count; i++)
+                    _runner!.Submit(new BuildCommand(playerId, state.Tick, new[] { builder.Id }, orders[i].TypeId, orders[i].Sites, queued || i > 0));
             }
             _dragging = false;
             _bridgeStart = null;
-            _path.Clear();
             // There can be one headquarters only: nothing more to place.
             if (_stats!.Behavior == BuildingBehavior.Headquarters && state.GetPlayer(playerId).Faction?.SingleHeadquarters == true)
                 End();
