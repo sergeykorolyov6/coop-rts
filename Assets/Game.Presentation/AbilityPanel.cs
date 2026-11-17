@@ -76,6 +76,7 @@ namespace Game.Presentation
                 _paths.Add(button.Button);
                 _pathButtons.Add(button.Button);
             }
+            HudKit.CloseGrid(_paths);
         }
 
         private void Update()
@@ -212,6 +213,7 @@ namespace Game.Presentation
 
         private void Sync(SimState state)
         {
+            bool grown = _buttons.Count < _abilities.Count;
             while (_buttons.Count < _abilities.Count)
             {
                 int index = _buttons.Count;
@@ -223,6 +225,8 @@ namespace Game.Presentation
                 _grid!.Add(button.Button);
                 _buttons.Add(button);
             }
+            if (grown)
+                HudKit.CloseGrid(_grid!);
             for (int i = 0; i < _buttons.Count; i++)
             {
                 bool used = i < _abilities.Count;

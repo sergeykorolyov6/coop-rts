@@ -218,6 +218,7 @@ namespace Game.Presentation
                 _grid.Add(button.Button);
                 _buttons.Add((button, stats));
             }
+            HudKit.CloseGrid(_grid);
         }
 
         private Wallet? Stock()

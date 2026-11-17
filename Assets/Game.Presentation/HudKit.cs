@@ -48,6 +48,18 @@ namespace Game.Presentation
             return element;
         }
 
+        // A wrapping row of command buttons is exactly as wide as its buttons, and on some UI scales
+        // the layout then finds the last one a hair too wide: it goes to a second row and the others
+        // stretch to the height of both. A sliver after the last button gives the row spare width.
+        // Call after adding buttons to a "hud-commands__grid".
+        public static void CloseGrid(VisualElement grid)
+        {
+            const string slackClass = "hud-commands__slack";
+            VisualElement slack = grid.Q(className: slackClass) ?? new VisualElement { pickingMode = PickingMode.Ignore };
+            slack.AddToClassList(slackClass);
+            grid.Add(slack);
+        }
+
         public static Label Text(VisualElement parent, string text, string className)
         {
             var label = new Label(text) { pickingMode = PickingMode.Ignore };

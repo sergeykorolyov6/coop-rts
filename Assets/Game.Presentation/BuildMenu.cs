@@ -195,6 +195,7 @@ namespace Game.Presentation
             _rebuild = new CommandButton(RebuildAll, "ui_rebuild", "Восстановить", "U");
             _hud!.AttachTip(_rebuild.Button, RebuildTip);
             _grid.Add(_rebuild.Button);
+            HudKit.CloseGrid(_grid);
             _shownGhosts = -1;
         }
 

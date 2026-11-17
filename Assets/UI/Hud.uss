@@ -667,6 +667,13 @@
     max-width: 672px;
 }
 
+/* Spare width after the last button (HudKit.CloseGrid): without it a row exactly as wide as its
+   buttons loses the last one to a second row on some UI scales. */
+.hud-commands__slack {
+    width: 3px;
+    height: 0;
+}
+
 /* ---- The factory: stock, queue ---- */
 
 .hud-stock {
