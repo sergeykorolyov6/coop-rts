@@ -14,6 +14,8 @@ namespace Game.Presentation
     // Conveyor and wall: press and drag a line from cell to cell, arrows show the direction of every
     // belt cell, the tip shows the total cost (conveyors.md). Bridge (the separate tool): first end,
     // then second end on a straight line within range. R rotates a single cell or bridge.
+    // A drill: a click places one, a press dragged to another cell lays drills over the frame
+    // (DrillFill, drill-fill.md).
     // The mode stays on for the next silhouette until right click or Esc (or a headquarters that can
     // be only one); a building joins the builder's build, or replaces what else it does — Shift
     // always queues it after everything ordered (order-queue.md).
@@ -65,6 +67,10 @@ namespace Game.Presentation
         private Vector2Int _lineStart;
         private bool _axisChosen;
         private bool _horizontalFirst = true;
+        // drill-fill.md: where a drill press started, and the drill a plain click would place there.
+        private Vector2Int _fillStart;
+        private BuildSite _pressSite;
+        private bool _filling;
         private int _endedFrame = -1;
         private int _tilesUsed, _arrowsUsed;
         private int _replaceSentTick = -1;
@@ -188,6 +194,12 @@ namespace Game.Presentation
             SimState state = simulation.State;
             BuildingStats stats = _stats!;
             int playerId = _localPlayer!.PlayerId;
+            if (stats.Behavior == BuildingBehavior.Drill)
+            {
+                string? fill = UpdateDrillFill(simulation, ground, mouse, overUi);
+                if (fill != null)
+                    return fill;
+            }
             // The cursor is the footprint's centre.
             int x = Mathf.FloorToInt(ground.x - (stats.SizeW - 1) * 0.5f);
             int y = Mathf.FloorToInt(ground.z - (stats.SizeH - 1) * 0.5f);
@@ -226,11 +238,111 @@ namespace Game.Presentation
                 tip += Shortfall(state, playerId, stats.Id, 1);
             if (nearCamp)
                 tip += "\nРядом лагерь крипов: нападут";
+            if (drill)
+                tip += "\nКлик — один бур · протяните — буры рамкой";
 
-            if (mouse.leftButton.wasPressedThisFrame && !overUi && reason == null)
+            // A drill waits for the release: the press may become a frame (UpdateDrillFill).
+            if (mouse.leftButton.wasPressedThisFrame && !overUi && reason == null && !drill)
             {
                 Order(simulation, _stats!.Id, new[] { new BuildSite(x, y, _rotation) });
             }
+            return tip;
+        }
+
+        // drill-fill.md: the press remembers the click's drill; once the cursor leaves the press cell
+        // with the button held, the frame takes over (null is returned until then: the single silhouette
+        // shows). Released — the click's drill or every drill of the frame, in one order.
+        private string? UpdateDrillFill(Simulation simulation, Vector3 ground, Mouse mouse, bool overUi)
+        {
+            SimState state = simulation.State;
+            BuildingStats stats = _stats!;
+            int playerId = _localPlayer!.PlayerId;
+            Vector2Int cursor = CursorCell(state, ground);
+            if (mouse.leftButton.wasPressedThisFrame && !overUi)
+            {
+                _dragging = true;
+                _filling = false;
+                _fillStart = cursor;
+                int px = Mathf.FloorToInt(ground.x - (stats.SizeW - 1) * 0.5f), py = Mathf.FloorToInt(ground.z - (stats.SizeH - 1) * 0.5f);
+                _pressSite = new BuildSite(px, py, _rotation);
+            }
+            if (!_dragging)
+                return null;
+            if (cursor != _fillStart)
+                _filling = true;
+
+            if (!mouse.leftButton.isPressed)
+            {
+                _dragging = false;
+                if (_filling)
+                {
+                    DrillFillPlan released = DrillFill.Plan(state, playerId, stats.Id, _fillStart.x, _fillStart.y, cursor.x, cursor.y);
+                    if (released.Sites.Count > 0)
+                    {
+                        var sites = new BuildSite[released.Sites.Count];
+                        for (int i = 0; i < sites.Length; i++)
+                            sites[i] = new BuildSite(released.Sites[i].X, released.Sites[i].Y, _rotation);
+                        Order(simulation, stats.Id, sites);
+                    }
+                    _filling = false;
+                    return null;
+                }
+                if (PlacementPreview.Check(state, playerId, stats.Id, _pressSite.CellX, _pressSite.CellY, _rotation) == null)
+                    Order(simulation, stats.Id, new[] { _pressSite });
+                return null;
+            }
+            if (!_filling)
+                return null;
+
+            int minX = Mathf.Min(_fillStart.x, cursor.x), maxX = Mathf.Max(_fillStart.x, cursor.x);
+            int minY = Mathf.Min(_fillStart.y, cursor.y), maxY = Mathf.Max(_fillStart.y, cursor.y);
+            for (int fx = minX; fx <= maxX; fx++)
+            {
+                PlaceTile(fx, minY, _spanColor, 0.35f);
+                if (maxY != minY)
+                    PlaceTile(fx, maxY, _spanColor, 0.35f);
+            }
+            for (int fy = minY + 1; fy < maxY; fy++)
+            {
+                PlaceTile(minX, fy, _spanColor, 0.35f);
+                if (maxX != minX)
+                    PlaceTile(maxX, fy, _spanColor, 0.35f);
+            }
+
+            DrillFillPlan plan = DrillFill.Plan(state, playerId, stats.Id, _fillStart.x, _fillStart.y, cursor.x, cursor.y);
+            bool nearCamp = false;
+            foreach (DrillFillCell site in plan.Sites)
+            {
+                bool camp = InCampAggro(state, playerId, site.X, site.Y, stats.SizeW, stats.SizeH);
+                nearCamp |= camp;
+                for (int cy = site.Y; cy < site.Y + stats.SizeH; cy++)
+                    for (int cx = site.X; cx < site.X + stats.SizeW; cx++)
+                        PlaceTile(cx, cy, state.Map.OreAt(cx, cy) != MapSetup.NoOre ? _oreColor : camp ? _warningColor : _okColor);
+            }
+            // Cells left out: too little ore — yellow; the place is not free — red.
+            foreach (DrillFillCell skipped in plan.Skipped)
+            {
+                Color color = skipped.Kind == DrillFillCellKind.Poor ? _warningColor : _blockedColor;
+                for (int cy = skipped.Y; cy < skipped.Y + stats.SizeH; cy++)
+                    for (int cx = skipped.X; cx < skipped.X + stats.SizeW; cx++)
+                        PlaceTile(cx, cy, color, 0.5f);
+            }
+
+            if (plan.Sites.Count == 0)
+                return "В рамке нет места для бура";
+            int count = plan.Sites.Count;
+            string cost = stats.CostSecondary > 0 ? $"{count * stats.CostPrimary} + {count * stats.CostSecondary} втор." : $"{count * stats.CostPrimary}";
+            string tip = $"Буров: {count} · руды под ними: {plan.OreTotal} · добыча ≈ {DisplayNames.PerSecond(plan.OreTotal, state.Rules.DrillTicksPerUnitPerOreCell)} · цена {cost}";
+            Wallet wallet = state.GetPlayer(playerId).Wallet;
+            int affordable = Mathf.Min(
+                stats.CostPrimary > 0 ? wallet.Get(Game.Sim.Resources.Primary) / stats.CostPrimary : count,
+                stats.CostSecondary > 0 ? wallet.Secondary / stats.CostSecondary : count);
+            if (affordable < count)
+                tip += $"\nСейчас хватает на {affordable} — остальные по мере дохода, начиная с самых богатых";
+            if (plan.Skipped.Count > 0)
+                tip += "\nЖёлтые — мало руды (кликом можно поставить), красные — место занято";
+            if (nearCamp)
+                tip += "\nРядом лагерь крипов: нападут";
             return tip;
         }
 

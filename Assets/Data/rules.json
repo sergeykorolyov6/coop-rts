@@ -17,6 +17,7 @@
   "conveyor_item_speed_mc_per_tick": 200,
   "demolish_time_pct": 25,
   "drill_buffer": 10,
+  "drill_fill_min_ore_pct": 50,
   "drill_rate_per_ore_cell_ticks_per_unit": 160,
   "factory_queue": 5,
   "factory_stock": 150,
